@@ -21,7 +21,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include "swaprep.h"
 #include "mipointer.h"
 
@@ -461,7 +461,15 @@ rrGetPixmapSharingSyncProp(int numOutputs, RROutputPtr * outputs)
     for (o = 0; o < numOutputs; o++) {
         RRPropertyValuePtr val;
 
+        /* Try pending value first, then current value */
         if ((val = RRGetOutputProperty(outputs[o], syncProp, TRUE)) &&
+            val->data) {
+            if (!(*(char *) val->data))
+                return FALSE;
+            continue;
+        }
+
+        if ((val = RRGetOutputProperty(outputs[o], syncProp, FALSE)) &&
             val->data) {
             if (!(*(char *) val->data))
                 return FALSE;
@@ -709,25 +717,6 @@ rrCheckPixmapBounding(ScreenPtr pScreen,
     return TRUE;
 }
 
-#define XRANDR_EMULATION_PROP "RANDR Emulation"
-static Bool
-rrCheckEmulated(RROutputPtr output)
-{
-    const char *emulStr = XRANDR_EMULATION_PROP;
-    Atom emulProp;
-    RRPropertyValuePtr val;
-
-    emulProp = MakeAtom(emulStr, strlen(emulStr), FALSE);
-    if (emulProp == None)
-        return FALSE;
-
-    val = RRGetOutputProperty(output, emulProp, TRUE);
-    if (val && val->data)
-        return !!val->data;
-
-    return FALSE;
-}
-
 /*
  * Request that the Crtc be reconfigured
  */
@@ -747,11 +736,9 @@ RRCrtcSet(RRCrtcPtr crtc,
 
     crtcChanged = FALSE;
     for (o = 0; o < numOutputs; o++) {
-        if (outputs[o]) {
-            if (rrCheckEmulated(outputs[o]) || (outputs[o]->crtc != crtc)) {
-                crtcChanged = TRUE;
-                break;
-            }
+        if (outputs[o] && outputs[o]->crtc != crtc) {
+            crtcChanged = TRUE;
+            break;
         }
     }
 
@@ -1261,9 +1248,6 @@ ProcRRGetCrtcInfo(ClientPtr client)
         }
     }
 
-    if (pScrPriv->rrCrtcGet)
-        pScrPriv->rrCrtcGet(pScreen, crtc, &rep);
-
     if (client->swapped) {
         swaps(&rep.sequenceNumber);
         swapl(&rep.length);
@@ -1305,7 +1289,7 @@ ProcRRSetCrtcConfig(ClientPtr client)
     CARD8 status;
 
     REQUEST_AT_LEAST_SIZE(xRRSetCrtcConfigReq);
-    numOutputs = (client->req_len - bytes_to_int32(sizeof(xRRSetCrtcConfigReq)));
+    numOutputs = (stuff->length - bytes_to_int32(SIZEOF(xRRSetCrtcConfigReq)));
 
     VERIFY_RR_CRTC(stuff->crtc, crtc, DixSetAttrAccess);
 
@@ -2087,6 +2071,6 @@ RRHasScanoutPixmap(ScreenPtr pScreen)
         if (crtc->scanout_pixmap)
             return TRUE;
     }
-
+    
     return FALSE;
 }

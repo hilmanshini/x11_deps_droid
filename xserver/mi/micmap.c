@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1987, Oracle and/or its affiliates.
+ * Copyright (c) 1987, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -33,19 +33,11 @@
 
 #include <X11/X.h>
 #include <X11/Xproto.h>
-
-#include "os/osdep.h"
-
 #include "scrnintstr.h"
 #include "colormapst.h"
 #include "resource.h"
 #include "globals.h"
 #include "micmap.h"
-
-#define ALL_VISUALS     (StaticGrayMask|GrayScaleMask|StaticColorMask|\
-                         PseudoColorMask|TrueColorMask|DirectColorMask)
-#define LARGE_VISUALS   (TrueColorMask|DirectColorMask)
-#define SMALL_VISUALS   (StaticGrayMask|GrayScaleMask|StaticColorMask|PseudoColorMask)
 
 DevPrivateKeyRec micmapScrPrivateKeyRec;
 
@@ -85,7 +77,7 @@ miUninstallColormap(ColormapPtr pmap)
         if (pmap->mid != pmap->pScreen->defColormap) {
             dixLookupResourceByType((void **) &curpmap,
                                     pmap->pScreen->defColormap,
-                                    X11_RESTYPE_COLORMAP, serverClient, DixUseAccess);
+                                    RT_COLORMAP, serverClient, DixUseAccess);
             (*pmap->pScreen->InstallColormap) (curpmap);
         }
     }
@@ -330,6 +322,7 @@ miSetVisualTypesAndMasks(int depth, int visuals, int bitsPerRGB,
                          Pixel redMask, Pixel greenMask, Pixel blueMask)
 {
     miVisualsPtr new, *prev, v;
+    int count;
 
     new = malloc(sizeof *new);
     if (!new)
@@ -347,7 +340,10 @@ miSetVisualTypesAndMasks(int depth, int visuals, int bitsPerRGB,
     new->redMask = redMask;
     new->greenMask = greenMask;
     new->blueMask = blueMask;
-    new->count = Ones(visuals);
+    count = (visuals >> 1) & 033333333333;
+    count = visuals - count - ((count >> 1) & 033333333333);
+    count = (((count + (count >> 3)) & 030707070707) % 077);    /* HAKMEM 169 */
+    new->count = count;
     for (prev = &miVisuals; (v = *prev); prev = &v->next);
     *prev = new;
     return TRUE;
@@ -519,7 +515,7 @@ miInitVisuals(VisualPtr * visualp, DepthPtr * depthp, int *nvisualp,
             case DirectColor:
             case TrueColor:
                 visual->ColormapEntries = _CE(d);
-                _X_FALLTHROUGH; /* fall through */
+                /* fall through */
             case StaticColor:
                 visual->redMask = visuals->redMask;
                 visual->greenMask = visuals->greenMask;

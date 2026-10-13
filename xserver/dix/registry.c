@@ -361,15 +361,15 @@ dixResetRegistry(void)
 
 #ifdef X_REGISTRY_RESOURCE
     /* Add built-in resources */
-    RegisterResourceName(X11_RESTYPE_NONE, "NONE");
-    RegisterResourceName(X11_RESTYPE_WINDOW, "WINDOW");
-    RegisterResourceName(X11_RESTYPE_PIXMAP, "PIXMAP");
-    RegisterResourceName(X11_RESTYPE_GC, "GC");
-    RegisterResourceName(X11_RESTYPE_FONT, "FONT");
-    RegisterResourceName(X11_RESTYPE_CURSOR, "CURSOR");
-    RegisterResourceName(X11_RESTYPE_COLORMAP, "COLORMAP");
-    RegisterResourceName(X11_RESTYPE_CMAPENTRY, "COLORMAP ENTRY");
-    RegisterResourceName(X11_RESTYPE_OTHERCLIENT, "OTHER CLIENT");
-    RegisterResourceName(X11_RESTYPE_PASSIVEGRAB, "PASSIVE GRAB");
+    RegisterResourceName(RT_NONE, "NONE");
+    RegisterResourceName(RT_WINDOW, "WINDOW");
+    RegisterResourceName(RT_PIXMAP, "PIXMAP");
+    RegisterResourceName(RT_GC, "GC");
+    RegisterResourceName(RT_FONT, "FONT");
+    RegisterResourceName(RT_CURSOR, "CURSOR");
+    RegisterResourceName(RT_COLORMAP, "COLORMAP");
+    RegisterResourceName(RT_CMAPENTRY, "COLORMAP ENTRY");
+    RegisterResourceName(RT_OTHERCLIENT, "OTHER CLIENT");
+    RegisterResourceName(RT_PASSIVEGRAB, "PASSIVE GRAB");
 #endif
 }

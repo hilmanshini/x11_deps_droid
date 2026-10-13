@@ -252,19 +252,19 @@ static int (*ProcIVector[]) (ClientPtr) = {
 
 /* For swapped clients */
 static int (*SProcIVector[]) (ClientPtr) = {
-        NULL,                       /*  0 */
+    NULL,                       /*  0 */
         SProcXGetExtensionVersion,      /*  1 */
-        ProcXListInputDevices, /*  2 */
-        ProcXOpenDevice,       /*  3 */
-        ProcXCloseDevice,      /*  4 */
-        ProcXSetDeviceMode,    /*  5 */
+        SProcXListInputDevices, /*  2 */
+        SProcXOpenDevice,       /*  3 */
+        SProcXCloseDevice,      /*  4 */
+        SProcXSetDeviceMode,    /*  5 */
         SProcXSelectExtensionEvent,     /*  6 */
         SProcXGetSelectedExtensionEvents,       /*  7 */
         SProcXChangeDeviceDontPropagateList,    /*  8 */
         SProcXGetDeviceDontPropagateList,       /*  9 */
         SProcXGetDeviceMotionEvents,    /* 10 */
-        ProcXChangeKeyboardDevice,     /* 11 */
-        ProcXChangePointerDevice,      /* 12 */
+        SProcXChangeKeyboardDevice,     /* 11 */
+        SProcXChangePointerDevice,      /* 12 */
         SProcXGrabDevice,       /* 13 */
         SProcXUngrabDevice,     /* 14 */
         SProcXGrabDeviceKey,    /* 15 */
@@ -272,30 +272,30 @@ static int (*SProcIVector[]) (ClientPtr) = {
         SProcXGrabDeviceButton, /* 17 */
         SProcXUngrabDeviceButton,       /* 18 */
         SProcXAllowDeviceEvents,        /* 19 */
-        ProcXGetDeviceFocus,   /* 20 */
+        SProcXGetDeviceFocus,   /* 20 */
         SProcXSetDeviceFocus,   /* 21 */
-        ProcXGetFeedbackControl,       /* 22 */
+        SProcXGetFeedbackControl,       /* 22 */
         SProcXChangeFeedbackControl,    /* 23 */
-        ProcXGetDeviceKeyMapping,      /* 24 */
+        SProcXGetDeviceKeyMapping,      /* 24 */
         SProcXChangeDeviceKeyMapping,   /* 25 */
-        ProcXGetDeviceModifierMapping, /* 26 */
-        ProcXSetDeviceModifierMapping, /* 27 */
-        ProcXGetDeviceButtonMapping,   /* 28 */
-        ProcXSetDeviceButtonMapping,   /* 29 */
-        ProcXQueryDeviceState, /* 30 */
+        SProcXGetDeviceModifierMapping, /* 26 */
+        SProcXSetDeviceModifierMapping, /* 27 */
+        SProcXGetDeviceButtonMapping,   /* 28 */
+        SProcXSetDeviceButtonMapping,   /* 29 */
+        SProcXQueryDeviceState, /* 30 */
         SProcXSendExtensionEvent,       /* 31 */
-        ProcXDeviceBell,       /* 32 */
-        ProcXSetDeviceValuators,       /* 33 */
+        SProcXDeviceBell,       /* 32 */
+        SProcXSetDeviceValuators,       /* 33 */
         SProcXGetDeviceControl, /* 34 */
         SProcXChangeDeviceControl,      /* 35 */
-        ProcXListDeviceProperties,     /* 36 */
+        SProcXListDeviceProperties,     /* 36 */
         SProcXChangeDeviceProperty,     /* 37 */
         SProcXDeleteDeviceProperty,     /* 38 */
         SProcXGetDeviceProperty,        /* 39 */
         SProcXIQueryPointer,    /* 40 */
         SProcXIWarpPointer,     /* 41 */
         SProcXIChangeCursor,    /* 42 */
-        ProcXIChangeHierarchy, /* 43 */
+        SProcXIChangeHierarchy, /* 43 */
         SProcXISetClientPointer,        /* 44 */
         SProcXIGetClientPointer,        /* 45 */
         SProcXISelectEvents,    /* 46 */
@@ -1220,7 +1220,7 @@ void
 AssignTypeAndName(DeviceIntPtr dev, Atom type, const char *name)
 {
     dev->xinput_type = type;
-    dev->name = XNFstrdup(name);
+    dev->name = strdup(name);
 }
 
 /***********************************************************************
@@ -1369,9 +1369,9 @@ XInputExtensionInit(void)
         memset(&xi_all_devices, 0, sizeof(xi_all_devices));
         memset(&xi_all_master_devices, 0, sizeof(xi_all_master_devices));
         xi_all_devices.id = XIAllDevices;
-        xi_all_devices.name = XNFstrdup("XIAllDevices");
+        xi_all_devices.name = strdup("XIAllDevices");
         xi_all_master_devices.id = XIAllMasterDevices;
-        xi_all_master_devices.name = XNFstrdup("XIAllMasterDevices");
+        xi_all_master_devices.name = strdup("XIAllMasterDevices");
 
         inputInfo.all_devices = &xi_all_devices;
         inputInfo.all_master_devices = &xi_all_master_devices;

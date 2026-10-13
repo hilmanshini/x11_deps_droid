@@ -50,13 +50,13 @@ SOFTWARE.
 #include "misc.h"
 #include <stdarg.h>
 #include <stdint.h>
-#include <stdlib.h>
+#if defined(HAVE_REALLOCARRAY)
+#include <stdlib.h>       /* for reallocarray */
+#endif
 #include <string.h>
 #ifdef MONOTONIC_CLOCK
 #include <time.h>
 #endif
-
-#include <X11/Xfuncproto.h>
 
 #define SCREEN_SAVER_ON   0
 #define SCREEN_SAVER_OFF  1
@@ -82,6 +82,8 @@ typedef struct _NewClientRec *NewClientPtr;
 #define xnfstrdup(s) XNFstrdup(s)
 
 #define xallocarray(num, size) reallocarray(NULL, (num), (size))
+#define xnfallocarray(num, size) XNFreallocarray(NULL, (num), (size))
+#define xnfreallocarray(ptr, num, size) XNFreallocarray((ptr), (num), (size))
 #endif
 
 #include <stdio.h>
@@ -90,6 +92,14 @@ typedef struct _NewClientRec *NewClientPtr;
 #ifdef DDXBEFORERESET
 extern void ddxBeforeReset(void);
 #endif
+
+#ifdef DDXOSVERRORF
+extern _X_EXPORT void (*OsVendorVErrorFProc) (const char *,
+                                              va_list args)
+_X_ATTRIBUTE_PRINTF(1, 0);
+#endif
+
+extern _X_EXPORT Bool WaitForSomething(Bool clients_are_ready);
 
 extern _X_EXPORT int ReadRequestFromClient(ClientPtr /*client */ );
 
@@ -130,6 +140,8 @@ extern _X_EXPORT const char *ClientAuthorized(ClientPtr /*client */ ,
                                               unsigned int /*string_n */ ,
                                               char * /*auth_string */ );
 
+extern _X_EXPORT void CloseDownConnection(ClientPtr /*client */ );
+
 typedef void (*NotifyFdProcPtr)(int fd, int ready, void *data);
 
 #define X_NOTIFY_NONE   0x0
@@ -144,13 +156,25 @@ static inline void RemoveNotifyFd(int fd)
     (void) SetNotifyFd(fd, NULL, X_NOTIFY_NONE, NULL);
 }
 
+extern _X_EXPORT int OnlyListenToOneClient(ClientPtr /*client */ );
+
+extern _X_EXPORT void ListenToAllClients(void);
+
 extern _X_EXPORT void IgnoreClient(ClientPtr /*client */ );
 
 extern _X_EXPORT void AttendClient(ClientPtr /*client */ );
 
+extern _X_EXPORT void MakeClientGrabImpervious(ClientPtr /*client */ );
+
+extern _X_EXPORT void MakeClientGrabPervious(ClientPtr /*client */ );
+
 extern _X_EXPORT void ListenOnOpenFD(int /* fd */ , int /* noxauth */ );
 
 extern _X_EXPORT Bool AddClientOnOpenFD(int /* fd */ );
+
+#ifdef MONOTONIC_CLOCK
+extern void ForceClockId(clockid_t /* forced_clockid */);
+#endif
 
 extern _X_EXPORT CARD32 GetTimeInMillis(void);
 extern _X_EXPORT CARD64 GetTimeInMicros(void);
@@ -182,6 +206,8 @@ extern _X_EXPORT void TimerFree(OsTimerPtr /* pTimer */ );
 
 extern _X_EXPORT void SetScreenSaverTimer(void);
 extern _X_EXPORT void FreeScreenSaverTimer(void);
+
+extern _X_EXPORT void AutoResetServer(int /*sig */ );
 
 extern _X_EXPORT void GiveUp(int /*sig */ );
 
@@ -277,6 +303,14 @@ extern _X_EXPORT void
 LockServer(void);
 extern _X_EXPORT void
 UnlockServer(void);
+
+extern _X_EXPORT int
+OsLookupColor(int /*screen */ ,
+              char * /*name */ ,
+              unsigned /*len */ ,
+              unsigned short * /*pred */ ,
+              unsigned short * /*pgreen */ ,
+              unsigned short * /*pblue */ );
 
 extern _X_EXPORT void
 OsInit(void);
@@ -395,6 +429,9 @@ GetClientFd(ClientPtr);
 
 extern _X_EXPORT Bool
 ClientIsLocal(ClientPtr client);
+
+extern _X_EXPORT int
+GetAccessControl(void);
 
 extern _X_EXPORT void
 AddLocalHosts(void);
@@ -676,10 +713,16 @@ LogPrintMarkers(void);
 extern _X_EXPORT void
 xorg_backtrace(void);
 
+extern _X_EXPORT int
+os_move_fd(int fd);
+
 #include <signal.h>
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 typedef _sigset_t sigset_t;
 #endif
+
+extern _X_EXPORT int
+xthread_sigmask(int how, const sigset_t *set, sigset_t *oldest);
 
 #endif                          /* OS_H */

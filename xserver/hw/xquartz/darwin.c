@@ -32,7 +32,6 @@
 #include <dix-config.h>
 #endif
 
-#include <sys/stat.h>
 #include <X11/X.h>
 #include <X11/Xproto.h>
 #include "os.h"
@@ -519,10 +518,9 @@ InitInput(int argc, char **argv)
     /* We need to really have rules... or something... */
     XkbSetRulesDflts(&rmlvo);
 
-    if (Success != AllocDevicePair(serverClient, "xquartz virtual",
-                                    &darwinPointer, &darwinKeyboard,
-                                    DarwinMouseProc, DarwinKeybdProc, FALSE))
-        FatalError("Failed to allocate xquartz virtual device pair\n");
+    assert(Success == AllocDevicePair(serverClient, "xquartz virtual",
+                                      &darwinPointer, &darwinKeyboard,
+                                      DarwinMouseProc, DarwinKeybdProc, FALSE));
 
     /* here's the snippet from the current gdk sources:
        if (!strcmp (tmp_name, "pointer"))
@@ -539,18 +537,15 @@ InitInput(int argc, char **argv)
      */
 
     darwinTabletStylus = AddInputDevice(serverClient, DarwinTabletProc, TRUE);
-    if (!darwinTabletStylus)
-        FatalError("Failed to add tablet stylus input device\n");
+    assert(darwinTabletStylus);
     darwinTabletStylus->name = strdup("pen");
 
     darwinTabletCursor = AddInputDevice(serverClient, DarwinTabletProc, TRUE);
-    if (!darwinTabletCursor)
-        FatalError("Failed to add tablet cursor input device\n");
+    assert(darwinTabletCursor);
     darwinTabletCursor->name = strdup("cursor");
 
     darwinTabletEraser = AddInputDevice(serverClient, DarwinTabletProc, TRUE);
-    if (!darwinTabletEraser)
-        FatalError("Failed to add tablet eraser input device\n");
+    assert(darwinTabletEraser);
     darwinTabletEraser->name = strdup("eraser");
 
     DarwinEQInit();
@@ -679,10 +674,8 @@ OsVendorInit(void)
     if (serverGeneration == 1) {
         char *lf;
         char *home = getenv("HOME");
-        if (!home)
-            FatalError("HOME is not set\n");
-        if (asprintf(&lf, "%s/Library/Logs/X11", home) < 0)
-            FatalError("Failed to allocate log directory path\n");
+        assert(home);
+        assert(0 < asprintf(&lf, "%s/Library/Logs/X11", home));
 
         /* Ignore errors.  If EEXIST, we don't care.  If anything else,
          * LogInit will handle it for us.
@@ -690,9 +683,9 @@ OsVendorInit(void)
         (void)mkdir(lf, S_IRWXU | S_IRWXG | S_IRWXO);
         free(lf);
 
-        if (asprintf(&lf, "%s/Library/Logs/X11/%s.log", home,
-                     bundle_id_prefix) < 0)
-            FatalError("Failed to allocate log file path\n");
+        assert(0 <
+               asprintf(&lf, "%s/Library/Logs/X11/%s.log", home,
+                        bundle_id_prefix));
         LogInit(lf, ".old");
         free(lf);
 

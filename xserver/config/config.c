@@ -133,7 +133,7 @@ struct OdevAttributes *
 config_odev_allocate_attributes(void)
 {
     struct OdevAttributes *attribs =
-        XNFcallocarray(1, sizeof (struct OdevAttributes));
+        xnfcalloc(1, sizeof (struct OdevAttributes));
     attribs->fd = -1;
     return attribs;
 }

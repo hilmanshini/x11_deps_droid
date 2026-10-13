@@ -107,11 +107,7 @@ srcs_windows += [
     '../../mi/miinitext.h',
 ]
 
-rsrc = windows.compile_resources(
-     'XWin.rc',
-     include_directories: include_directories('../../include/'),
-     depend_files: ['XWin.exe.manifest', 'X.ico'],
-)
+rsrc = windows.compile_resources('XWin.rc', include_directories: include_directories('../../include/'))
 srcs_windows += rsrc
 
 flex = find_program('flex')
@@ -170,8 +166,7 @@ executable(
 
 install_data(
     'system.XWinrc',
-    install_dir: get_option('sysconfdir') / 'X11',
-    install_tag: 'runtime',
+    install_dir: join_paths(get_option('sysconfdir'), 'X11')
 )
 
 xwin_man = configure_file(

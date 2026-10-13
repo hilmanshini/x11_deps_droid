@@ -77,8 +77,8 @@ extern void winDebug(const char *format, ...);
 extern void winReshapeMultiWindow(WindowPtr pWin);
 extern void winUpdateRgnMultiWindow(WindowPtr pWin);
 
-#ifndef ENABLE_DEBUG
-#define ENABLE_DEBUG NO
+#ifndef CYGDEBUG
+#define CYGDEBUG NO
 #endif
 
 /*
@@ -189,7 +189,7 @@ static Bool g_shutdown = FALSE;
  * Translate msg id to text, for debug purposes
  */
 
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
 static const char *
 MessageName(winWMMessagePtr msg)
 {
@@ -386,7 +386,7 @@ GetWindowName(WMInfoPtr pWMInfo, xcb_window_t iWin, char **ppWindowName)
     xcb_connection_t *conn = pWMInfo->conn;
     char *pszWindowName = NULL;
 
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
     ErrorF("GetWindowName\n");
 #endif
 
@@ -791,7 +791,7 @@ winMultiWindowWMProc(void *pArg)
     /* Initialize the Window Manager */
     winInitMultiWindowWM(pWMInfo, pProcArg);
 
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
     ErrorF("winMultiWindowWMProc ()\n");
 #endif
 
@@ -808,7 +808,7 @@ winMultiWindowWMProc(void *pArg)
             pthread_exit(NULL);
         }
 
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
         ErrorF("winMultiWindowWMProc - MSG: %s (%d) ID: %d\n",
                MessageName(&(pNode->msg)), (int)pNode->msg.msg, (int)pNode->msg.dwID);
 #endif
@@ -909,7 +909,6 @@ winMultiWindowWMProc(void *pArg)
                -- independently, the WM_TAKE_FOCUS protocol determines whether
                the WM should send a WM_TAKE_FOCUS ClientMessage.
             */
-            if (pNode->msg.iWindow)
             {
               Bool neverFocus = FALSE;
               xcb_get_property_cookie_t cookie;
@@ -923,7 +922,7 @@ winMultiWindowWMProc(void *pArg)
               }
 
               if (!neverFocus)
-                xcb_set_input_focus(pWMInfo->conn, XCB_INPUT_FOCUS_PARENT,
+                xcb_set_input_focus(pWMInfo->conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                                     pNode->msg.iWindow, XCB_CURRENT_TIME);
 
               if (IsWmProtocolAvailable(pWMInfo,
@@ -932,13 +931,6 @@ winMultiWindowWMProc(void *pArg)
                 SendXMessage(pWMInfo->conn,
                              pNode->msg.iWindow,
                              pWMInfo->atmWmProtos, pWMInfo->atmWmTakeFocus);
-
-            }
-            else
-            /* Set the input focus to none */
-            {
-              xcb_set_input_focus(pWMInfo->conn, XCB_INPUT_FOCUS_NONE,
-                                  XCB_NONE, XCB_CURRENT_TIME);
 
             }
             break;
@@ -1010,7 +1002,7 @@ winMultiWindowWMProc(void *pArg)
     /* Free the passed-in argument */
     free(pProcArg);
 
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
     ErrorF("-winMultiWindowWMProc ()\n");
 #endif
     return NULL;
@@ -1403,9 +1395,9 @@ winInitWM(void **ppWMInfo,
           pthread_mutex_t * ppmServerStarted,
           int dwScreen, HWND hwndScreen, Bool compositeWM)
 {
-    WMProcArgPtr pArg = calloc(1, sizeof(WMProcArgRec));
-    WMInfoPtr pWMInfo = calloc(1, sizeof(WMInfoRec));
-    XMsgProcArgPtr pXMsgArg = calloc(1, sizeof(XMsgProcArgRec));
+    WMProcArgPtr pArg = malloc(sizeof(WMProcArgRec));
+    WMInfoPtr pWMInfo = malloc(sizeof(WMInfoRec));
+    XMsgProcArgPtr pXMsgArg = malloc(sizeof(XMsgProcArgRec));
 
     /* Bail if the input parameters are bad */
     if (pArg == NULL || pWMInfo == NULL || pXMsgArg == NULL) {
@@ -1415,6 +1407,11 @@ winInitWM(void **ppWMInfo,
         free(pXMsgArg);
         return FALSE;
     }
+
+    /* Zero the allocated memory */
+    ZeroMemory(pArg, sizeof(WMProcArgRec));
+    ZeroMemory(pWMInfo, sizeof(WMInfoRec));
+    ZeroMemory(pXMsgArg, sizeof(XMsgProcArgRec));
 
     /* Set a return pointer to the Window Manager info structure */
     *ppWMInfo = pWMInfo;
@@ -1449,7 +1446,7 @@ winInitWM(void **ppWMInfo,
         return FALSE;
     }
 
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
     winDebug("winInitWM - Returning.\n");
 #endif
 
@@ -1639,7 +1636,7 @@ winSendMessageToWM(void *pWMInfo, winWMMessagePtr pMsg)
 {
     WMMsgNodePtr pNode;
 
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
     ErrorF("winSendMessageToWM %s\n", MessageName(pMsg));
 #endif
 

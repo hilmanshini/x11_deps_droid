@@ -912,8 +912,8 @@ xf86NormalizeName(const char *s)
         case '\t':
             continue;
         default:
-            if (isupper((unsigned char)*p))
-                *q++ = tolower((unsigned char)*p);
+            if (isupper(*p))
+                *q++ = tolower(*p);
             else
                 *q++ = *p;
         }

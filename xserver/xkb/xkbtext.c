@@ -41,6 +41,7 @@
 #include "inputstr.h"
 #include "dix.h"
 #include "xkbstr.h"
+#define XKBSRV_NEED_FILE_FUNCS	1
 #include <xkbsrv.h>
 #include "xkbgeom.h"
 
@@ -63,7 +64,7 @@ tbGetBuffer(unsigned size)
 
     if (size > tb->size) {
         free(tb->buffer);
-        tb->buffer = XNFalloc(size);
+        tb->buffer = xnfalloc(size);
         tb->size = size;
     }
     return tb->buffer;
@@ -101,9 +102,9 @@ XkbAtomText(Atom atm, unsigned format)
     }
     if (format == XkbCFile) {
         for (tmp = rtrn; *tmp != '\0'; tmp++) {
-            if ((tmp == rtrn) && (!isalpha((unsigned char)*tmp)))
+            if ((tmp == rtrn) && (!isalpha(*tmp)))
                 *tmp = '_';
-            else if (!isalnum((unsigned char)*tmp))
+            else if (!isalnum(*tmp))
                 *tmp = '_';
         }
     }
@@ -539,7 +540,7 @@ XkbControlsMaskText(unsigned ctrls, unsigned format)
                 if (len != 0)
                     buf[len++] = '|';
                 sprintf(&buf[len], "Xkb%sMask", ctrlNames[i]);
-                buf[len + 3] = toupper((unsigned char)buf[len + 3]);
+                buf[len + 3] = toupper(buf[len + 3]);
             }
             else {
                 if (len != 0)
@@ -570,7 +571,7 @@ XkbStringText(char *str, unsigned format)
     else if (format == XkbXKMFile)
         return str;
     for (ok = TRUE, len = 0, in = str; *in != '\0'; in++, len++) {
-        if (!isprint((unsigned char)*in)) {
+        if (!isprint(*in)) {
             ok = FALSE;
             switch (*in) {
             case '\n':
@@ -591,7 +592,7 @@ XkbStringText(char *str, unsigned format)
         return str;
     buf = tbGetBuffer(len + 1);
     for (in = str, out = buf; *in != '\0'; in++) {
-        if (isprint((unsigned char)*in))
+        if (isprint(*in))
             *out++ = *in;
         else {
             *out++ = '\\';
@@ -987,7 +988,8 @@ CopySetLockControlsArgs(XkbDescPtr xkb, XkbAction *action, char *buf, int *sz)
         int nOut = 0;
 
         if (tmp & XkbRepeatKeysMask) {
-            TryCopyStr(buf, "RepeatKeys", sz);
+            snprintf(tbuf, sizeof(tbuf), "%sRepeatKeys", (nOut > 0 ? "+" : ""));
+            TryCopyStr(buf, tbuf, sz);
             nOut++;
         }
         if (tmp & XkbSlowKeysMask) {
@@ -1262,7 +1264,7 @@ XkbActionText(XkbDescPtr xkb, XkbAction *action, unsigned format)
 char *
 XkbBehaviorText(XkbDescPtr xkb, XkbBehavior * behavior, unsigned format)
 {
-    char buf[256] = "";
+    char buf[256];
 
     if (format == XkbCFile) {
         if (behavior->type == XkbKB_Default)

@@ -2,11 +2,11 @@ python3 = import('python3')
 
 # XWin requires OpenGL spec files in order to generate wrapper code for native GL functions
 py3 = python3.find_python()
-if run_command(py3, '-c', 'import lxml;', check: false).returncode() != 0
+if run_command(py3, '-c', 'import lxml;').returncode() != 0
     error('python3 lxml module not found')
 endif
 
-khronos_spec_dir = dependency('khronos-opengl-registry').get_variable(pkgconfig : 'specdir')
+khronos_spec_dir = dependency('khronos-opengl-registry').get_pkgconfig_variable('specdir')
 
 gen_gl_wrappers_opts= ['-nodebug']
 gen_gl_wrappers_cmd = ['env', 'PYTHONPATH=' + khronos_spec_dir, py3, files('./gen_gl_wrappers.py'), gen_gl_wrappers_opts]
@@ -14,33 +14,33 @@ gen_gl_wrappers_cmd = ['env', 'PYTHONPATH=' + khronos_spec_dir, py3, files('./ge
 wgl_wrappers = custom_target(
     'gen_wgl_wrappers',
     command: [gen_gl_wrappers_cmd, '-registry', '@INPUT@', '-prefix', 'wgl', '-wrapper', '-preresolve', '-outfile', '@OUTPUT@'],
-    input: khronos_spec_dir / 'wgl.xml',
+    input: join_paths(khronos_spec_dir, 'wgl.xml'),
     output: 'generated_wgl_wrappers.ic',
-    depend_files: khronos_spec_dir / 'reg.py',
+    depend_files: join_paths(khronos_spec_dir, 'reg.py'),
 )
 
 gl_shim = custom_target(
     'gen_gl_shim',
     command: [gen_gl_wrappers_cmd, '-registry', '@INPUT@', '-shim', '-outfile', '@OUTPUT@'],
-    input: khronos_spec_dir / 'gl.xml',
+    input: join_paths(khronos_spec_dir, 'gl.xml'),
     output: 'generated_gl_shim.ic',
-    depend_files: khronos_spec_dir / 'reg.py',
+    depend_files: join_paths(khronos_spec_dir, 'reg.py'),
 )
 
 gl_thunks = custom_target(
     'gen_gl_thunks',
     command: [gen_gl_wrappers_cmd, '-registry', '@INPUT@', '-thunk', '-outfile', '@OUTPUT@'],
-    input: khronos_spec_dir / 'gl.xml',
+    input: join_paths(khronos_spec_dir, 'gl.xml'),
     output: 'generated_gl_thunks.ic',
-    depend_files: khronos_spec_dir / 'reg.py',
+    depend_files: join_paths(khronos_spec_dir, 'reg.py'),
 )
 
 gl_thunks_def = custom_target(
     'gen_gl_thunks_def',
     command: [gen_gl_wrappers_cmd, '-registry', '@INPUT@', '-thunkdefs', '-outfile', '@OUTPUT@'],
-    input: khronos_spec_dir / 'gl.xml',
+    input: join_paths(khronos_spec_dir, 'gl.xml'),
     output: 'generated_gl_thunks.def',
-    depend_files: khronos_spec_dir / 'reg.py',
+    depend_files: join_paths(khronos_spec_dir, 'reg.py'),
 )
 
 srcs_windows_glx = [

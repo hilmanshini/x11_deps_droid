@@ -312,8 +312,6 @@ ProcXResQueryClientResources(ClientPtr client)
     }
 
     counts = calloc(lastResourceType + 1, sizeof(int));
-    if (!counts)
-        return BadAlloc;
 
     FindAllClientResources(clients[clientID], ResFindAllRes, counts);
 
@@ -464,7 +462,7 @@ ConstructClientIdValue(ClientPtr sendClient, ClientPtr client, CARD32 mask,
     xXResClientIdValue rep;
 
     rep.spec.client = client->clientAsMask;
-    if (sendClient->swapped) {
+    if (client->swapped) {
         swapl (&rep.spec.client);
     }
 
@@ -492,13 +490,11 @@ ConstructClientIdValue(ClientPtr sendClient, ClientPtr client, CARD32 mask,
         if (pid != -1) {
             void *ptr = AddFragment(&ctx->response,
                                     sizeof(rep) + sizeof(CARD32));
-            CARD32 *value;
+            CARD32 *value = (void*) ((char*) ptr + sizeof(rep));
 
             if (!ptr) {
                 return FALSE;
             }
-
-            value = (void*) ((char*) ptr + sizeof(rep));
 
             rep.spec.mask = X_XResLocalClientPIDMask;
             rep.length = 4;
@@ -508,11 +504,11 @@ ConstructClientIdValue(ClientPtr sendClient, ClientPtr client, CARD32 mask,
                 swapl (&rep.length);
             }
 
-            memcpy(ptr, &rep, sizeof(rep));
-            *value = pid;
             if (sendClient->swapped) {
                 swapl (value);
             }
+            memcpy(ptr, &rep, sizeof(rep));
+            *value = pid;
 
             ctx->resultBytes += sizeof(rep) + sizeof(CARD32);
             ++ctx->numIds;
@@ -1051,22 +1047,10 @@ SProcXResQueryClientPixmapBytes(ClientPtr client)
 static int _X_COLD
 SProcXResQueryClientIds (ClientPtr client)
 {
-    int i;
-    xXResClientIdSpec *specs;
-
     REQUEST(xXResQueryClientIdsReq);
 
     REQUEST_AT_LEAST_SIZE (xXResQueryClientIdsReq);
     swapl(&stuff->numSpecs);
-    REQUEST_FIXED_SIZE(xXResQueryClientIdsReq,
-                       stuff->numSpecs * sizeof(xXResClientIdSpec));
-
-    specs = (xXResClientIdSpec *) (stuff + 1);
-    for (i = 0; i < stuff->numSpecs; i++) {
-        swapl(&specs[i].client);
-        swapl(&specs[i].mask);
-    }
-
     return ProcXResQueryClientIds(client);
 }
 
@@ -1096,6 +1080,7 @@ static int _X_COLD
 SProcResDispatch (ClientPtr client)
 {
     REQUEST(xReq);
+    swaps(&stuff->length);
 
     switch (stuff->data) {
     case X_XResQueryVersion:

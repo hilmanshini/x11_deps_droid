@@ -790,9 +790,6 @@ create_thread(void *(*func)(void *), void *arg)
     pthread_attr_init(&attr);
     pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    if (&pthread_attr_set_qos_class_np) {
-        pthread_attr_set_qos_class_np(&attr, QOS_CLASS_USER_INITIATED, 0);
-    }
     pthread_create(&tid, &attr, func, arg);
     pthread_attr_destroy(&attr);
 
@@ -962,7 +959,7 @@ wait_for_mieq_init(void);
                            [e type] == NSOtherMouseDragged ||
                            [e type] == NSRightMouseDragged ||
                            [e type] == NSMouseMoved ||
-                           [e type] == NSTabletPoint ||
+                           [e type] == NSTabletPoint || 
                            [e type] == NSScrollWheel;
 
     isTabletEvent = ([e type] == NSTabletPoint) ||
@@ -1045,7 +1042,7 @@ wait_for_mieq_init(void);
                                 NX_DEVICELCTLKEYMASK | NX_DEVICERCTLKEYMASK,
                                 NX_DEVICELCTLKEYMASK);
     modifierFlags = ensure_flag(modifierFlags, NX_SHIFTMASK,
-                                NX_DEVICELSHIFTKEYMASK | NX_DEVICERSHIFTKEYMASK,
+                                NX_DEVICELSHIFTKEYMASK | NX_DEVICERSHIFTKEYMASK, 
                                 NX_DEVICELSHIFTKEYMASK);
     modifierFlags = ensure_flag(modifierFlags, NX_COMMANDMASK,
                                 NX_DEVICELCMDKEYMASK | NX_DEVICERCMDKEYMASK,
@@ -1161,7 +1158,7 @@ handle_mouse:
             else
                 DarwinSendTabletEvents(darwinTabletCurrent, ProximityOut, 0,
                                        location.x, location.y, pressure,
-                                       tilt.x, -tilt.y);
+                                       tilt.x, tilt.y);
             return;
         }
 
@@ -1175,7 +1172,7 @@ handle_mouse:
             if (needsProximityIn) {
                 DarwinSendTabletEvents(darwinTabletCurrent, ProximityIn, 0,
                                        location.x, location.y, pressure,
-                                       tilt.x, -tilt.y);
+                                       tilt.x, tilt.y);
 
                 needsProximityIn = NO;
             }
@@ -1217,7 +1214,7 @@ handle_mouse:
         } else {
             DarwinSendTabletEvents(pDev, ev_type, ev_button,
                                    location.x, location.y, pressure,
-                                   tilt.x, -tilt.y);
+                                   tilt.x, tilt.y);
         }
 
         break;
@@ -1244,7 +1241,7 @@ handle_mouse:
         else
             DarwinSendTabletEvents(darwinTabletCurrent, ProximityOut, 0,
                                    location.x, location.y, pressure,
-                                   tilt.x, -tilt.y);
+                                   tilt.x, tilt.y);
         break;
 
     case NSScrollWheel:
@@ -1261,16 +1258,16 @@ handle_mouse:
         if (source) {
             double lineHeight = CGEventSourceGetPixelsPerLine(source);
             CFRelease(source);
-
+            
             /* There's no real reason for the 1/5 ratio here other than that
              * it feels like a good ratio after some testing.
              */
-
+            
             deltaX *= lineHeight / 5.0;
             deltaY *= lineHeight / 5.0;
         }
 #endif
-
+        
         if (XQuartzScrollInDeviceDirection &&
             [e isDirectionInvertedFromDevice]) {
             deltaX *= -1;
@@ -1304,7 +1301,7 @@ handle_mouse:
                 }
 
                 /* Eat up the deficit, but ensure that something is
-                 * always sent
+                 * always sent 
                  */
                 if (fabs(deltaX) > fabs(deficit_x)) {
                     deltaX -= deficit_x;
@@ -1337,7 +1334,7 @@ handle_mouse:
                 }
 
                 /* Eat up the deficit, but ensure that something is
-                 * always sent
+                 * always sent 
                  */
                 if (fabs(deltaY) > fabs(deficit_y)) {
                     deltaY -= deficit_y;

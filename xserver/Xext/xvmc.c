@@ -44,6 +44,8 @@ static RESTYPE XvMCRTContext;
 static RESTYPE XvMCRTSurface;
 static RESTYPE XvMCRTSubpicture;
 
+int (*XvMCScreenInitProc)(ScreenPtr, int, XvMCAdaptorPtr) = NULL;
+
 typedef struct {
     int num_adaptors;
     XvMCAdaptorPtr adaptors;
@@ -130,7 +132,7 @@ ProcXvMCListSurfaceTypes(ClientPtr client)
     int i;
     XvMCScreenPtr pScreenPriv;
     xvmcListSurfaceTypesReply rep;
-    xvmcSurfaceInfo info = { 0 };
+    xvmcSurfaceInfo info;
     XvMCAdaptorPtr adaptor = NULL;
     XvMCSurfaceInfoPtr surface;
     int num_surfaces;
@@ -224,7 +226,7 @@ ProcXvMCCreateContext(ClientPtr client)
         }
     }
 
-    /* adaptor doesn't support this surface_type_id */
+    /* adaptor doesn't support this suface_type_id */
     if (!surface)
         return BadMatch;
 
@@ -288,7 +290,7 @@ ProcXvMCDestroyContext(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->context_id, X11_RESTYPE_NONE);
+    FreeResource(stuff->context_id, RT_NONE);
 
     return Success;
 }
@@ -366,7 +368,7 @@ ProcXvMCDestroySurface(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->surface_id, X11_RESTYPE_NONE);
+    FreeResource(stuff->surface_id, RT_NONE);
 
     return Success;
 }
@@ -494,7 +496,7 @@ ProcXvMCDestroySubpicture(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->subpicture_id, X11_RESTYPE_NONE);
+    FreeResource(stuff->subpicture_id, RT_NONE);
 
     return Success;
 }
@@ -508,7 +510,7 @@ ProcXvMCListSubpictureTypes(ClientPtr client)
     ScreenPtr pScreen;
     XvMCAdaptorPtr adaptor = NULL;
     XvMCSurfaceInfoPtr surface = NULL;
-    xvImageFormatInfo info = { 0 };
+    xvImageFormatInfo info;
     XvImagePtr pImage;
     int i, j;
 

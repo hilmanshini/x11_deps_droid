@@ -27,6 +27,10 @@ Equipment Corporation.
 #include <dix-config.h>
 #endif
 
+#ifdef HAVE_DMX_CONFIG_H
+#include <dmx-config.h>
+#endif
+
 #include <stdio.h>
 #include <X11/X.h>
 #include <X11/Xproto.h>
@@ -781,16 +785,16 @@ PanoramiXMaybeAddVisual(VisualPtr pVisual)
     /* found a matching visual on all screens, add it to the subset list */
     j = PanoramiXNumVisuals;
     PanoramiXNumVisuals++;
-    PanoramiXVisuals = XNFreallocarray(PanoramiXVisuals,
-                                       PanoramiXNumVisuals, sizeof(VisualRec));
+    PanoramiXVisuals = reallocarray(PanoramiXVisuals,
+                                    PanoramiXNumVisuals, sizeof(VisualRec));
 
     memcpy(&PanoramiXVisuals[j], pVisual, sizeof(VisualRec));
 
     for (k = 0; k < PanoramiXNumDepths; k++) {
         if (PanoramiXDepths[k].depth == pVisual->nplanes) {
-            PanoramiXDepths[k].vids = XNFreallocarray(PanoramiXDepths[k].vids,
-                                                      PanoramiXDepths[k].numVids + 1,
-                                                      sizeof(VisualID));
+            PanoramiXDepths[k].vids = reallocarray(PanoramiXDepths[k].vids,
+                                                   PanoramiXDepths[k].numVids + 1,
+                                                   sizeof(VisualID));
             PanoramiXDepths[k].vids[PanoramiXDepths[k].numVids] = pVisual->vid;
             PanoramiXDepths[k].numVids++;
             break;

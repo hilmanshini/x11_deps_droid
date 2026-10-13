@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011 Collabora, Ltd.
+ * Copyright © 2011 Collabra Ltd.
  * Copyright © 2011 Red Hat, Inc.
  * Copyright © 2020 Povilas Kanapickas  <povilas@radix.lt>
  *
@@ -58,12 +58,6 @@ GestureInitGestureInfo(GestureInfoPtr gi)
     return TRUE;
 }
 
-void
-GestureFreeGestureInfo(GestureInfoPtr gi)
-{
-    free(gi->sprite.spriteTrace);
-}
-
 /**
  * Given an event type returns the associated gesture event info.
  */
@@ -114,8 +108,10 @@ void
 GestureEndGesture(GestureInfoPtr gi)
 {
     if (gi->has_listener) {
-        FreeGrab(gi->listener.grab);
-        gi->listener.grab = NULL;
+        if (gi->listener.grab) {
+            FreeGrab(gi->listener.grab);
+            gi->listener.grab = NULL;
+        }
         gi->listener.listener = 0;
         gi->has_listener = FALSE;
     }
@@ -198,8 +194,8 @@ GestureAddGrabListener(DeviceIntPtr dev, GestureInfoPtr gi, GrabPtr grab)
         BUG_RETURN_MSG(1, "Unsupported grab type\n");
     }
 
-    /* grab listeners are always X11_RESTYPE_NONE since we keep the grab pointer */
-    GestureAddListener(gi, grab->resource, X11_RESTYPE_NONE, type, grab->window, grab);
+    /* grab listeners are always RT_NONE since we keep the grab pointer */
+    GestureAddListener(gi, grab->resource, RT_NONE, type, grab->window, grab);
 }
 
 /**

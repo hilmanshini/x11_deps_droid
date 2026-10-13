@@ -46,13 +46,14 @@
 #define SERVER_DAMAGE_MAJOR_VERSION		1
 #define SERVER_DAMAGE_MINOR_VERSION		1
 
-/* DPMS */
-#define SERVER_DPMS_MAJOR_VERSION		1
-#define SERVER_DPMS_MINOR_VERSION		2
-
 /* DRI3 */
 #define SERVER_DRI3_MAJOR_VERSION               1
-#define SERVER_DRI3_MINOR_VERSION               4
+#define SERVER_DRI3_MINOR_VERSION               2
+
+/* DMX */
+#define SERVER_DMX_MAJOR_VERSION		2
+#define SERVER_DMX_MINOR_VERSION		2
+#define SERVER_DMX_PATCH_VERSION		20040604
 
 /* Generic event extension */
 #define SERVER_GE_MAJOR_VERSION                 1
@@ -68,11 +69,7 @@
 
 /* Present */
 #define SERVER_PRESENT_MAJOR_VERSION            1
-#ifdef DRI3
-#define SERVER_PRESENT_MINOR_VERSION            4
-#else
-#define SERVER_PRESENT_MINOR_VERSION            3
-#endif
+#define SERVER_PRESENT_MINOR_VERSION            2
 
 /* RandR */
 #define SERVER_RANDR_MAJOR_VERSION		1

@@ -31,7 +31,6 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <xkb-config.h>
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <X11/X.h>
 #include <X11/Xos.h>
@@ -41,8 +40,10 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "inputstr.h"
 #include "scrnintstr.h"
 #include "windowstr.h"
+#define	XKBSRV_NEED_FILE_FUNCS
 #include <xkbsrv.h>
 #include <X11/extensions/XI.h>
+#include "xkb.h"
 
 #define	PRE_ERROR_MSG "\"The XKEYBOARD keymap compiler (xkbcomp) reports:\""
 #define	ERROR_PREFIX	"\"> \""
@@ -69,17 +70,9 @@ OutputDirectory(char *outdir, size_t size)
     /* Can we write an xkm and then open it too? */
     if (access(XKM_OUTPUT_DIR, W_OK | X_OK) == 0) {
         directory = XKM_OUTPUT_DIR;
-    } else {
-        const char *xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
-
-        if (xdg_runtime_dir && xdg_runtime_dir[0] == '/' &&
-            access(xdg_runtime_dir, W_OK | X_OK) == 0)
-            directory = xdg_runtime_dir;
+        if (XKM_OUTPUT_DIR[strlen(XKM_OUTPUT_DIR) - 1] != '/')
+            pathsep = "/";
     }
-
-    if (directory && directory[strlen(directory) - 1] != '/')
-        pathsep = "/";
-
 #else
     directory = Win32TempDir();
     pathsep = "\\";
@@ -189,7 +182,7 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata)
 #ifdef WIN32
             unlink(tmpname);
 #endif
-            return XNFstrdup(keymap);
+            return xnfstrdup(keymap);
         }
         else {
             LogMessage(X_ERROR, "Error compiling keymap (%s) executing '%s'\n",
@@ -384,7 +377,7 @@ XkbDDXLoadKeymapByNames(DeviceIntPtr keybd,
         (names->compat == NULL) && (names->symbols == NULL) &&
         (names->geometry == NULL)) {
         LogMessage(X_ERROR, "XKB: No components provided for device %s\n",
-                   keybd && keybd->name ? keybd->name : "(unnamed keyboard)");
+                   keybd->name ? keybd->name : "(unnamed keyboard)");
         return 0;
     }
     else if (!XkbDDXCompileKeymapByNames(xkb, names, want, need,

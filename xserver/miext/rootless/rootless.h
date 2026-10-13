@@ -140,7 +140,8 @@ typedef void (*RootlessMoveFrameProc)
  *  pScreen     Screen to move the new frame to
  *  newX, newY  New position of the frame
  *  newW, newH  New size of the frame
- *  gravity     Gravity for window contents (rl_gravity_enum).
+ *  gravity     Gravity for window contents (rl_gravity_enum). This is always
+ *              RL_GRAVITY_NONE unless ROOTLESS_RESIZE_GRAVITY is set.
  */
 typedef void (*RootlessResizeFrameProc)
  (RootlessFrameID wid, ScreenPtr pScreen,
@@ -205,7 +206,7 @@ typedef void (*RootlessStopDrawingProc)
  *  Drawing is stopped before this is called.
  *
  *  wid         Frame id
- *  pDamage     Region containing all the changed pixels in frame-local
+ *  pDamage     Region containing all the changed pixels in frame-lcoal
  *              coordinates. This is clipped to the window's clip.
  */
 typedef void (*RootlessUpdateRegionProc)

@@ -61,5 +61,4 @@ libxserver_main = static_library('libxserver_main',
 install_data(
     'protocol.txt',
     install_dir: serverconfigdir,
-    install_tag: 'runtime',
 )

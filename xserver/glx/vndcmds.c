@@ -30,7 +30,7 @@
 #include <dix-config.h>
 
 #include "hashtable.h"
-#include "vndserver_priv.h"
+#include "vndserver.h"
 #include "vndservervendor.h"
 
 /**

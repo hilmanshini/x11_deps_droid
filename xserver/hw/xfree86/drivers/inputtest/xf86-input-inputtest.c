@@ -940,7 +940,7 @@ get_type_name(InputInfoPtr pInfo, xf86ITDevicePtr driver_data)
 static xf86ITDevicePtr
 device_alloc(void)
 {
-    xf86ITDevicePtr driver_data = calloc(1, sizeof(xf86ITDevice));
+    xf86ITDevicePtr driver_data = calloc(sizeof(xf86ITDevice), 1);
 
     if (!driver_data)
         return NULL;
@@ -1107,17 +1107,18 @@ InputDriverRec driver = {
 };
 
 static XF86ModuleVersionInfo version_info = {
-    .modname      = "inputtest",
-    .vendor       = MODULEVENDORSTRING,
-    ._modinfo1_   = MODINFOSTRING1,
-    ._modinfo2_   = MODINFOSTRING2,
-    .xf86version  = XORG_VERSION_CURRENT,
-    .majorversion = XORG_VERSION_MAJOR,
-    .minorversion = XORG_VERSION_MINOR,
-    .patchlevel   = XORG_VERSION_PATCH,
-    .abiclass     = ABI_CLASS_XINPUT,
-    .abiversion   = ABI_XINPUT_VERSION,
-    .moduleclass  = MOD_CLASS_XINPUT,
+    "inputtest",
+    MODULEVENDORSTRING,
+    MODINFOSTRING1,
+    MODINFOSTRING2,
+    XORG_VERSION_CURRENT,
+    XORG_VERSION_MAJOR,
+    XORG_VERSION_MINOR,
+    XORG_VERSION_PATCH,
+    ABI_CLASS_XINPUT,
+    ABI_XINPUT_VERSION,
+    MOD_CLASS_XINPUT,
+    {0, 0, 0, 0}
 };
 
 static void*
@@ -1130,4 +1131,5 @@ setup_proc(void *module, void *options, int *errmaj, int *errmin)
 _X_EXPORT XF86ModuleData inputtestModuleData = {
     .vers = &version_info,
     .setup = &setup_proc,
+    .teardown = NULL
 };

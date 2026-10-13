@@ -74,6 +74,7 @@ int _X_COLD
 SProcXGetExtensionVersion(ClientPtr client)
 {
     REQUEST(xGetExtensionVersionReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xGetExtensionVersionReq);
     swaps(&stuff->nbytes);
     return (ProcXGetExtensionVersion(client));
@@ -93,7 +94,7 @@ ProcXGetExtensionVersion(ClientPtr client)
     REQUEST(xGetExtensionVersionReq);
     REQUEST_AT_LEAST_SIZE(xGetExtensionVersionReq);
 
-    if (client->req_len != bytes_to_int32(sizeof(xGetExtensionVersionReq) +
+    if (stuff->length != bytes_to_int32(sizeof(xGetExtensionVersionReq) +
                                         stuff->nbytes))
         return BadLength;
 

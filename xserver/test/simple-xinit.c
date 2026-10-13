@@ -25,8 +25,6 @@
 #include <dix-config.h>
 #endif
 
-#include <X11/Xfuncproto.h>
-
 #include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -55,7 +53,7 @@ kill_server(int server_pid)
     }
 }
 
-_X_NORETURN static void
+static void
 usage(int argc, char **argv)
 {
     fprintf(stderr, "%s <client command> -- <server command>\n", argv[0]);

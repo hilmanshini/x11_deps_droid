@@ -22,8 +22,6 @@ PIGLIT_ARGS="$PIGLIT_ARGS -x xcleararea@7"
 PIGLIT_ARGS="$PIGLIT_ARGS -x xclearwindow@4"
 PIGLIT_ARGS="$PIGLIT_ARGS -x xclearwindow@5"
 PIGLIT_ARGS="$PIGLIT_ARGS -x xcopyarea@1"
-PIGLIT_ARGS="$PIGLIT_ARGS -x xsetfontpath@1"
-PIGLIT_ARGS="$PIGLIT_ARGS -x xsetfontpath@2"
 
 export PIGLIT_ARGS
 

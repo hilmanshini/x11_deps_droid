@@ -236,7 +236,7 @@ dixLookupWindow(WindowPtr *pWin, XID id, ClientPtr client, Mask access)
 int
 dixLookupGC(GCPtr *pGC, XID id, ClientPtr client, Mask access)
 {
-    return dixLookupResourceByType((void **) pGC, id, X11_RESTYPE_GC, client, access);
+    return dixLookupResourceByType((void **) pGC, id, RT_GC, client, access);
 }
 
 int
@@ -246,11 +246,11 @@ dixLookupFontable(FontPtr *pFont, XID id, ClientPtr client, Mask access)
     GC *pGC;
 
     client->errorValue = id;    /* EITHER font or gc */
-    rc = dixLookupResourceByType((void **) pFont, id, X11_RESTYPE_FONT, client,
+    rc = dixLookupResourceByType((void **) pFont, id, RT_FONT, client,
                                  access);
     if (rc != BadFont)
         return rc;
-    rc = dixLookupResourceByType((void **) &pGC, id, X11_RESTYPE_GC, client, access);
+    rc = dixLookupResourceByType((void **) &pGC, id, RT_GC, client, access);
     if (rc == BadGC)
         return BadFont;
     if (rc == Success)
@@ -271,7 +271,7 @@ dixLookupClient(ClientPtr *pClient, XID rid, ClientPtr client, Mask access)
     if (rc != Success)
         goto bad;
 
-    rc = XaceHookClientAccess(client, clients[clientIndex], access);
+    rc = XaceHook(XACE_CLIENT_ACCESS, client, clients[clientIndex], access);
     if (rc != Success)
         goto bad;
 
@@ -524,10 +524,6 @@ void
 ProcessWorkQueue(void)
 {
     WorkQueuePtr q, *p;
-
-    // don't have a work queue yet
-    if (!workQueue)
-        return;
 
     p = &workQueue;
     /*
@@ -837,7 +833,7 @@ CreateCallbackList(CallbackListPtr *pcbl)
         }
     }
 
-    listsToCleanup = (CallbackListPtr **) XNFrealloc(listsToCleanup,
+    listsToCleanup = (CallbackListPtr **) xnfrealloc(listsToCleanup,
                                                      sizeof(CallbackListPtr *) *
                                                      (numCallbackListsToCleanup
                                                       + 1));

@@ -43,10 +43,12 @@
 #include "inputstr.h"
 #include "opaque.h"
 #include "property.h"
+#define	XKBSRV_NEED_FILE_FUNCS
 #include <xkbsrv.h>
 #include "../xkb/xkbgeom.h"
 #include <X11/extensions/XKMformat.h>
 #include "xkbfile.h"
+#include "../xkb/xkb.h"
 #include <assert.h>
 
 #include "tests-common.h"
@@ -74,8 +76,6 @@ xkb_get_rules_test(void)
     assert(strcmp(rmlvo.layout, XKB_DFLT_LAYOUT) == 0);
     assert(strcmp(rmlvo.variant, XKB_DFLT_VARIANT) == 0);
     assert(strcmp(rmlvo.options, XKB_DFLT_OPTIONS) == 0);
-
-    XkbFreeRMLVOSet(&rmlvo, FALSE);
 }
 
 /**
@@ -115,7 +115,6 @@ xkb_set_rules_test(void)
     assert(strcmp(rmlvo.options, rmlvo_new.options) == 0);
 
     XkbFreeRMLVOSet(&rmlvo, FALSE);
-    XkbFreeRMLVOSet(&rmlvo_new, FALSE);
 }
 
 /**
@@ -141,7 +140,6 @@ xkb_set_get_rules_test(void)
 
     /* pass 1 */
     XkbSetRulesDflts(&rmlvo);
-    XkbFreeRMLVOSet(&rmlvo, FALSE);
     XkbGetRulesDflts(&rmlvo);
 
     /* Make a backup copy */
@@ -162,26 +160,20 @@ xkb_set_get_rules_test(void)
     assert(strcmp(rmlvo.variant, rmlvo_backup.variant) == 0);
     assert(strcmp(rmlvo.options, rmlvo_backup.options) == 0);
 
-    XkbFreeRMLVOSet(&rmlvo, FALSE);
     XkbGetRulesDflts(&rmlvo);
     assert(strcmp(rmlvo.rules, rmlvo_backup.rules) == 0);
     assert(strcmp(rmlvo.model, rmlvo_backup.model) == 0);
     assert(strcmp(rmlvo.layout, rmlvo_backup.layout) == 0);
     assert(strcmp(rmlvo.variant, rmlvo_backup.variant) == 0);
     assert(strcmp(rmlvo.options, rmlvo_backup.options) == 0);
-
-    XkbFreeRMLVOSet(&rmlvo, FALSE);
-    XkbFreeRMLVOSet(&rmlvo_backup, FALSE);
 }
 
-const testfunc_t*
+int
 xkb_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        xkb_set_get_rules_test,
-        xkb_get_rules_test,
-        xkb_set_rules_test,
-        NULL,
-    };
-    return testfuncs;
+    xkb_set_get_rules_test();
+    xkb_get_rules_test();
+    xkb_set_rules_test();
+
+    return 0;
 }

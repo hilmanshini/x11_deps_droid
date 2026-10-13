@@ -15,8 +15,6 @@ is" without express or implied warranty.
 #ifndef XNESTWINDOW_H
 #define XNESTWINDOW_H
 
-#include <X11/Xdefs.h>
-
 typedef struct {
     Window window;
     Window parent;

@@ -35,16 +35,14 @@ in this Software without prior written authorization from The Open Group.
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#ifdef HAVE_MEMFD_CREATE
 #include <sys/mman.h>
+#endif
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <X11/X.h>
 #include <X11/Xproto.h>
-
-#include "os/busfault.h"
-#include "os/osdep.h"
-
 #include "misc.h"
 #include "os.h"
 #include "dixstruct.h"
@@ -61,6 +59,7 @@ in this Software without prior written authorization from The Open Group.
 #include <X11/Xfuncproto.h>
 #include <sys/mman.h>
 #include "protocol-versions.h"
+#include "busfault.h"
 
 /* Needed for Solaris cross-zone shared memory extension */
 #ifdef HAVE_SHMCTL64
@@ -460,7 +459,7 @@ ProcShmDetach(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xShmDetachReq);
     VERIFY_SHMSEG(stuff->shmseg, shmdesc, client);
-    FreeResource(stuff->shmseg, X11_RESTYPE_NONE);
+    FreeResource(stuff->shmseg, RT_NONE);
     return Success;
 }
 
@@ -482,8 +481,8 @@ doShmPutImage(DrawablePtr dst, GCPtr pGC,
                                          PixmapBytePad(w, depth), data);
         if (!pPixmap)
             return;
-        (void) pGC->ops->CopyArea((DrawablePtr) pPixmap, dst, pGC,
-                                  sx, sy, sw, sh, dx, dy);
+        pGC->ops->CopyArea((DrawablePtr) pPixmap, dst, pGC, sx, sy, sw, sh, dx,
+                           dy);
         FreeScratchPixmapHeader(pPixmap);
     }
     else {
@@ -997,8 +996,8 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
                                                        stuff->offset);
 
         if (pMap) {
-            result = XaceHookResourceAccess(client, stuff->pid,
-                              X11_RESTYPE_PIXMAP, pMap, X11_RESTYPE_NONE, NULL, DixCreateAccess);
+            result = XaceHook(XACE_RESOURCE_ACCESS, client, stuff->pid,
+                              RT_PIXMAP, pMap, RT_NONE, NULL, DixCreateAccess);
             if (result != Success) {
                 pDraw->pScreen->DestroyPixmap(pMap);
                 break;
@@ -1007,7 +1006,7 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
             shmdesc->refcnt++;
             pMap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
             pMap->drawable.id = newPix->info[j].id;
-            if (!AddResource(newPix->info[j].id, X11_RESTYPE_PIXMAP, (void *) pMap)) {
+            if (!AddResource(newPix->info[j].id, RT_PIXMAP, (void *) pMap)) {
                 result = BadAlloc;
                 break;
             }
@@ -1020,7 +1019,7 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
 
     if (result != Success) {
         while (j--)
-            FreeResource(newPix->info[j].id, X11_RESTYPE_NONE);
+            FreeResource(newPix->info[j].id, RT_NONE);
         free(newPix);
     }
     else
@@ -1112,8 +1111,8 @@ ProcShmCreatePixmap(ClientPtr client)
                                                    shmdesc->addr +
                                                    stuff->offset);
     if (pMap) {
-        rc = XaceHookResourceAccess(client, stuff->pid, X11_RESTYPE_PIXMAP,
-                      pMap, X11_RESTYPE_NONE, NULL, DixCreateAccess);
+        rc = XaceHook(XACE_RESOURCE_ACCESS, client, stuff->pid, RT_PIXMAP,
+                      pMap, RT_NONE, NULL, DixCreateAccess);
         if (rc != Success) {
             pDraw->pScreen->DestroyPixmap(pMap);
             return rc;
@@ -1122,7 +1121,7 @@ ProcShmCreatePixmap(ClientPtr client)
         shmdesc->refcnt++;
         pMap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
         pMap->drawable.id = stuff->pid;
-        if (AddResource(stuff->pid, X11_RESTYPE_PIXMAP, (void *) pMap)) {
+        if (AddResource(stuff->pid, RT_PIXMAP, (void *) pMap)) {
             return Success;
         }
     }
@@ -1140,7 +1139,7 @@ ShmBusfaultNotify(void *context)
            (unsigned int) shmdesc->resource);
     busfault_unregister(shmdesc->busfault);
     shmdesc->busfault = NULL;
-    FreeResource (shmdesc->resource, X11_RESTYPE_NONE);
+    FreeResource (shmdesc->resource, RT_NONE);
 }
 
 static int
@@ -1322,13 +1321,9 @@ ProcShmCreateSegment(ClientPtr client)
     }
 
     if (WriteFdToClient(client, fd, TRUE) < 0) {
-        FreeResource(stuff->shmseg, X11_RESTYPE_NONE);
+        FreeResource(stuff->shmseg, RT_NONE);
         close(fd);
         return BadAlloc;
-    }
-    if (client->swapped) {
-        swaps(&rep.sequenceNumber);
-        swapl(&rep.length);
     }
     WriteToClient(client, sizeof (xShmCreateSegmentReply), &rep);
     return Success;
@@ -1393,9 +1388,19 @@ SShmCompletionEvent(xShmCompletionEvent * from, xShmCompletionEvent * to)
 }
 
 static int _X_COLD
+SProcShmQueryVersion(ClientPtr client)
+{
+    REQUEST(xShmQueryVersionReq);
+
+    swaps(&stuff->length);
+    return ProcShmQueryVersion(client);
+}
+
+static int _X_COLD
 SProcShmAttach(ClientPtr client)
 {
     REQUEST(xShmAttachReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xShmAttachReq);
     swapl(&stuff->shmseg);
     swapl(&stuff->shmid);
@@ -1406,6 +1411,7 @@ static int _X_COLD
 SProcShmDetach(ClientPtr client)
 {
     REQUEST(xShmDetachReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xShmDetachReq);
     swapl(&stuff->shmseg);
     return ProcShmDetach(client);
@@ -1415,6 +1421,7 @@ static int _X_COLD
 SProcShmPutImage(ClientPtr client)
 {
     REQUEST(xShmPutImageReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xShmPutImageReq);
     swapl(&stuff->drawable);
     swapl(&stuff->gc);
@@ -1435,6 +1442,7 @@ static int _X_COLD
 SProcShmGetImage(ClientPtr client)
 {
     REQUEST(xShmGetImageReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xShmGetImageReq);
     swapl(&stuff->drawable);
     swaps(&stuff->x);
@@ -1451,6 +1459,7 @@ static int _X_COLD
 SProcShmCreatePixmap(ClientPtr client)
 {
     REQUEST(xShmCreatePixmapReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xShmCreatePixmapReq);
     swapl(&stuff->pid);
     swapl(&stuff->drawable);
@@ -1467,6 +1476,7 @@ SProcShmAttachFd(ClientPtr client)
 {
     REQUEST(xShmAttachFdReq);
     SetReqFds(client, 1);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xShmAttachFdReq);
     swapl(&stuff->shmseg);
     return ProcShmAttachFd(client);
@@ -1476,6 +1486,7 @@ static int _X_COLD
 SProcShmCreateSegment(ClientPtr client)
 {
     REQUEST(xShmCreateSegmentReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xShmCreateSegmentReq);
     swapl(&stuff->shmseg);
     swapl(&stuff->size);
@@ -1489,7 +1500,7 @@ SProcShmDispatch(ClientPtr client)
     REQUEST(xReq);
 
     if (stuff->data == X_ShmQueryVersion)
-        return ProcShmQueryVersion(client);
+        return SProcShmQueryVersion(client);
 
     if (!client->local)
         return BadRequest;

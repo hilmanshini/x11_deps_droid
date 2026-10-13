@@ -17,11 +17,9 @@ is" without express or implied warranty.
 #endif
 
 #include <X11/X.h>
-#include <X11/Xdefs.h>
 #include <X11/Xproto.h>
-#include <X11/fonts/fontstruct.h>
-
 #include "regionstr.h"
+#include <X11/fonts/fontstruct.h>
 #include "gcstruct.h"
 #include "scrnintstr.h"
 #include "windowstr.h"
@@ -100,7 +98,7 @@ static int
 xnestIgnoreErrorHandler (Display     *dpy,
                          XErrorEvent *event)
 {
-    return FALSE; /* return value is ignored */
+    return False; /* return value is ignored */
 }
 
 void
@@ -112,7 +110,7 @@ xnestGetImage(DrawablePtr pDrawable, int x, int y, int w, int h,
     int (*old_handler)(Display*, XErrorEvent*);
 
     /* we may get BadMatch error when xnest window is minimized */
-    XSync(xnestDisplay, FALSE);
+    XSync(xnestDisplay, False);
     old_handler = XSetErrorHandler (xnestIgnoreErrorHandler);
 
     ximage = XGetImage(xnestDisplay, xnestDrawable(pDrawable),
@@ -150,13 +148,13 @@ xnestBitBlitHelper(GCPtr pGC)
         if (!pReg || !pTmpReg)
             return NullRegion;
 
-        pending = TRUE;
+        pending = True;
         while (pending) {
             XIfEvent(xnestDisplay, &event, xnestBitBlitPredicate, NULL);
 
             switch (event.type) {
             case NoExpose:
-                pending = FALSE;
+                pending = False;
                 break;
 
             case GraphicsExpose:

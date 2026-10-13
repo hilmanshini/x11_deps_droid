@@ -66,7 +66,6 @@ SOFTWARE.
 
 Selection *CurrentSelections;
 CallbackListPtr SelectionCallback;
-CallbackListPtr SelectionBridgeCallback;
 
 int
 dixLookupSelection(Selection ** result, Atom selectionName,
@@ -81,21 +80,8 @@ dixLookupSelection(Selection ** result, Atom selectionName,
         if (pSel->selection == selectionName)
             break;
 
-    if (!pSel) {
-        pSel = dixAllocateObjectWithPrivates(Selection, PRIVATE_SELECTION);
-        if (!pSel)
-            return BadAlloc;
-        pSel->selection = selectionName;
-        pSel->next = CurrentSelections;
-        CurrentSelections = pSel;
-    }
-
-    /* security creation/labeling check */
-    rc = XaceHookSelectionAccess(client, &pSel, access_mode | DixCreateAccess);
-    if (rc != Success) {
-        return rc;
-    }
-
+    if (pSel)
+        rc = XaceHookSelectionAccess(client, &pSel, access_mode);
     *result = pSel;
     return rc;
 }
@@ -115,7 +101,7 @@ InitSelections(void)
     CurrentSelections = NULL;
 }
 
-static inline void
+static _X_INLINE void
 CallSelectionCallback(Selection * pSel, ClientPtr client,
                       SelectionCallbackKind kind)
 {
@@ -154,72 +140,87 @@ DeleteClientFromAnySelections(ClientPtr client)
 }
 
 int
-dixSetSelectionOwner(ClientPtr client, Atom selection,
-                     Window window, TimeStamp time)
+ProcSetSelectionOwner(ClientPtr client)
 {
     WindowPtr pWin = NULL;
+    TimeStamp time;
     Selection *pSel;
     int rc;
+
+    REQUEST(xSetSelectionOwnerReq);
+    REQUEST_SIZE_MATCH(xSetSelectionOwnerReq);
+
+    UpdateCurrentTime();
+    time = ClientTimeToServerTime(stuff->time);
 
     /* If the client's time stamp is in the future relative to the server's
        time stamp, do not set the selection, just return success. */
     if (CompareTimeStamps(time, currentTime) == LATER)
         return Success;
 
-    if (window != None) {
-        rc = dixLookupWindow(&pWin, window, client, DixSetAttrAccess);
+    if (stuff->window != None) {
+        rc = dixLookupWindow(&pWin, stuff->window, client, DixSetAttrAccess);
         if (rc != Success)
             return rc;
     }
-
-    if (!ValidAtom(selection)) {
-        client->errorValue = selection;
+    if (!ValidAtom(stuff->selection)) {
+        client->errorValue = stuff->selection;
         return BadAtom;
     }
 
     /*
      * First, see if the selection is already set...
      */
-    rc = dixLookupSelection(&pSel, selection, client, DixSetAttrAccess);
+    rc = dixLookupSelection(&pSel, stuff->selection, client, DixSetAttrAccess);
 
-    if (rc != Success)
+    if (rc == Success) {
+        /* If the timestamp in client's request is in the past relative
+           to the time stamp indicating the last time the owner of the
+           selection was set, do not set the selection, just return
+           success. */
+        if (CompareTimeStamps(time, pSel->lastTimeChanged) == EARLIER)
+            return Success;
+        if (pSel->client && (!pWin || (pSel->client != client))) {
+            xEvent event = {
+                .u.selectionClear.time = time.milliseconds,
+                .u.selectionClear.window = pSel->window,
+                .u.selectionClear.atom = pSel->selection
+            };
+            event.u.u.type = SelectionClear;
+            WriteEventsToClient(pSel->client, 1, &event);
+        }
+    }
+    else if (rc == BadMatch) {
+        /*
+         * It doesn't exist, so add it...
+         */
+        pSel = dixAllocateObjectWithPrivates(Selection, PRIVATE_SELECTION);
+        if (!pSel)
+            return BadAlloc;
+
+        pSel->selection = stuff->selection;
+
+        /* security creation/labeling check */
+        rc = XaceHookSelectionAccess(client, &pSel,
+                                     DixCreateAccess | DixSetAttrAccess);
+        if (rc != Success) {
+            free(pSel);
+            return rc;
+        }
+
+        pSel->next = CurrentSelections;
+        CurrentSelections = pSel;
+    }
+    else
         return rc;
 
-    /* If the timestamp in client's request is in the past relative
-       to the time stamp indicating the last time the owner of the
-       selection was set, do not set the selection, just return
-       success. */
-    if (CompareTimeStamps(time, pSel->lastTimeChanged) == EARLIER)
-        return Success;
-    if (pSel->client && (!pWin || (pSel->client != client))) {
-        xEvent event = {
-            .u.selectionClear.time = time.milliseconds,
-            .u.selectionClear.window = pSel->window,
-            .u.selectionClear.atom = pSel->selection
-        };
-        event.u.u.type = SelectionClear;
-        WriteEventsToClient(pSel->client, 1, &event);
-    }
-
     pSel->lastTimeChanged = time;
-    pSel->window = window;
+    pSel->window = stuff->window;
     pSel->pWin = pWin;
     pSel->client = (pWin ? client : NullClient);
 
     CallSelectionCallback(pSel, client, SelectionSetOwner);
     return Success;
-}
-
-int
-ProcSetSelectionOwner(ClientPtr client)
-{
-    REQUEST(xSetSelectionOwnerReq);
-    REQUEST_SIZE_MATCH(xSetSelectionOwnerReq);
-
-    UpdateCurrentTime();
-
-    return dixSetSelectionOwner(client, stuff->selection, stuff->window,
-                                ClientTimeToServerTime(stuff->time));
 }
 
 int
@@ -253,25 +254,6 @@ ProcGetSelectionOwner(ClientPtr client)
 
     WriteReplyToClient(client, sizeof(xGetSelectionOwnerReply), &reply);
     return Success;
-}
-
-static void
-CallSelectionBridgeCallback(ClientPtr pClient, Selection *pSel, xEvent *event)
-{
-    SelectionBridgeInfoRec info;
-
-    if (!pSel->pWin)
-        return;
-
-    info.screen = pSel->pWin->drawable.pScreen;
-    info.client = pClient;
-    info.requestor = event->u.selectionRequest.requestor;
-    info.selection = event->u.selectionRequest.selection;
-    info.target = event->u.selectionRequest.target;
-    info.property = event->u.selectionRequest.property;
-    info.time = ClientTimeToServerTime(event->u.selectionRequest.time);
-
-    CallCallbacks(&SelectionBridgeCallback, &info);
 }
 
 int
@@ -316,14 +298,6 @@ ProcConvertSelection(ClientPtr client)
         if (pSel->client && pSel->client != serverClient &&
             !pSel->client->clientGone) {
             WriteEventsToClient(pSel->client, 1, &event);
-            return Success;
-        }
-
-        /* If the selection is owned by the server client, and there are
-         * selection bridge callbacks registered, call them now.
-         */
-        if (pSel->client == serverClient && SelectionBridgeCallback != NULL) {
-            CallSelectionBridgeCallback(client, pSel, &event);
             return Success;
         }
     }

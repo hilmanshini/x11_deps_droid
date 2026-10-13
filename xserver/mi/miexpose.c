@@ -461,7 +461,7 @@ miPaintWindow(WindowPtr pWin, RegionPtr prgn, int what)
         tile_x_off = pWin->drawable.x;
         tile_y_off = pWin->drawable.y;
 
-#if defined(COMPOSITE) || defined(ROOTLESS)
+#ifdef COMPOSITE
         draw_x_off = pixmap->screen_x;
         draw_y_off = pixmap->screen_y;
         tile_x_off -= draw_x_off;
@@ -488,28 +488,6 @@ miPaintWindow(WindowPtr pWin, RegionPtr prgn, int what)
         gcval[1].val =
             fill.pixel | RootlessAlphaMask(pWin->drawable.bitsPerPixel);
 #else
-#ifdef COMPOSITE
-        /* Make sure alpha will sample as 1.0 for opaque windows */
-        if (drawable->depth == 32) {
-            WindowPtr orig_pWin = pWin;
-            int effective_depth = orig_pWin->drawable.depth;
-
-            if (effective_depth == 32) {
-                orig_pWin = orig_pWin->parent;
-                while (orig_pWin && orig_pWin->parent) {
-                    if (orig_pWin->drawable.depth == 24) {
-                        effective_depth = 24;
-                        break;
-                    }
-
-                    orig_pWin = orig_pWin->parent;
-                }
-            }
-
-            if (effective_depth == 24)
-                fill.pixel |= 0xff000000;
-        }
-#endif
         gcval[1].val = fill.pixel;
 #endif
         gcval[2].val = FillSolid;

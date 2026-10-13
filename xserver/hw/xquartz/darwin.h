@@ -29,8 +29,6 @@
 #define _DARWIN_H
 
 #include <IOKit/IOTypes.h>
-#include <X11/Xfuncproto.h>
-
 #include "inputstr.h"
 #include "scrnintstr.h"
 #include <X11/extensions/XKB.h>

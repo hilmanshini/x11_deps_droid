@@ -733,7 +733,7 @@ LoadModule(const char *module, void *options, const XF86ModReqInfo *modreq,
      * check the elements in the path
      */
     if (PathIsAbsolute(module))
-        found = Xstrdup(module);
+        found = xstrdup(module);
     path_elem = pathlist;
     while (!found && *path_elem != NULL) {
         found = FindModule(m, *path_elem, patterns);

@@ -84,19 +84,13 @@ static const xf86ConfigSymTabRec ServerFlagsTab[] = {
 #define CLEANUP xf86freeFlags
 
 XF86ConfFlagsPtr
-xf86parseFlagsSection(XF86ConfFlagsPtr ptr)
+xf86parseFlagsSection(void)
 {
     int token;
 
-    if (ptr == NULL)
-    {
-        if((ptr=calloc(1, sizeof(XF86ConfFlagsRec))) == NULL)
-        {
-            return NULL;
-        }
-    }
+    parsePrologue(XF86ConfFlagsPtr, XF86ConfFlagsRec)
 
-    while ((token = xf86getToken(ServerFlagsTab)) != ENDSECTION) {
+        while ((token = xf86getToken(ServerFlagsTab)) != ENDSECTION) {
         int hasvalue = FALSE;
         int strvalue = FALSE;
         int tokentype;
@@ -113,13 +107,13 @@ xf86parseFlagsSection(XF86ConfFlagsPtr ptr)
              */
         case DEFAULTLAYOUT:
             strvalue = TRUE;
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case BLANKTIME:
         case STANDBYTIME:
         case SUSPENDTIME:
         case OFFTIME:
             hasvalue = TRUE;
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case DONTZAP:
         case DONTZOOM:
         case DISABLEVIDMODE:

@@ -27,14 +27,11 @@
 #include <xorg-config.h>
 #endif
 
-#include <errno.h>
-#include <sys/mman.h>
-#include <sys/param.h>
 #include <X11/X.h>
-
 #include "xf86.h"
 #include "xf86Priv.h"
 
+#include <sys/param.h>
 #ifndef __NetBSD__
 #include <sys/sysctl.h>
 #endif

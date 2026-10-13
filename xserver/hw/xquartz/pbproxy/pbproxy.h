@@ -37,7 +37,6 @@
 
 #define  Cursor X_Cursor
 #undef _SHAPE_H_
-#include <X11/Xfuncproto.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/shape.h>
 #undef   Cursor

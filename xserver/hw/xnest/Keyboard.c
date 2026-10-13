@@ -21,10 +21,8 @@ is" without express or implied warranty.
 #endif
 
 #include <X11/X.h>
-#include <X11/Xdefs.h>
 #include <X11/Xproto.h>
 #include <X11/keysym.h>
-
 #include "screenint.h"
 #include "inputstr.h"
 #include "misc.h"
@@ -39,11 +37,28 @@ is" without express or implied warranty.
 #include "Args.h"
 #include "Events.h"
 
-// must come after Xnest.h, because of trickery to avoid name clash
-#include <X11/XKBlib.h>
 #include <X11/extensions/XKB.h>
-
 #include "xkbsrv.h"
+#include <X11/extensions/XKBconfig.h>
+
+extern Bool
+ XkbQueryExtension(Display * /* dpy */ ,
+                   int * /* opcodeReturn */ ,
+                   int * /* eventBaseReturn */ ,
+                   int * /* errorBaseReturn */ ,
+                   int * /* majorRtrn */ ,
+                   int *        /* minorRtrn */
+    );
+
+extern XkbDescPtr XkbGetKeyboard(Display * /* dpy */ ,
+                                 unsigned int /* which */ ,
+                                 unsigned int   /* deviceSpec */
+    );
+
+extern Status XkbGetControls(Display * /* dpy */ ,
+                             unsigned long /* which */ ,
+                             XkbDescPtr /* desc */
+    );
 
 DeviceIntPtr xnestKeyboardDevice = NULL;
 
@@ -174,7 +189,7 @@ xnestKeyboardProc(DeviceIntPtr pDev, int onoff)
                               modmap, serverClient);
 
         XkbDDXChangeControls(pDev, xkb->ctrls, xkb->ctrls);
-        XkbFreeKeyboard(xkb, 0, FALSE);
+        XkbFreeKeyboard(xkb, 0, False);
         free(keymap);
         break;
     case DEVICE_ON:

@@ -63,9 +63,6 @@ SOFTWARE.
 #include <errno.h>
 #include <stdio.h>
 #include <X11/X.h>
-
-#include "os/busfault.h"
-
 #include "misc.h"
 
 #include "osdep.h"
@@ -74,6 +71,7 @@ SOFTWARE.
 #ifdef DPMSExtension
 #include "dpmsproc.h"
 #endif
+#include "busfault.h"
 
 #ifdef WIN32
 /* Error codes from windows sockets differ from fileio error codes  */
@@ -190,7 +188,9 @@ WaitForSomething(Bool are_ready)
        crashed connections and the screen saver timeout */
     while (1) {
         /* deal with any blocked jobs */
-        ProcessWorkQueue();
+        if (workQueue) {
+            ProcessWorkQueue();
+        }
 
         timeout = check_timers();
         are_ready = clients_are_ready();
@@ -418,13 +418,13 @@ NextDPMSTimeout(INT32 timeout)
     switch (DPMSPowerLevel) {
     case DPMSModeOn:
         DPMS_CHECK_TIMEOUT(DPMSStandbyTime)
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case DPMSModeStandby:
         DPMS_CHECK_TIMEOUT(DPMSSuspendTime)
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case DPMSModeSuspend:
         DPMS_CHECK_TIMEOUT(DPMSOffTime)
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     default:                   /* DPMSModeOff */
         return 0;
     }

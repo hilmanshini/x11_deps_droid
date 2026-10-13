@@ -59,6 +59,7 @@ SProcXIPassiveGrabDevice(ClientPtr client)
     REQUEST(xXIPassiveGrabDeviceReq);
     REQUEST_AT_LEAST_SIZE(xXIPassiveGrabDeviceReq);
 
+    swaps(&stuff->length);
     swaps(&stuff->deviceid);
     swapl(&stuff->grab_window);
     swapl(&stuff->cursor);
@@ -141,6 +142,12 @@ ProcXIPassiveGrabDevice(ClientPtr client)
         return BadValue;
     }
 
+    /* XI2 allows 32-bit keycodes but thanks to XKB we can never
+     * implement this. Just return an error for all keycodes that
+     * cannot work anyway, same for buttons > 255. */
+    if (stuff->detail > 255)
+        return XIAlreadyGrabbed;
+
     if (XICheckInvalidMaskBits(client, (unsigned char *) &stuff[1],
                                stuff->mask_len * 4) != Success)
         return BadValue;
@@ -170,7 +177,7 @@ ProcXIPassiveGrabDevice(ClientPtr client)
 
     if (stuff->cursor != None) {
         ret = dixLookupResourceByType(&tmp, stuff->cursor,
-                                      X11_RESTYPE_CURSOR, client, DixUseAccess);
+                                      RT_CURSOR, client, DixUseAccess);
         if (ret != Success) {
             client->errorValue = stuff->cursor;
             goto out;
@@ -199,14 +206,6 @@ ProcXIPassiveGrabDevice(ClientPtr client)
 
     for (i = 0; i < stuff->num_modifiers; i++, modifiers++) {
         uint8_t status = Success;
-
-        /* XI2 allows 32-bit keycodes but thanks to XKB we can never
-         * implement this. Pretend that all keycodes above 255 are
-         * already grabbed, same for buttons > 255. */
-        if (stuff->detail > 255) {
-            status = XIAlreadyGrabbed;
-            goto modifier_done;
-        }
 
         param.modifiers = *modifiers;
         ret = CheckGrabValues(client, &param);
@@ -240,7 +239,6 @@ ProcXIPassiveGrabDevice(ClientPtr client)
             break;
         }
 
-modifier_done:
         if (status != GrabSuccess) {
             xXIGrabModifierInfo *info = modifiers_failed + rep.num_modifiers;
 
@@ -286,6 +284,7 @@ SProcXIPassiveUngrabDevice(ClientPtr client)
     REQUEST(xXIPassiveUngrabDeviceReq);
     REQUEST_AT_LEAST_SIZE(xXIPassiveUngrabDeviceReq);
 
+    swaps(&stuff->length);
     swapl(&stuff->grab_window);
     swaps(&stuff->deviceid);
     swapl(&stuff->detail);

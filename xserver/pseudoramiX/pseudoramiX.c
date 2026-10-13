@@ -37,8 +37,6 @@
 #include <dix-config.h>
 #endif
 
-#include <X11/Xfuncproto.h>
-
 #include "pseudoramiX.h"
 #include "extnsionst.h"
 #include "nonsdk_extinit.h"
@@ -47,8 +45,8 @@
 #include <X11/extensions/panoramiXproto.h>
 #include "globals.h"
 
-#define TRACE LogMessageVerb(X_NONE, 10, "TRACE " __FILE__ ":%s", __FUNCTION__)
-#define DEBUG_LOG(...) LogMessageVerb(X_NONE, 3, __VA_ARGS__);
+#define TRACE PseudoramiXTrace("TRACE " __FILE__ ":%s",__FUNCTION__)
+#define DEBUG_LOG PseudoramiXDebug
 
 Bool noPseudoramiXExtension = FALSE;
 extern Bool noRRXineramaExtension;
@@ -100,6 +98,34 @@ static PseudoramiXScreenRec *pseudoramiXScreens = NULL;
 static int pseudoramiXScreensAllocated = 0;
 static int pseudoramiXNumScreens = 0;
 static unsigned long pseudoramiXGeneration = 0;
+
+static void
+PseudoramiXTrace(const char *format, ...)
+    _X_ATTRIBUTE_PRINTF(1, 2);
+
+static void
+PseudoramiXTrace(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    LogVMessageVerb(X_NONE, 10, format, ap);
+    va_end(ap);
+}
+
+static void
+PseudoramiXDebug(const char *format, ...)
+    _X_ATTRIBUTE_PRINTF(1, 2);
+
+static void
+PseudoramiXDebug(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    LogVMessageVerb(X_NONE, 3, format, ap);
+    va_end(ap);
+}
 
 // Add a PseudoramiX screen.
 // The rest of the X server will know nothing about this screen.
@@ -408,6 +434,7 @@ SProcPseudoramiXQueryVersion(ClientPtr client)
 
     TRACE;
 
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xPanoramiXQueryVersionReq);
     return ProcPseudoramiXQueryVersion(client);
 }
@@ -419,8 +446,8 @@ SProcPseudoramiXGetState(ClientPtr client)
 
     TRACE;
 
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xPanoramiXGetStateReq);
-    swapl(&stuff->window);
     return ProcPseudoramiXGetState(client);
 }
 
@@ -431,8 +458,8 @@ SProcPseudoramiXGetScreenCount(ClientPtr client)
 
     TRACE;
 
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xPanoramiXGetScreenCountReq);
-    swapl(&stuff->window);
     return ProcPseudoramiXGetScreenCount(client);
 }
 
@@ -443,9 +470,8 @@ SProcPseudoramiXGetScreenSize(ClientPtr client)
 
     TRACE;
 
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xPanoramiXGetScreenSizeReq);
-    swapl(&stuff->window);
-    swapl(&stuff->screen);
     return ProcPseudoramiXGetScreenSize(client);
 }
 
@@ -456,6 +482,7 @@ SProcPseudoramiXIsActive(ClientPtr client)
 
     TRACE;
 
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xXineramaIsActiveReq);
     return ProcPseudoramiXIsActive(client);
 }
@@ -467,6 +494,7 @@ SProcPseudoramiXQueryScreens(ClientPtr client)
 
     TRACE;
 
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xXineramaQueryScreensReq);
     return ProcPseudoramiXQueryScreens(client);
 }

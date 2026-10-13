@@ -114,7 +114,7 @@ dix_init_valuators(void)
     assert(axis->scroll.type == SCROLL_TYPE_HORIZONTAL);
     assert(axis->scroll.flags == 0);
 
-    /* can add another non-preferred axis */
+    /* can add another non-preffered axis */
     assert(SetScrollValuator
            (&dev, 1, SCROLL_TYPE_VERTICAL, 5.0, SCROLL_FLAG_NONE) == TRUE);
     assert(SetScrollValuator
@@ -154,9 +154,6 @@ dix_init_valuators(void)
     assert(axis->scroll.type == SCROLL_TYPE_VERTICAL);
     assert(axis->scroll.increment == 3.0);
     assert(axis->scroll.flags == SCROLL_FLAG_NONE);
-
-    FreeDeviceClass(ValuatorClass, (void**)&val);
-    free(dev.last.scroll); /* sigh, allocated but not freed by the valuator functions */
 }
 
 /* just check the known success cases, and that error cases set the client's
@@ -285,7 +282,6 @@ dix_event_to_core(int type)
     ev.detail.key = 0;
     rc = EventToCore((InternalEvent *) &ev, &core, &count);
     test_event();
-    free(core);
 
     x = 1;
     y = 2;
@@ -293,7 +289,6 @@ dix_event_to_core(int type)
     ev.root_y = y;
     rc = EventToCore((InternalEvent *) &ev, &core, &count);
     test_event();
-    free(core);
 
     x = 0x7FFF;
     y = 0x7FFF;
@@ -301,7 +296,6 @@ dix_event_to_core(int type)
     ev.root_y = y;
     rc = EventToCore((InternalEvent *) &ev, &core, &count);
     test_event();
-    free(core);
 
     x = 0x8000;                 /* too high */
     y = 0x8000;                 /* too high */
@@ -313,7 +307,6 @@ dix_event_to_core(int type)
     assert(count == 1);
     assert(core->u.keyButtonPointer.rootX != x);
     assert(core->u.keyButtonPointer.rootY != y);
-    free(core);
 
     x = 0x7FFF;
     y = 0x7FFF;
@@ -323,19 +316,16 @@ dix_event_to_core(int type)
     ev.time = time;
     rc = EventToCore((InternalEvent *) &ev, &core, &count);
     test_event();
-    free(core);
 
     detail = 1;
     ev.detail.key = detail;
     rc = EventToCore((InternalEvent *) &ev, &core, &count);
     test_event();
-    free(core);
 
     detail = 0xFF;              /* highest value */
     ev.detail.key = detail;
     rc = EventToCore((InternalEvent *) &ev, &core, &count);
     test_event();
-    free(core);
 
     detail = 0xFFF;             /* too big */
     ev.detail.key = detail;
@@ -348,7 +338,6 @@ dix_event_to_core(int type)
     ev.corestate = state;
     rc = EventToCore((InternalEvent *) &ev, &core, &count);
     test_event();
-    free(core);
 
     state = 0x10000;            /* too big */
     ev.corestate = state;
@@ -358,7 +347,6 @@ dix_event_to_core(int type)
     assert(count == 1);
     assert(core->u.keyButtonPointer.state != state);
     assert(core->u.keyButtonPointer.state == (state & 0xFFFF));
-    free(core);
 
 #undef test_event
 }
@@ -876,7 +864,7 @@ dix_grab_matching(void)
     rc = GrabMatchesSecond(&b, &a, FALSE);
     assert(rc == FALSE);
 
-    /* XIAnyModifier or AnyModifier must succeed */
+    /* XIAnyModifier or AnyModifer must succeed */
     a.grabtype = XI2;
     b.grabtype = XI2;
     a.detail.exact = 1;
@@ -997,7 +985,7 @@ test_padding_for_int32(int i)
 static void
 include_byte_padding_macros(void)
 {
-    dbg("Testing bits_to_bytes()\n");
+    printf("Testing bits_to_bytes()\n");
 
     /* the macros don't provide overflow protection */
     test_bits_to_byte(0);
@@ -1010,7 +998,7 @@ include_byte_padding_macros(void)
     test_bits_to_byte(INT_MAX - 9);
     test_bits_to_byte(INT_MAX - 8);
 
-    dbg("Testing bytes_to_int32()\n");
+    printf("Testing bytes_to_int32()\n");
 
     test_bytes_to_int32(0);
     test_bytes_to_int32(1);
@@ -1026,7 +1014,7 @@ include_byte_padding_macros(void)
     test_bytes_to_int32(INT_MAX - 4);
     test_bytes_to_int32(INT_MAX - 3);
 
-    dbg("Testing pad_to_int32()\n");
+    printf("Testing pad_to_int32()\n");
 
     test_pad_to_int32(0);
     test_pad_to_int32(1);
@@ -1043,7 +1031,7 @@ include_byte_padding_macros(void)
     test_pad_to_int32(INT_MAX - 4);
     test_pad_to_int32(INT_MAX - 3);
 
-    dbg("Testing padding_for_int32()\n");
+    printf("Testing padding_for_int32()\n");
 
     test_padding_for_int32(0);
     test_padding_for_int32(1);
@@ -1076,7 +1064,7 @@ xi_unregister_handlers(void)
     handler = XIRegisterPropertyHandler(&dev, NULL, NULL, NULL);
     assert(handler == 3);
 
-    dbg("Unlinking from front.\n");
+    printf("Unlinking from front.\n");
 
     XIUnregisterPropertyHandler(&dev, 4);       /* NOOP */
     assert(dev.properties.handlers->id == 3);
@@ -1209,29 +1197,28 @@ dix_input_attributes(void)
 
     new = DuplicateInputAttributes(orig);
     assert(memcmp(orig, new, sizeof(InputAttributes)) == 0);
-    FreeInputAttributes(new);
 
-    orig->product = XNFstrdup("product name");
+    orig->product = xnfstrdup("product name");
     new = DuplicateInputAttributes(orig);
     cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig->vendor = XNFstrdup("vendor name");
+    orig->vendor = xnfstrdup("vendor name");
     new = DuplicateInputAttributes(orig);
     cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig->device = XNFstrdup("device path");
+    orig->device = xnfstrdup("device path");
     new = DuplicateInputAttributes(orig);
     cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig->pnp_id = XNFstrdup("PnPID");
+    orig->pnp_id = xnfstrdup("PnPID");
     new = DuplicateInputAttributes(orig);
     cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig->usb_id = XNFstrdup("USBID");
+    orig->usb_id = xnfstrdup("USBID");
     new = DuplicateInputAttributes(orig);
     cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
@@ -1253,22 +1240,23 @@ static void
 dix_input_valuator_masks(void)
 {
     ValuatorMask *mask = NULL, *copy;
-    double valuators[MAX_VALUATORS];
-    int val_ranged[MAX_VALUATORS];
+    int nvaluators = MAX_VALUATORS;
+    double valuators[nvaluators];
+    int val_ranged[nvaluators];
     int i;
     int first_val, num_vals;
 
-    for (i = 0; i < MAX_VALUATORS; i++) {
+    for (i = 0; i < nvaluators; i++) {
         valuators[i] = i + 0.5;
         val_ranged[i] = i;
     }
 
-    mask = valuator_mask_new(MAX_VALUATORS);
+    mask = valuator_mask_new(nvaluators);
     assert(mask != NULL);
     assert(valuator_mask_size(mask) == 0);
     assert(valuator_mask_num_valuators(mask) == 0);
 
-    for (i = 0; i < MAX_VALUATORS; i++) {
+    for (i = 0; i < nvaluators; i++) {
         assert(!valuator_mask_isset(mask, i));
         valuator_mask_set_double(mask, i, valuators[i]);
         assert(valuator_mask_isset(mask, i));
@@ -1278,13 +1266,13 @@ dix_input_valuator_masks(void)
         assert(valuator_mask_num_valuators(mask) == i + 1);
     }
 
-    for (i = 0; i < MAX_VALUATORS; i++) {
+    for (i = 0; i < nvaluators; i++) {
         assert(valuator_mask_isset(mask, i));
         valuator_mask_unset(mask, i);
         /* we're removing valuators from the front, so size should stay the
          * same until the last bit is removed */
-        if (i < MAX_VALUATORS - 1)
-            assert(valuator_mask_size(mask) == MAX_VALUATORS);
+        if (i < nvaluators - 1)
+            assert(valuator_mask_size(mask) == nvaluators);
         assert(!valuator_mask_isset(mask, i));
     }
 
@@ -1292,7 +1280,7 @@ dix_input_valuator_masks(void)
     valuator_mask_zero(mask);
     assert(valuator_mask_size(mask) == 0);
     assert(valuator_mask_num_valuators(mask) == 0);
-    for (i = 0; i < MAX_VALUATORS; i++)
+    for (i = 0; i < nvaluators; i++)
         assert(!valuator_mask_isset(mask, i));
 
     first_val = 5;
@@ -1301,7 +1289,7 @@ dix_input_valuator_masks(void)
     valuator_mask_set_range(mask, first_val, num_vals, val_ranged);
     assert(valuator_mask_size(mask) == first_val + num_vals);
     assert(valuator_mask_num_valuators(mask) == num_vals);
-    for (i = 0; i < MAX_VALUATORS; i++) {
+    for (i = 0; i < nvaluators; i++) {
         double val;
 
         if (i < first_val || i >= first_val + num_vals) {
@@ -1318,14 +1306,14 @@ dix_input_valuator_masks(void)
         }
     }
 
-    copy = valuator_mask_new(MAX_VALUATORS);
+    copy = valuator_mask_new(nvaluators);
     valuator_mask_copy(copy, mask);
     assert(mask != copy);
     assert(valuator_mask_size(mask) == valuator_mask_size(copy));
     assert(valuator_mask_num_valuators(mask) ==
            valuator_mask_num_valuators(copy));
 
-    for (i = 0; i < MAX_VALUATORS; i++) {
+    for (i = 0; i < nvaluators; i++) {
         double a, b;
 
         assert(valuator_mask_isset(mask, i) == valuator_mask_isset(copy, i));
@@ -1342,7 +1330,6 @@ dix_input_valuator_masks(void)
     }
 
     valuator_mask_free(&mask);
-    valuator_mask_free(&copy);
     assert(mask == NULL);
 }
 
@@ -1374,9 +1361,6 @@ dix_valuator_mode(void)
     valuator_set_mode(&dev, VALUATOR_MODE_ALL_AXES, Relative);
     for (i = 0; i < num_axes; i++)
         assert(valuator_get_mode(&dev, i) == Relative);
-
-    FreeDeviceClass(ValuatorClass, (void**)&dev.valuator);
-    free(dev.last.scroll); /* sigh, allocated but not freed by the valuator functions */
 }
 
 static void
@@ -1564,7 +1548,7 @@ input_option_test(void)
     InputOption *opt;
     const char *val;
 
-    dbg("Testing input_option list interface\n");
+    printf("Testing input_option list interface\n");
 
     list = input_option_new(list, "key", "value");
     assert(list);
@@ -1653,7 +1637,7 @@ _test_double_fp16_values(double orig_d)
     double final_d;
 
     if (orig_d > 0x7FFF) {
-        dbg("Test out of range\n");
+        printf("Test out of range\n");
         assert(0);
     }
 
@@ -1667,7 +1651,7 @@ _test_double_fp16_values(double orig_d)
      *    snprintf(first_fp16_s, sizeof(first_fp16_s), "%d + %u * 2^-16", (first_fp16 & 0xffff0000) >> 16, first_fp16 & 0xffff);
      *    snprintf(final_fp16_s, sizeof(final_fp16_s), "%d + %u * 2^-16", (final_fp16 & 0xffff0000) >> 16, final_fp16 & 0xffff);
      *
-     *    dbg("FP16: original double: %f first fp16: %s, re-encoded double: %f, final fp16: %s\n", orig_d, first_fp16_s, final_d, final_fp16_s);
+     *    printf("FP16: original double: %f first fp16: %s, re-encoded double: %f, final fp16: %s\n", orig_d, first_fp16_s, final_d, final_fp16_s);
      * }
      */
 
@@ -1688,7 +1672,7 @@ _test_double_fp32_values(double orig_d)
     double final_d;
 
     if (orig_d > 0x7FFFFFFF) {
-        dbg("Test out of range\n");
+        printf("Test out of range\n");
         assert(0);
     }
 
@@ -1702,7 +1686,7 @@ _test_double_fp32_values(double orig_d)
      *     snprintf(first_fp32_s, sizeof(first_fp32_s), "%d + %u * 2^-32", first_fp32.integral, first_fp32.frac);
      *     snprintf(final_fp32_s, sizeof(final_fp32_s), "%d + %u * 2^-32", first_fp32.integral, final_fp32.frac);
      *
-     *     dbg("FP32: original double: %f first fp32: %s, re-encoded double: %f, final fp32: %s\n", orig_d, first_fp32_s, final_d, final_fp32_s);
+     *     printf("FP32: original double: %f first fp32: %s, re-encoded double: %f, final fp32: %s\n", orig_d, first_fp32_s, final_d, final_fp32_s);
      * }
      */
 
@@ -1721,7 +1705,7 @@ dix_double_fp_conversion(void)
 {
     uint32_t i;
 
-    dbg("Testing double to FP1616/FP3232 conversions\n");
+    printf("Testing double to FP1616/FP3232 conversions\n");
 
     _test_double_fp16_values(0);
     for (i = 1; i < 0x7FFF; i <<= 1) {
@@ -1925,31 +1909,28 @@ dix_enqueue_events(void)
     inputInfo.devices = NULL;
 }
 
-const testfunc_t*
+int
 input_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        dix_enqueue_events,
-        dix_double_fp_conversion,
-        dix_input_valuator_masks,
-        dix_input_valuator_masks_unaccel,
-        dix_input_attributes,
-        dix_init_valuators,
-        dix_event_to_core_conversion,
-        dix_event_to_xi1_conversion,
-        dix_check_grab_values,
-        xi2_struct_sizes,
-        dix_grab_matching,
-        dix_valuator_mode,
-        include_byte_padding_macros,
-        include_bit_test_macros,
-        xi_unregister_handlers,
-        dix_valuator_alloc,
-        dix_get_master,
-        input_option_test,
-        mieq_test,
-        NULL,
-    };
+    dix_enqueue_events();
+    dix_double_fp_conversion();
+    dix_input_valuator_masks();
+    dix_input_valuator_masks_unaccel();
+    dix_input_attributes();
+    dix_init_valuators();
+    dix_event_to_core_conversion();
+    dix_event_to_xi1_conversion();
+    dix_check_grab_values();
+    xi2_struct_sizes();
+    dix_grab_matching();
+    dix_valuator_mode();
+    include_byte_padding_macros();
+    include_bit_test_macros();
+    xi_unregister_handlers();
+    dix_valuator_alloc();
+    dix_get_master();
+    input_option_test();
+    mieq_test();
 
-    return testfuncs;
+    return 0;
 }

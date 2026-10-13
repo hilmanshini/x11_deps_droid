@@ -18,7 +18,6 @@
 #include "inputstr.h"
 
 DevPrivateKeyRec xf86CursorScreenKeyRec;
-DevScreenPrivateKeyRec xf86ScreenCursorBitsKeyRec;
 
 /* sprite functions */
 
@@ -67,10 +66,6 @@ xf86InitCursor(ScreenPtr pScreen, xf86CursorInfoPtr infoPtr)
 
     ScreenPriv = calloc(1, sizeof(xf86CursorScreenRec));
     if (!ScreenPriv)
-        return FALSE;
-
-    if (!dixRegisterScreenPrivateKey(&xf86ScreenCursorBitsKeyRec, pScreen,
-                                     PRIVATE_CURSOR, 0))
         return FALSE;
 
     dixSetPrivate(&pScreen->devPrivates, xf86CursorScreenKey, ScreenPriv);
@@ -278,8 +273,8 @@ xf86CursorRealizeCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCurs)
                                                xf86CursorScreenKey);
 
     if (CursorRefCount(pCurs) <= 1)
-        dixSetScreenPrivate(&pCurs->devPrivates, &xf86ScreenCursorBitsKeyRec,
-                            pScreen, NULL);
+        dixSetScreenPrivate(&pCurs->devPrivates, CursorScreenKey, pScreen,
+                            NULL);
 
     return (*ScreenPriv->spriteFuncs->RealizeCursor) (pDev, pScreen, pCurs);
 }
@@ -293,9 +288,9 @@ xf86CursorUnrealizeCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCurs)
 
     if (CursorRefCount(pCurs) <= 1) {
         free(dixLookupScreenPrivate
-             (&pCurs->devPrivates, &xf86ScreenCursorBitsKeyRec, pScreen));
-        dixSetScreenPrivate(&pCurs->devPrivates, &xf86ScreenCursorBitsKeyRec,
-                            pScreen, NULL);
+             (&pCurs->devPrivates, CursorScreenKey, pScreen));
+        dixSetScreenPrivate(&pCurs->devPrivates, CursorScreenKey, pScreen,
+                            NULL);
     }
 
     return (*ScreenPriv->spriteFuncs->UnrealizeCursor) (pDev, pScreen, pCurs);
@@ -489,7 +484,7 @@ xf86DestroyCursorInfoRec(xf86CursorInfoPtr infoPtr)
 }
 
 /**
- * New cursor has been created. Do your initializations here.
+ * New cursor has been created. Do your initalizations here.
  */
 static Bool
 xf86DeviceCursorInitialize(DeviceIntPtr pDev, ScreenPtr pScreen)

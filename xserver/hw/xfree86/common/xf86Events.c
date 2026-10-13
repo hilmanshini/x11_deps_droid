@@ -53,11 +53,9 @@
 #include <xorg-config.h>
 #endif
 
-#include <errno.h>
 #include <X11/X.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
-
 #include "misc.h"
 #include "xf86.h"
 #include "xf86Priv.h"
@@ -541,7 +539,7 @@ addInputHandler(int fd, InputHandlerProc proc, void *data)
     if (fd < 0 || !proc)
         return NULL;
 
-    ih = calloc(1, sizeof(*ih));
+    ih = calloc(sizeof(*ih), 1);
     if (!ih)
         return NULL;
 

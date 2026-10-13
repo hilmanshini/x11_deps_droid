@@ -212,7 +212,7 @@ xf86DuplicateMode(const DisplayModeRec * pMode)
 {
     DisplayModePtr pNew;
 
-    pNew = XNFalloc(sizeof(DisplayModeRec));
+    pNew = xnfalloc(sizeof(DisplayModeRec));
     *pNew = *pMode;
     pNew->next = NULL;
     pNew->prev = NULL;
@@ -220,7 +220,7 @@ xf86DuplicateMode(const DisplayModeRec * pMode)
     if (pMode->name == NULL)
         xf86SetModeDefaultName(pNew);
     else
-        pNew->name = XNFstrdup(pMode->name);
+        pNew->name = xnfstrdup(pMode->name);
 
     return pNew;
 }
@@ -288,7 +288,7 @@ xf86ModesEqual(const DisplayModeRec * pMode1, const DisplayModeRec * pMode2)
 static void
 add(char **p, const char *new)
 {
-    *p = XNFrealloc(*p, strlen(*p) + strlen(new) + 2);
+    *p = xnfrealloc(*p, strlen(*p) + strlen(new) + 2);
     strcat(*p, " ");
     strcat(*p, new);
 }
@@ -322,7 +322,7 @@ void
 xf86PrintModeline(int scrnIndex, DisplayModePtr mode)
 {
     char tmp[256];
-    char *flags = XNFcallocarray(1, 1);
+    char *flags = xnfcalloc(1, 1);
 
 #define TBITS 6
     const char tchar[TBITS + 1] = "UezdPb";
@@ -681,7 +681,7 @@ xf86GetConfigModes(XF86ConfModeLinePtr conf_mode)
         mode = calloc(1, sizeof(DisplayModeRec));
         if (!mode)
             continue;
-        mode->name = Xstrdup(conf_mode->ml_identifier);
+        mode->name = xstrdup(conf_mode->ml_identifier);
         if (!mode->name) {
             free(mode);
             continue;
@@ -802,7 +802,7 @@ xf86CVTMode(int HDisplay, int VDisplay, float VRefresh, Bool Reduced,
             Bool Interlaced)
 {
     struct libxcvt_mode_info *libxcvt_mode_info;
-    DisplayModeRec *Mode = XNFcallocarray(1, sizeof(DisplayModeRec));
+    DisplayModeRec *Mode = xnfcalloc(1, sizeof(DisplayModeRec));
     char *tmp;
 
     libxcvt_mode_info =
@@ -810,7 +810,7 @@ xf86CVTMode(int HDisplay, int VDisplay, float VRefresh, Bool Reduced,
 
     XNFasprintf(&tmp, "%dx%d", HDisplay, VDisplay);
     Mode->name = tmp;
-
+    
     Mode->VDisplay   = libxcvt_mode_info->vdisplay;
     Mode->HDisplay   = libxcvt_mode_info->hdisplay;
     Mode->Clock      = libxcvt_mode_info->dot_clock;

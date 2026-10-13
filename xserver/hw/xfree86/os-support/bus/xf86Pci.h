@@ -156,7 +156,7 @@
 #define PCI_CLASS_I2O			0x0e
 #define PCI_CLASS_SATELLITE		0x0f
 #define PCI_CLASS_CRYPT			0x10
-#define PCI_CLASS_DATA_ACQUISITION	0x11
+#define PCI_CLASS_DATA_ACQUISTION	0x11
 #define PCI_CLASS_UNDEFINED		0xff
 
 /* sub class */
@@ -228,7 +228,12 @@
 #define PCI_REG_USERCONFIG		0x40
 #define PCI_OPTION_REG			0x40
 
+/*
+ * Typedefs, etc...
+ */
+
 /* Public PCI access functions */
+extern _X_EXPORT Bool xf86scanpci(void);
 extern _X_EXPORT char *DRICreatePCIBusID(const struct pci_device *dev);
 
 #endif                          /* _XF86PCI_H */

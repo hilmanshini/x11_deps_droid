@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates.
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -339,9 +339,9 @@ compIsAlternateVisual(ScreenPtr pScreen, XID visual)
     return FALSE;
 }
 
-Bool
-CompositeIsImplicitRedirectException(ScreenPtr pScreen,
-                                     XID parentVisual, XID winVisual)
+static Bool
+compIsImplicitRedirectException(ScreenPtr pScreen,
+                                XID parentVisual, XID winVisual)
 {
     CompScreenPtr cs = GetCompScreen(pScreen);
     int i;
@@ -362,7 +362,7 @@ compImplicitRedirect(WindowPtr pWin, WindowPtr pParent)
         XID winVisual = wVisual(pWin);
         XID parentVisual = wVisual(pParent);
 
-        if (CompositeIsImplicitRedirectException(pScreen, parentVisual, winVisual))
+        if (compIsImplicitRedirectException(pScreen, parentVisual, winVisual))
             return FALSE;
 
         if (winVisual != parentVisual &&
@@ -607,9 +607,9 @@ compDestroyWindow(WindowPtr pWin)
 
     pScreen->DestroyWindow = cs->DestroyWindow;
     while ((cw = GetCompWindow(pWin)))
-        FreeResource(cw->clients->id, X11_RESTYPE_NONE);
+        FreeResource(cw->clients->id, RT_NONE);
     while ((csw = GetCompSubwindows(pWin)))
-        FreeResource(csw->clients->id, X11_RESTYPE_NONE);
+        FreeResource(csw->clients->id, RT_NONE);
 
     if (pWin->redirectDraw != RedirectDrawNone) {
         PixmapPtr pPixmap = (*pScreen->GetWindowPixmap) (pWin);

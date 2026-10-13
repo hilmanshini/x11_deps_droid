@@ -23,9 +23,10 @@
 #include "glamor_priv.h"
 
 void
-glamor_solid_boxes(DrawablePtr drawable,
+glamor_solid_boxes(PixmapPtr pixmap,
                    BoxPtr box, int nbox, unsigned long fg_pixel)
 {
+    DrawablePtr drawable = &pixmap->drawable;
     GCPtr gc;
     xRectangle *rect;
     int n;

@@ -53,6 +53,7 @@ SProcXIGrabDevice(ClientPtr client)
      */
     REQUEST_AT_LEAST_SIZE(xXIGrabDeviceReq);
 
+    swaps(&stuff->length);
     swaps(&stuff->deviceid);
     swapl(&stuff->grab_window);
     swapl(&stuff->cursor);
@@ -81,10 +82,8 @@ ProcXIGrabDevice(ClientPtr client)
     if (ret != Success)
         return ret;
 
-    if (!dev->enabled) {
-        status = XIAlreadyGrabbed;
-        goto reply;
-    }
+    if (!dev->enabled)
+        return AlreadyGrabbed;
 
     if (!IsMaster(dev))
         stuff->paired_device_mode = GrabModeAsync;
@@ -124,7 +123,6 @@ ProcXIGrabDevice(ClientPtr client)
     if (ret != Success)
         return ret;
 
-reply:
     rep = (xXIGrabDeviceReply) {
         .repType = X_Reply,
         .RepType = X_XIGrabDevice,
@@ -143,6 +141,7 @@ SProcXIUngrabDevice(ClientPtr client)
     REQUEST(xXIUngrabDeviceReq);
     REQUEST_SIZE_MATCH(xXIUngrabDeviceReq);
 
+    swaps(&stuff->length);
     swaps(&stuff->deviceid);
     swapl(&stuff->time);
 

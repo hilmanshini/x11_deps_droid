@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2005, Oracle and/or its affiliates.
+/* Copyright (c) 2004-2005, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -24,13 +24,11 @@
 #include <xorg-config.h>
 #endif
 
-#include <errno.h>
 #include <sys/audio.h>
 #include <sys/uio.h>
 #include <limits.h>
 #include <math.h>
-
-#include "os/xserver_poll.h"
+#include <xserver_poll.h>
 
 #include "xf86.h"
 #include "xf86Priv.h"

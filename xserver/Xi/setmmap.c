@@ -65,6 +65,21 @@ SOFTWARE.
 
 /***********************************************************************
  *
+ * This procedure sets the modifier mapping for an extension device,
+ * for clients on machines with a different byte ordering than the server.
+ *
+ */
+
+int _X_COLD
+SProcXSetDeviceModifierMapping(ClientPtr client)
+{
+    REQUEST(xSetDeviceModifierMappingReq);
+    swaps(&stuff->length);
+    return (ProcXSetDeviceModifierMapping(client));
+}
+
+/***********************************************************************
+ *
  * Set the device Modifier mapping.
  *
  */
@@ -79,7 +94,7 @@ ProcXSetDeviceModifierMapping(ClientPtr client)
     REQUEST(xSetDeviceModifierMappingReq);
     REQUEST_AT_LEAST_SIZE(xSetDeviceModifierMappingReq);
 
-    if (client->req_len != bytes_to_int32(sizeof(xSetDeviceModifierMappingReq)) +
+    if (stuff->length != bytes_to_int32(sizeof(xSetDeviceModifierMappingReq)) +
         (stuff->numKeyPerModifier << 1))
         return BadLength;
 

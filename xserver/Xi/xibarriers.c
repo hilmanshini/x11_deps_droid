@@ -602,10 +602,8 @@ CreatePointerBarrierClient(ClientPtr client,
      * function */
     xorg_list_for_each_entry(counter, &cs->barriers, entry) {
         nbarriers++;
-        if (nbarriers >= 32) {
-            err = BadAlloc;
-            goto error;
-        }
+        if (nbarriers >= 32)
+            return BadAlloc;
     }
 
     ret->screen = screen;
@@ -876,7 +874,7 @@ XIDestroyPointerBarrier(ClientPtr client,
     if (CLIENT_ID(stuff->barrier) != client->index)
         return BadAccess;
 
-    FreeResource(stuff->barrier, X11_RESTYPE_NONE);
+    FreeResource(stuff->barrier, RT_NONE);
     return Success;
 }
 
@@ -887,6 +885,7 @@ SProcXIBarrierReleasePointer(ClientPtr client)
     REQUEST(xXIBarrierReleasePointerReq);
     int i;
 
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xXIBarrierReleasePointerReq);
 
     swapl(&stuff->num_barriers);

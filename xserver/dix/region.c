@@ -402,7 +402,7 @@ RegionRectAlloc(RegionPtr pRgn, int n)
  *
  *-----------------------------------------------------------------------
  */
-static inline int
+_X_INLINE static int
 RegionCoalesce(RegionPtr pReg,  /* Region to coalesce                */
                int prevStart,   /* Index of start of previous band   */
                int curStart)
@@ -487,7 +487,7 @@ RegionCoalesce(RegionPtr pReg,  /* Region to coalesce                */
  *-----------------------------------------------------------------------
  */
 
-static inline Bool
+_X_INLINE static Bool
 RegionAppendNonO(RegionPtr pReg, BoxPtr r, BoxPtr rEnd, int y1, int y2)
 {
     BoxPtr pNextRect;

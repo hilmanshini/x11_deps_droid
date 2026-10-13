@@ -231,7 +231,7 @@ winMouseButtonsSendEvent(int iEventType, int iButton)
     QueuePointerEvents(g_pwinPointer, iEventType, iButton,
                        POINTER_RELATIVE, &mask);
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     ErrorF("winMouseButtonsSendEvent: iEventType: %d, iButton: %d\n",
            iEventType, iButton);
 #endif

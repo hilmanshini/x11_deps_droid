@@ -76,6 +76,7 @@ int _X_COLD
 SProcXGetDeviceDontPropagateList(ClientPtr client)
 {
     REQUEST(xGetDeviceDontPropagateListReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xGetDeviceDontPropagateListReq);
     swapl(&stuff->window);
     return (ProcXGetDeviceDontPropagateList(client));

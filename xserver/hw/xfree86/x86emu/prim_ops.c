@@ -2475,7 +2475,7 @@ div_byte(u8 s)
     }
     div = dvd / (u8) s;
     mod = dvd % (u8) s;
-    if (div > 0xff) {
+    if (abs(div) > 0xff) {
         x86emu_intr_raise(0);
         return;
     }
@@ -2499,7 +2499,7 @@ div_word(u16 s)
     }
     div = dvd / (u16) s;
     mod = dvd % (u16) s;
-    if (div > 0xffff) {
+    if (abs(div) > 0xffff) {
         x86emu_intr_raise(0);
         return;
     }
@@ -2622,8 +2622,8 @@ ins(int size)
                 store_data_long_abs(M.x86.R_ES, M.x86.R_DI,
                                     (*sys_inl) (M.x86.R_DX));
                 M.x86.R_DI += inc;
+                break;
             }
-            break;
         }
         M.x86.R_CX = 0;
         if (M.x86.mode & SYSMODE_PREFIX_DATA) {
@@ -2688,8 +2688,8 @@ outs(int size)
                 (*sys_outl) (M.x86.R_DX,
                              fetch_data_long_abs(M.x86.R_ES, M.x86.R_SI));
                 M.x86.R_SI += inc;
+                break;
             }
-            break;
         }
         M.x86.R_CX = 0;
         if (M.x86.mode & SYSMODE_PREFIX_DATA) {

@@ -35,8 +35,6 @@ from The Open Group.
 #include <sys/utsname.h>
 #endif
 
-#include "os/osdep.h"
-
 #include <../xfree86/common/xorgVersion.h>
 #include "win.h"
 #include "winconfig.h"
@@ -254,7 +252,7 @@ ddxProcessArgument(int argc, char *argv[], int i)
         }
     }
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("ddxProcessArgument - arg: %s\n", argv[i]);
 #endif
 
@@ -287,7 +285,7 @@ ddxProcessArgument(int argc, char *argv[], int i)
         int iWidth, iHeight, iX, iY;
         int iMonitor;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("ddxProcessArgument - screen - argc: %d i: %d\n", argc, i);
 #endif
 

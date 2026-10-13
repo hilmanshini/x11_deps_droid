@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 
 static CARD16
  RR10CurrentSizeID(ScreenPtr pScreen);
@@ -268,14 +268,17 @@ ProcRRSetScreenSize(ClientPtr client)
         RRModePtr mode = crtc->mode;
 
         if (!RRCrtcIsLeased(crtc) && mode) {
-            struct pixman_box16 display_box = {
-                crtc->x, crtc->y,
-                crtc->x + mode->mode.width,
-                crtc->y + mode->mode.height
-            };
-            pixman_f_transform_bounds(&crtc->f_transform, &display_box);
+            int source_width = mode->mode.width;
+            int source_height = mode->mode.height;
+            Rotation rotation = crtc->rotation;
 
-            if (display_box.x2 > stuff->width || display_box.y2 > stuff->height)
+            if (rotation & (RR_Rotate_90 | RR_Rotate_270)) {
+                source_width = mode->mode.height;
+                source_height = mode->mode.width;
+            }
+
+            if (crtc->x + source_width > stuff->width ||
+                crtc->y + source_height > stuff->height)
                 return BadMatch;
         }
     }
@@ -794,8 +797,13 @@ ProcRRGetScreenInfo(ClientPtr client)
         extraLen = 0;
     }
     else {
+        int i, j;
+        xScreenSizes *size;
+        CARD16 *rates;
+        CARD8 *data8;
         Bool has_rate = RRClientKnowsRates(client);
         RR10DataPtr pData;
+        RRScreenSizePtr pSize;
 
         pData = RR10GetData(pScreen, output);
         if (!pData)
@@ -821,62 +829,55 @@ ProcRRGetScreenInfo(ClientPtr client)
             extraLen += rep.nrateEnts * sizeof(CARD16);
 
         if (extraLen) {
-            xScreenSizes *size;
-            CARD16 *rates;
-            CARD8 *data8;
-
             extra = (CARD8 *) malloc(extraLen);
             if (!extra) {
                 free(pData);
                 return BadAlloc;
             }
-
-            /*
-             * First comes the size information
-             */
-            size = (xScreenSizes *) extra;
-            rates = (CARD16 *) (size + rep.nSizes);
-            for (int i = 0; i < pData->nsize; i++) {
-                RRScreenSizePtr pSize = &pData->sizes[i];
-
-                size->widthInPixels = pSize->width;
-                size->heightInPixels = pSize->height;
-                size->widthInMillimeters = pSize->mmWidth;
-                size->heightInMillimeters = pSize->mmHeight;
-                if (client->swapped) {
-                    swaps(&size->widthInPixels);
-                    swaps(&size->heightInPixels);
-                    swaps(&size->widthInMillimeters);
-                    swaps(&size->heightInMillimeters);
-                }
-                size++;
-                if (has_rate) {
-                    *rates = pSize->nRates;
-                    if (client->swapped) {
-                        swaps(rates);
-                    }
-                    rates++;
-                    for (int j = 0; j < pSize->nRates; j++) {
-                        *rates = pSize->pRates[j].rate;
-                        if (client->swapped) {
-                            swaps(rates);
-                        }
-                        rates++;
-                    }
-                }
-            }
-
-            data8 = (CARD8 *) rates;
-
-            if (data8 - (CARD8 *) extra != extraLen)
-                FatalError("RRGetScreenInfo bad extra len %ld != %ld\n",
-                           (unsigned long) (data8 - (CARD8 *) extra), extraLen);
         }
         else
             extra = NULL;
 
+        /*
+         * First comes the size information
+         */
+        size = (xScreenSizes *) extra;
+        rates = (CARD16 *) (size + rep.nSizes);
+        for (i = 0; i < pData->nsize; i++) {
+            pSize = &pData->sizes[i];
+            size->widthInPixels = pSize->width;
+            size->heightInPixels = pSize->height;
+            size->widthInMillimeters = pSize->mmWidth;
+            size->heightInMillimeters = pSize->mmHeight;
+            if (client->swapped) {
+                swaps(&size->widthInPixels);
+                swaps(&size->heightInPixels);
+                swaps(&size->widthInMillimeters);
+                swaps(&size->heightInMillimeters);
+            }
+            size++;
+            if (has_rate) {
+                *rates = pSize->nRates;
+                if (client->swapped) {
+                    swaps(rates);
+                }
+                rates++;
+                for (j = 0; j < pSize->nRates; j++) {
+                    *rates = pSize->pRates[j].rate;
+                    if (client->swapped) {
+                        swaps(rates);
+                    }
+                    rates++;
+                }
+            }
+        }
         free(pData);
 
+        data8 = (CARD8 *) rates;
+
+        if (data8 - (CARD8 *) extra != extraLen)
+            FatalError("RRGetScreenInfo bad extra len %ld != %ld\n",
+                       (unsigned long) (data8 - (CARD8 *) extra), extraLen);
         rep.length = bytes_to_int32(extraLen);
     }
     if (client->swapped) {

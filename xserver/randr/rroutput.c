@@ -21,7 +21,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include <X11/Xatom.h>
 
 RESTYPE RROutputType;
@@ -467,6 +467,9 @@ ProcRRGetOutputInfo(ClientPtr client)
     unsigned long extraLen;
     ScreenPtr pScreen;
     rrScrPrivPtr pScrPriv;
+    RRCrtc *crtcs;
+    RRMode *modes;
+    RROutput *clones;
     char *name;
     int i;
     Bool leased;
@@ -531,42 +534,36 @@ ProcRRGetOutputInfo(ClientPtr client)
                      output->numClones + bytes_to_int32(rep.nameLength)) << 2);
 
         if (extraLen) {
-            RRCrtc *crtcs;
-            RRMode *modes;
-            RROutput *clones;
-
             rep.length += bytes_to_int32(extraLen);
             extra = calloc(1, extraLen);
             if (!extra)
                 return BadAlloc;
-
-            crtcs = (RRCrtc *) extra;
-            modes = (RRMode *) (crtcs + output->numCrtcs);
-            clones = (RROutput *) (modes + output->numModes + output->numUserModes);
-            name = (char *) (clones + output->numClones);
-
-            for (i = 0; i < output->numCrtcs; i++) {
-                crtcs[i] = output->crtcs[i]->id;
-                if (client->swapped)
-                    swapl(&crtcs[i]);
-            }
-            for (i = 0; i < output->numModes + output->numUserModes; i++) {
-                if (i < output->numModes)
-                    modes[i] = output->modes[i]->mode.id;
-                else
-                    modes[i] = output->userModes[i - output->numModes]->mode.id;
-                if (client->swapped)
-                    swapl(&modes[i]);
-            }
-            for (i = 0; i < output->numClones; i++) {
-                clones[i] = output->clones[i]->id;
-                if (client->swapped)
-                    swapl(&clones[i]);
-            }
         }
-        else {
+        else
             extra = NULL;
-            name = NULL;
+
+        crtcs = (RRCrtc *) extra;
+        modes = (RRMode *) (crtcs + output->numCrtcs);
+        clones = (RROutput *) (modes + output->numModes + output->numUserModes);
+        name = (char *) (clones + output->numClones);
+
+        for (i = 0; i < output->numCrtcs; i++) {
+            crtcs[i] = output->crtcs[i]->id;
+            if (client->swapped)
+                swapl(&crtcs[i]);
+        }
+        for (i = 0; i < output->numModes + output->numUserModes; i++) {
+            if (i < output->numModes)
+                modes[i] = output->modes[i]->mode.id;
+            else
+                modes[i] = output->userModes[i - output->numModes]->mode.id;
+            if (client->swapped)
+                swapl(&modes[i]);
+        }
+        for (i = 0; i < output->numClones; i++) {
+            clones[i] = output->clones[i]->id;
+            if (client->swapped)
+                swapl(&clones[i]);
         }
     }
     memcpy(name, output->name, output->nameLength);

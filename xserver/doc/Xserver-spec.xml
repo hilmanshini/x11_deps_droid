@@ -440,7 +440,7 @@ To free a resource, use one of the following.
 FreeResource frees all resources matching the given id, regardless of
 type; the type's deleteFunc will be called on each matching resource,
 except that skipDeleteFuncType can be set to a single type for which
-the deleteFunc should not be called (otherwise pass RT_NONE / X11_RESTYPE_NONE).
+the deleteFunc should not be called (otherwise pass RT_NONE).
 FreeResourceByType frees a specific resource matching a given id
 and type; if skipFree is true, then the deleteFunc is not called.
 </para>
@@ -657,11 +657,14 @@ make the server suspend until one or more of the following occurs:
 <para>
 Before WaitForSomething() computes the masks to pass to select, poll or
 similar operating system interface, it needs to
-see if there is anything to do on the work queue; it must call a DIX
-routine called ProcessWorkQueue().
+see if there is anything to do on the work queue; if so, it must call a DIX
+routine called ProcessWorkQueue.
 <blockquote>
 <programlisting>
-	ProcessWorkQueue ();
+	extern WorkQueuePtr	workQueue;
+
+	if (workQueue)
+		ProcessWorkQueue ();
 </programlisting>
 </blockquote>
 </para>
@@ -857,7 +860,7 @@ and RemoveEnabledDevice are in Xserver/os/connection.c.
 <para>
 Similarly, the X server or an extension may need to wait for some timeout.
 Early X releases implemented this functionality using block and wakeup handlers,
-but this has been rewritten to use a general timer facility, and the
+but this has been rewritten to use a general timer facilty, and the
 internal screen saver facilities reimplemented to use Timers.
 These functions are TimerInit, TimerForce, TimerSet, TimerCheck, TimerCancel,
 and TimerFree, as defined in Xserver/include/os.h. A callback function will be called
@@ -1097,7 +1100,7 @@ the current request.
 InsertFakeRequest() must insert the specified number of bytes of data
 into the head of the input buffer for the client.  This may be a
 complete request, or it might be a partial request.  For example,
-NextAvailableClient() will insert a partial request in order to read
+NextAvailableCient() will insert a partial request in order to read
 the initial connection data sent by the client.  The routine returns FALSE
 if memory could not be allocated.  ResetCurrentRequest()
 should "back up" the input buffer so that the currently executing request
@@ -3277,8 +3280,9 @@ need to be done when these happen, such as allocating or deallocating
 structures that are only needed for visible windows.  RealizeWindow
 does NOT draw the window border, background or contents;
 UnrealizeWindow does NOT erase the window or generate exposure events
-for underlying windows; this is taken care of by DIX.
-</para>
+for underlying windows; this is taken care of by DIX.  DIX does,
+however, call PaintWindowBackground() and PaintWindowBorder() to
+perform some of these.</para>
 <para>
 <blockquote><programlisting>
 
@@ -3382,7 +3386,7 @@ and all of its child windows.</para>
 If generateExposures is false, the client is trying to simply erase part
 of the window to the background fill style.
 ClearToBackground should write the background color or tile to the
-rectangle in question.
+rectangle in question (probably using PaintWindowBackground).
 If w or h is zero, it clears all the way to the right or lower edge of the window.</para>
 <para>
 The sample server implementation is in Xserver/mi/miwindow.c.</para>
@@ -4043,7 +4047,7 @@ returned instead).  Furthermore, the invalid bits of the source are
 not copied to the destination and (when the destination is a window)
 are filled with the background tile.  The sample routine
 miHandleExposures generates the appropriate return value and fills the
-invalid area.</para>
+invalid area using pScreen->PaintWindowBackground.</para>
 <para>
 For instance, imagine a window that is partially obscured by other
 windows in front of it.  As text is scrolled on your window, the pixels
@@ -4256,6 +4260,7 @@ bit in that plane equal to 0.  If format is XYPixmap, planemask is
 guaranteed to have a single bit set; the bits should be written in
 Bitmap format, which is the format for a single plane of an XYPixmap.</para>
 <para>
+An example implementation is miGetImage() in Xserver/mi/mibitblt.c.
 <blockquote><programlisting>
 
 	void pGC->ops->ImageText8(pDraw, pGC, x, y, count, chars)
@@ -4922,8 +4927,10 @@ mi and fb implementations.</para>
 <row><entry><function>ClipNotify</function></entry><entry><literal>ddx</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>CloseScreen</function></entry><entry><literal>hd</literal></entry><entry><para></para></entry></row>
 <row><entry><function>ConstrainCursor</function></entry><entry><literal>hd</literal></entry><entry><para>Screen</para></entry></row>
+<row><entry><function>CopyArea</function></entry><entry><literal>mi</literal></entry><entry><para>GC op</para></entry></row>
 <row><entry><function>CopyGCDest</function></entry><entry><literal>ddx</literal></entry><entry><para>GC func</para></entry></row>
 <row><entry><function>CopyGCSource</function></entry><entry><literal>none</literal></entry><entry><para>GC func</para></entry></row>
+<row><entry><function>CopyPlane</function></entry><entry><literal>mi</literal></entry><entry><para>GC op</para></entry></row>
 <row><entry><function>CopyWindow</function></entry><entry><literal>ddx</literal></entry><entry><para>Window</para></entry></row>
 <row><entry><function>CreateGC</function></entry><entry><literal>ddx</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>CreateCallbackList</function></entry><entry><literal>dix</literal></entry><entry><para></para></entry></row>
@@ -4948,6 +4955,7 @@ mi and fb implementations.</para>
 <row><entry><function>FlushAllOutput</function></entry><entry><literal>os</literal></entry><entry><para></para></entry></row>
 <row><entry><function>FlushIfCriticalOutputPending</function></entry><entry><literal>os</literal></entry><entry><para></para></entry></row>
 <row><entry><function>FreeScratchPixmapHeader</function></entry><entry><literal>dix</literal></entry><entry><para></para></entry></row>
+<row><entry><function>GetImage</function></entry><entry><literal>mi</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>GetMotionEvents</function></entry><entry><literal>hd</literal></entry><entry><para>Device</para></entry></row>
 <row><entry><function>GetScratchPixmapHeader</function></entry><entry><literal>dix</literal></entry><entry><para></para></entry></row>
 <row><entry><function>GetSpans</function></entry><entry><literal>ddx</literal></entry><entry><para>Screen</para></entry></row>
@@ -4985,6 +4993,8 @@ mi and fb implementations.</para>
 <row><entry><function>ModifyPixmapHeader</function></entry><entry><literal>mi</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>NextAvailableClient</function></entry><entry><literal>dix</literal></entry><entry><para></para></entry></row>
 <row><entry><function>OsInit</function></entry><entry><literal>os</literal></entry><entry><para></para></entry></row>
+<row><entry><function>PaintWindowBackground</function></entry><entry><literal>mi</literal></entry><entry><para>Window</para></entry></row>
+<row><entry><function>PaintWindowBorder</function></entry><entry><literal>mi</literal></entry><entry><para>Window</para></entry></row>
 <row><entry><function>PointerNonInterestBox</function></entry><entry><literal>hd</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>PointInRegion</function></entry><entry><literal>mi</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>PolyArc</function></entry><entry><literal>mi</literal></entry><entry><para>GC op</para></entry></row>
@@ -5000,6 +5010,7 @@ mi and fb implementations.</para>
 <row><entry><function>PositionWindow</function></entry><entry><literal>ddx</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>ProcessInputEvents</function></entry><entry><literal>hd</literal></entry><entry><para></para></entry></row>
 <row><entry><function>PushPixels</function></entry><entry><literal>mi</literal></entry><entry><para>GC op</para></entry></row>
+<row><entry><function>PutImage</function></entry><entry><literal>mi</literal></entry><entry><para>GC op</para></entry></row>
 <row><entry><function>QueryBestSize</function></entry><entry><literal>hd</literal></entry><entry><para>Screen</para></entry></row>
 <row><entry><function>ReadRequestFromClient</function></entry><entry><literal>os</literal></entry><entry><para></para></entry></row>
 <row><entry><function>RealizeCursor</function></entry><entry><literal>hd</literal></entry><entry><para>Screen</para></entry></row>

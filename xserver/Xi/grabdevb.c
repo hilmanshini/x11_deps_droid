@@ -75,6 +75,7 @@ int _X_COLD
 SProcXGrabDeviceButton(ClientPtr client)
 {
     REQUEST(xGrabDeviceButtonReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xGrabDeviceButtonReq);
     swapl(&stuff->grabWindow);
     swaps(&stuff->modifiers);
@@ -106,7 +107,7 @@ ProcXGrabDeviceButton(ClientPtr client)
     REQUEST(xGrabDeviceButtonReq);
     REQUEST_AT_LEAST_SIZE(xGrabDeviceButtonReq);
 
-    if (client->req_len !=
+    if (stuff->length !=
         bytes_to_int32(sizeof(xGrabDeviceButtonReq)) + stuff->event_count)
         return BadLength;
 
@@ -124,7 +125,7 @@ ProcXGrabDeviceButton(ClientPtr client)
     }
     else {
         mdev = PickKeyboard(client);
-        ret = XaceHookDeviceAccess(client, mdev, DixUseAccess);
+        ret = XaceHook(XACE_DEVICE_ACCESS, client, mdev, DixUseAccess);
         if (ret != Success)
             return ret;
     }

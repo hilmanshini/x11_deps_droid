@@ -48,22 +48,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 static MODULESETUPPROTO(glxSetup);
 
 static XF86ModuleVersionInfo VersRec = {
-    .modname      = "glx",
-    .vendor       = MODULEVENDORSTRING,
-    ._modinfo1_   = MODINFOSTRING1,
-    ._modinfo2_   = MODINFOSTRING2,
-    .xf86version  = XORG_VERSION_CURRENT,
-    .majorversion = 1,
-    .minorversion = 0,
-    .patchlevel   = 0,
-    .abiclass     = ABI_CLASS_EXTENSION,
-    .abiversion   = ABI_EXTENSION_VERSION,
+    "glx",
+    MODULEVENDORSTRING,
+    MODINFOSTRING1,
+    MODINFOSTRING2,
+    XORG_VERSION_CURRENT,
+    1, 0, 0,
+    ABI_CLASS_EXTENSION,
+    ABI_EXTENSION_VERSION,
+    MOD_CLASS_NONE,
+    {0, 0, 0, 0}
 };
 
-_X_EXPORT XF86ModuleData glxModuleData = {
-    .vers = &VersRec,
-    .setup = glxSetup
-};
+_X_EXPORT XF86ModuleData glxModuleData = { &VersRec, glxSetup, NULL };
 
 static void *
 glxSetup(void *module, void *opts, int *errmaj, int *errmin)

@@ -58,7 +58,7 @@ glamor_poly_glyph_blt_gl(DrawablePtr drawable, GCPtr gc,
 
     glamor_make_current(glamor_priv);
 
-    prog = glamor_use_program_fill(drawable, gc,
+    prog = glamor_use_program_fill(pixmap, gc,
                                    &glamor_priv->poly_glyph_blt_progs,
                                    &glamor_facet_poly_glyph_blt);
     if (!prog)
@@ -193,7 +193,7 @@ glamor_push_pixels_gl(GCPtr gc, PixmapPtr bitmap,
 
     glamor_make_current(glamor_priv);
 
-    prog = glamor_use_program_fill(drawable, gc,
+    prog = glamor_use_program_fill(pixmap, gc,
                                    &glamor_priv->poly_glyph_blt_progs,
                                    &glamor_facet_poly_glyph_blt);
     if (!prog)

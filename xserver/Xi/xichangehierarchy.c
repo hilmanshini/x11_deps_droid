@@ -45,6 +45,7 @@
 #include "extnsionst.h"
 #include "exevents.h"
 #include "exglobals.h"
+#include "geext.h"
 #include "misc.h"
 #include "xace.h"
 #include "xiquerydevice.h"      /* for GetDeviceUse */
@@ -126,6 +127,14 @@ XISendDeviceHierarchyEvent(int flags[MAXDEVICES])
  * adding new master devices, removing them, etc.
  *
  */
+
+int _X_COLD
+SProcXIChangeHierarchy(ClientPtr client)
+{
+    REQUEST(xXIChangeHierarchyReq);
+    swaps(&stuff->length);
+    return (ProcXIChangeHierarchy(client));
+}
 
 static int
 add_master(ClientPtr client, xXIAddMasterInfo * c, int flags[MAXDEVICES])
@@ -284,7 +293,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
         if (rc != Success)
             goto unwind;
 
-        if (!IsMaster(newptr) || !IsPointerDevice(newptr)) {
+        if (!IsMaster(newptr)) {
             client->errorValue = r->return_pointer;
             rc = BadDevice;
             goto unwind;
@@ -295,7 +304,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
         if (rc != Success)
             goto unwind;
 
-        if (!IsMaster(newkeybd) || !IsKeyboardDevice(newkeybd)) {
+        if (!IsMaster(newkeybd)) {
             client->errorValue = r->return_keyboard;
             rc = BadDevice;
             goto unwind;
@@ -454,10 +463,8 @@ ProcXIChangeHierarchy(ClientPtr client)
         SWAPIF(swaps(&any->type));
         SWAPIF(swaps(&any->length));
 
-        if (any->length == 0 || len < ((size_t)any->length << 2)) {
-            rc = BadLength;
-            goto unwind;
-        }
+        if (len < ((size_t)any->length << 2))
+            return BadLength;
 
 #define CHANGE_SIZE_MATCH(type) \
     do { \

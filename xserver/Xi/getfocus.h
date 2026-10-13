@@ -30,6 +30,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef GETFOCUS_H
 #define GETFOCUS_H 1
 
+int SProcXGetDeviceFocus(ClientPtr      /* client */
+    );
+
 int ProcXGetDeviceFocus(ClientPtr       /* client */
     );
 

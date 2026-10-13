@@ -68,6 +68,20 @@ SOFTWARE.
  *
  */
 
+int _X_COLD
+SProcXGetDeviceFocus(ClientPtr client)
+{
+    REQUEST(xGetDeviceFocusReq);
+    swaps(&stuff->length);
+    return (ProcXGetDeviceFocus(client));
+}
+
+/***********************************************************************
+ *
+ * This procedure gets the focus for a device.
+ *
+ */
+
 int
 ProcXGetDeviceFocus(ClientPtr client)
 {

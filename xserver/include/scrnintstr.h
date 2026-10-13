@@ -241,7 +241,7 @@ typedef void (*CursorWarpedToProcPtr) (DeviceIntPtr /* pDev */ ,
                                        int /*x */ ,
                                        int /*y */ );
 
-typedef void (*CursorConfinedToProcPtr) (DeviceIntPtr /* pDev */ ,
+typedef void (*CurserConfinedToProcPtr) (DeviceIntPtr /* pDev */ ,
                                          ScreenPtr /*pScreen */ ,
                                          WindowPtr /*pWindow */ );
 
@@ -567,7 +567,7 @@ typedef struct _Screen {
     RecolorCursorProcPtr RecolorCursor;
     SetCursorPositionProcPtr SetCursorPosition;
     CursorWarpedToProcPtr CursorWarpedTo;
-    CursorConfinedToProcPtr CursorConfinedTo;
+    CurserConfinedToProcPtr CursorConfinedTo;
 
     /* GC procedures */
 
@@ -603,6 +603,8 @@ typedef struct _Screen {
     GetScreenPixmapProcPtr GetScreenPixmap;
     SetScreenPixmapProcPtr SetScreenPixmap;
     NameWindowPixmapProcPtr NameWindowPixmap;
+
+    PixmapPtr pScratchPixmap;   /* scratch pixmap "pool" */
 
     unsigned int totalPixmapSize;
 

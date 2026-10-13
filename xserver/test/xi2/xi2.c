@@ -139,14 +139,10 @@ xi2mask_test(void)
     free(mask);
 }
 
-const testfunc_t*
+int
 xi2_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        xi2mask_test,
-        NULL,
-    };
-    return testfuncs;
+    xi2mask_test();
 
     return 0;
 }

@@ -25,6 +25,9 @@
 #include <dix-config.h>
 #endif
 
+#ifndef _MIINDEX_H_
+#define _MIINDEX_H_
+
 #include "scrnintstr.h"
 #include "gcstruct.h"
 #include "pixmapstr.h"
@@ -126,7 +129,7 @@ miBuildRenderColormap(ColormapPtr pColormap, Pixel * pixels, int *nump)
 
     case PictureCmapPolicyColor:
         cube = NUM_CUBE_LEVELS;
-        _X_FALLTHROUGH; /* fall through ... */
+        /* fall through ... */
     case PictureCmapPolicyGray:
         gray = NUM_GRAY_LEVELS;
         break;
@@ -325,3 +328,5 @@ miUpdateIndexed(ScreenPtr pScreen,
         }
     }
 }
+
+#endif                          /* _MIINDEX_H_ */

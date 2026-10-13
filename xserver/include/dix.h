@@ -52,6 +52,7 @@ SOFTWARE.
 #include "window.h"
 #include "input.h"
 #include "cursor.h"
+#include "geext.h"
 #include "events.h"
 #include <X11/extensions/XI.h>
 
@@ -134,7 +135,7 @@ SOFTWARE.
 typedef struct _TimeStamp *TimeStampPtr;
 
 #ifndef _XTYPEDEF_CLIENTPTR
-typedef struct _Client *ClientPtr;
+typedef struct _Client *ClientPtr;      /* also in misc.h */
 
 #define _XTYPEDEF_CLIENTPTR
 #endif
@@ -568,6 +569,11 @@ extern Bool
 IsInterferingGrab(ClientPtr /* client */ ,
                   DeviceIntPtr /* dev */ ,
                   xEvent * /* events */ );
+
+#ifdef PANORAMIX
+extern _X_EXPORT void
+ReinitializeRootWindow(WindowPtr win, int xoff, int yoff);
+#endif
 
 #ifdef RANDR
 extern _X_EXPORT void

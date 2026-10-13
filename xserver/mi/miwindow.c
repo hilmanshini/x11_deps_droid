@@ -124,7 +124,7 @@ miMarkWindow(WindowPtr pWin)
 
     if (pWin->valdata)
         return;
-    val = (ValidatePtr) XNFalloc(sizeof(ValidateRec));
+    val = (ValidatePtr) xnfalloc(sizeof(ValidateRec));
     val->before.oldAbsCorner.x = pWin->drawable.x;
     val->before.oldAbsCorner.y = pWin->drawable.y;
     val->before.borderVisible = NullRegion;
@@ -775,16 +775,10 @@ miSpriteTrace(SpritePtr pSprite, int x, int y)
              */
             && !pWin->unhittable) {
             if (pSprite->spriteTraceGood >= pSprite->spriteTraceSize) {
-                WindowPtr *newTrace;
-                int newSize = pSprite->spriteTraceSize + 10;
-
-                newTrace = reallocarray(pSprite->spriteTrace,
-                                        newSize,
-                                        sizeof(WindowPtr));
-                if (!newTrace)
-                    return DeepestSpriteWin(pSprite);
-                pSprite->spriteTraceSize = newSize;
-                pSprite->spriteTrace = newTrace;
+                pSprite->spriteTraceSize += 10;
+                pSprite->spriteTrace = reallocarray(pSprite->spriteTrace,
+                                                    pSprite->spriteTraceSize,
+                                                    sizeof(WindowPtr));
             }
             pSprite->spriteTrace[pSprite->spriteTraceGood++] = pWin;
             pWin = pWin->firstChild;

@@ -393,7 +393,7 @@ PrintPassiveGrabs(void)
             FreeLocalClientCreds(lcc);
         }
 
-        FindClientResourcesByType(clients[i], X11_RESTYPE_PASSIVEGRAB, log_grab_info, NULL);
+        FindClientResourcesByType(clients[i], RT_PASSIVEGRAB, log_grab_info, NULL);
     }
     ErrorF("End list of registered passive grabs\n");
 }
@@ -636,11 +636,11 @@ CreateRootWindow(ScreenPtr pScreen)
 
     /*  security creation/labeling check
      */
-    if (XaceHookResourceAccess(serverClient, pWin->drawable.id,
-                 X11_RESTYPE_WINDOW, pWin, X11_RESTYPE_NONE, NULL, DixCreateAccess))
+    if (XaceHook(XACE_RESOURCE_ACCESS, serverClient, pWin->drawable.id,
+                 RT_WINDOW, pWin, RT_NONE, NULL, DixCreateAccess))
         return FALSE;
 
-    if (!AddResource(pWin->drawable.id, X11_RESTYPE_WINDOW, (void *) pWin))
+    if (!AddResource(pWin->drawable.id, RT_WINDOW, (void *) pWin))
         return FALSE;
 
     if (disableBackingStore)
@@ -865,8 +865,8 @@ CreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
 
     /*  security creation/labeling check
      */
-    *error = XaceHookResourceAccess(client, wid, X11_RESTYPE_WINDOW, pWin,
-                      X11_RESTYPE_WINDOW, pWin->parent,
+    *error = XaceHook(XACE_RESOURCE_ACCESS, client, wid, RT_WINDOW, pWin,
+                      RT_WINDOW, pWin->parent,
                       DixCreateAccess | DixSetAttrAccess);
     if (*error != Success) {
         dixFreeObjectWithPrivates(pWin, PRIVATE_WINDOW);
@@ -1040,7 +1040,7 @@ CrushTree(WindowPtr pWin)
                 event.u.destroyNotify.window = pChild->drawable.id;
                 DeliverEvents(pChild, &event, 1, NullWindow);
             }
-            FreeResource(pChild->drawable.id, X11_RESTYPE_WINDOW);
+            FreeResource(pChild->drawable.id, RT_WINDOW);
             pSib = pChild->nextSib;
             pChild->viewable = FALSE;
             if (pChild->realized) {
@@ -1113,13 +1113,13 @@ DestroySubwindows(WindowPtr pWin, ClientPtr client)
      */
     UnmapSubwindows(pWin);
     while (pWin->lastChild) {
-        int rc = XaceHookResourceAccess(client,
-                          pWin->lastChild->drawable.id, X11_RESTYPE_WINDOW,
-                          pWin->lastChild, X11_RESTYPE_NONE, NULL, DixDestroyAccess);
+        int rc = XaceHook(XACE_RESOURCE_ACCESS, client,
+                          pWin->lastChild->drawable.id, RT_WINDOW,
+                          pWin->lastChild, RT_NONE, NULL, DixDestroyAccess);
 
         if (rc != Success)
             return rc;
-        FreeResource(pWin->lastChild->drawable.id, X11_RESTYPE_NONE);
+        FreeResource(pWin->lastChild->drawable.id, RT_NONE);
     }
     return Success;
 }
@@ -1216,7 +1216,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
             }
             else {
                 rc = dixLookupResourceByType((void **) &pPixmap, pixID,
-                                             X11_RESTYPE_PIXMAP, client, DixReadAccess);
+                                             RT_PIXMAP, client, DixReadAccess);
                 if (rc == Success) {
                     if ((pPixmap->drawable.depth != pWin->drawable.depth) ||
                         (pPixmap->drawable.pScreen != pScreen)) {
@@ -1269,7 +1269,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                     pixID = pWin->parent->border.pixmap->drawable.id;
                 }
             }
-            rc = dixLookupResourceByType((void **) &pPixmap, pixID, X11_RESTYPE_PIXMAP,
+            rc = dixLookupResourceByType((void **) &pPixmap, pixID, RT_PIXMAP,
                                          client, DixReadAccess);
             if (rc == Success) {
                 if ((pPixmap->drawable.depth != pWin->drawable.depth) ||
@@ -1395,8 +1395,8 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                 goto PatchUp;
             }
             if (val == xTrue) {
-                rc = XaceHookResourceAccess(client, pWin->drawable.id,
-                              X11_RESTYPE_WINDOW, pWin, X11_RESTYPE_NONE, NULL, DixGrabAccess);
+                rc = XaceHook(XACE_RESOURCE_ACCESS, client, pWin->drawable.id,
+                              RT_WINDOW, pWin, RT_NONE, NULL, DixGrabAccess);
                 if (rc != Success) {
                     error = rc;
                     client->errorValue = pWin->drawable.id;
@@ -1421,7 +1421,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                 error = BadMatch;
                 goto PatchUp;
             }
-            rc = dixLookupResourceByType((void **) &pCmap, cmap, X11_RESTYPE_COLORMAP,
+            rc = dixLookupResourceByType((void **) &pCmap, cmap, RT_COLORMAP,
                                          client, DixUseAccess);
             if (rc != Success) {
                 error = rc;
@@ -1492,7 +1492,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
             }
             else {
                 rc = dixLookupResourceByType((void **) &pCursor, cursorID,
-                                             X11_RESTYPE_CURSOR, client, DixUseAccess);
+                                             RT_CURSOR, client, DixUseAccess);
                 if (rc != Success) {
                     error = rc;
                     client->errorValue = cursorID;
@@ -2662,8 +2662,8 @@ MapWindow(WindowPtr pWin, ClientPtr client)
         return Success;
 
     /* general check for permission to map window */
-    if (XaceHookResourceAccess(client, pWin->drawable.id, X11_RESTYPE_WINDOW,
-                 pWin, X11_RESTYPE_NONE, NULL, DixShowAccess) != Success)
+    if (XaceHook(XACE_RESOURCE_ACCESS, client, pWin->drawable.id, RT_WINDOW,
+                 pWin, RT_NONE, NULL, DixShowAccess) != Success)
         return Success;
 
     pScreen = pWin->drawable.pScreen;
@@ -3111,7 +3111,7 @@ dixSaveScreens(ClientPtr client, int on, int mode)
     }
 
     for (i = 0; i < screenInfo.numScreens; i++) {
-        rc = XaceHookScreensaverAccess(client, screenInfo.screens[i],
+        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, screenInfo.screens[i],
                       DixShowAccess | DixHideAccess);
         if (rc != Success)
             return rc;
@@ -3135,7 +3135,7 @@ dixSaveScreens(ClientPtr client, int on, int mode)
             }
             else if (HasSaverWindow(pScreen)) {
                 pScreen->screensaver.pWindow = NullWindow;
-                FreeResource(pScreen->screensaver.wid, X11_RESTYPE_NONE);
+                FreeResource(pScreen->screensaver.wid, RT_NONE);
             }
             break;
         case SCREEN_SAVER_CYCLE:
@@ -3263,12 +3263,16 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
                                  &cursor, serverClient, (XID) 0);
         if (cursor) {
             cursorID = FakeClientID(0);
-            if (AddResource(cursorID, X11_RESTYPE_CURSOR, (void *) cursor)) {
+            if (AddResource(cursorID, RT_CURSOR, (void *) cursor)) {
                 attributes[attri] = cursorID;
                 mask |= CWCursor;
             }
             else
                 cursor = 0;
+        }
+        else {
+            free(srcbits);
+            free(mskbits);
         }
     }
 
@@ -3282,12 +3286,12 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
                      wVisual(pScreen->root), &result);
 
     if (cursor)
-        FreeResource(cursorID, X11_RESTYPE_NONE);
+        FreeResource(cursorID, RT_NONE);
 
     if (!pWin)
         return FALSE;
 
-    if (!AddResource(pWin->drawable.id, X11_RESTYPE_WINDOW,
+    if (!AddResource(pWin->drawable.id, RT_WINDOW,
                      (void *) pScreen->screensaver.pWindow))
         return FALSE;
 
@@ -3640,7 +3644,7 @@ SetRootClip(ScreenPtr pScreen, int enable)
     if (!pWin)
         return;
     WasViewable = (Bool) (pWin->viewable);
-    if (WasViewable && mode != ROOT_CLIP_INPUT_ONLY) {
+    if (WasViewable) {
         for (pChild = pWin->firstChild; pChild; pChild = pChild->nextSib) {
             (void) (*pScreen->MarkOverlappedWindows) (pChild,
                                                       pChild, &pLayerWin);
@@ -3694,7 +3698,7 @@ SetRootClip(ScreenPtr pScreen, int enable)
 
     ResizeChildrenWinSize(pWin, 0, 0, 0, 0);
 
-    if (WasViewable && mode != ROOT_CLIP_INPUT_ONLY) {
+    if (WasViewable) {
         if (pWin->firstChild) {
             anyMarked |= (*pScreen->MarkOverlappedWindows) (pWin->firstChild,
                                                             pWin->firstChild,

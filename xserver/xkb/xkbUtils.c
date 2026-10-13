@@ -63,8 +63,11 @@ DEALINGS IN THE SOFTWARE.
 #include "misc.h"
 #include "inputstr.h"
 #include "eventstr.h"
+
+#define	XKBSRV_NEED_FILE_FUNCS
 #include <xkbsrv.h>
 #include "xkbgeom.h"
+#include "xkb.h"
 
 /***====================================================================***/
 
@@ -211,7 +214,7 @@ XkbMaskForVMask(XkbDescPtr xkb, unsigned vmask)
 
 /***====================================================================***/
 
-static void
+void
 XkbUpdateKeyTypesFromCore(DeviceIntPtr pXDev,
                           KeySymsPtr pCore,
                           KeyCode first, CARD8 num, XkbChangesPtr changes)
@@ -521,7 +524,7 @@ void
 XkbSetRepeatKeys(DeviceIntPtr pXDev, int key, int onoff)
 {
     if (pXDev && pXDev->key && pXDev->key->xkbInfo) {
-        xkbControlsNotify cn = { 0 };
+        xkbControlsNotify cn;
         XkbControlsPtr ctrls = pXDev->key->xkbInfo->desc->ctrls;
         XkbControlsRec old;
 
@@ -780,7 +783,7 @@ XkbEnableDisableControls(XkbSrvInfoPtr xkbi,
     if (old == ctrls->enabled_ctrls)
         return FALSE;
     if (cause != NULL) {
-        xkbControlsNotify cn = { 0 };
+        xkbControlsNotify cn;
 
         cn.numGroups = ctrls->num_groups;
         cn.changedControls = XkbControlsEnabledMask;
@@ -1494,8 +1497,8 @@ _XkbCopyGeom(XkbDescPtr src, XkbDescPtr dst)
                     strcpy(dprop->value, sprop->value);
                 }
                 else {
-                    dprop->name = Xstrdup(sprop->name);
-                    dprop->value = Xstrdup(sprop->value);
+                    dprop->name = xstrdup(sprop->name);
+                    dprop->value = xstrdup(sprop->value);
                 }
             }
 
@@ -1548,7 +1551,7 @@ _XkbCopyGeom(XkbDescPtr src, XkbDescPtr dst)
                     strcpy(dcolor->spec, scolor->spec);
                 }
                 else {
-                    dcolor->spec = Xstrdup(scolor->spec);
+                    dcolor->spec = xstrdup(scolor->spec);
                 }
                 dcolor->pixel = scolor->pixel;
             }

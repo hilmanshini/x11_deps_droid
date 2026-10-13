@@ -87,10 +87,16 @@ SOFTWARE.
 #if defined(TCPCONN)
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#ifdef apollo
+#ifndef NO_TCP_H
+#include <netinet/tcp.h>
+#endif
+#else
 #ifdef CSRG_BASED
 #include <sys/param.h>
 #endif
 #include <netinet/tcp.h>
+#endif
 #include <arpa/inet.h>
 #endif
 
@@ -102,6 +108,8 @@ SOFTWARE.
 #include "opaque.h"
 #include "dixstruct.h"
 #include "xace.h"
+
+#define Pid_t pid_t
 
 #ifdef HAVE_GETPEERUCRED
 #include <ucred.h>
@@ -121,12 +129,12 @@ struct ospoll   *server_poll;
 Bool NewOutputPending;          /* not yet attempted to write some new output */
 Bool NoListenAll;               /* Don't establish any listening sockets */
 
+static Bool RunFromSmartParent; /* send SIGUSR1 to parent process */
+Bool RunFromSigStopParent;      /* send SIGSTOP to our own process; Upstart (or
+                                   equivalent) will send SIGCONT back. */
 static char dynamic_display[7]; /* display name */
 Bool PartialNetwork;            /* continue even if unable to bind all addrs */
-#if !defined(WIN32)
-static pid_t ParentProcess;
-static Bool RunFromSmartParent; /* send SIGUSR1 to parent process */
-#endif
+static Pid_t ParentProcess;
 
 int GrabInProgress = 0;
 
@@ -203,6 +211,8 @@ NotifyParentProcess(void)
             kill(ParentProcess, SIGUSR1);
         }
     }
+    if (RunFromSigStopParent)
+        raise(SIGSTOP);
 #ifdef HAVE_SYSTEMD_DAEMON
     /* If we have been started as a systemd service, tell systemd that
        we are ready. Otherwise sd_notify() won't do anything. */
@@ -386,20 +396,11 @@ AuthAudit(ClientPtr client, Bool letin,
             strlcpy(addr, "local host", sizeof(addr));
             break;
 #if defined(TCPCONN)
-        case AF_INET:{
-#if defined(HAVE_INET_NTOP)
-            char ipaddr[INET_ADDRSTRLEN];
-
-            inet_ntop(AF_INET, &((struct sockaddr_in *) saddr)->sin_addr,
-                      ipaddr, sizeof(ipaddr));
-#else
-            const char *ipaddr =
-                inet_ntoa(((struct sockaddr_in *) saddr)->sin_addr);
-#endif
-            snprintf(addr, sizeof(addr), "IP %s", ipaddr);
-        }
+        case AF_INET:
+            snprintf(addr, sizeof(addr), "IP %s",
+                     inet_ntoa(((struct sockaddr_in *) saddr)->sin_addr));
             break;
-#if defined(IPv6)
+#if defined(IPv6) && defined(AF_INET6)
         case AF_INET6:{
             char ipaddr[INET6_ADDRSTRLEN];
 
@@ -581,7 +582,7 @@ ClientAuthorized(ClientPtr client,
     XdmcpOpenDisplay(priv->fd);
 #endif                          /* XDMCP */
 
-    XaceHookAuthAvail(client, auth_id);
+    XaceHook(XACE_AUTH_AVAIL, client, auth_id);
 
     /* At this point, if the client is authorized to change the access control
      * list, we should getpeername() information, and add the client to
@@ -711,7 +712,7 @@ ConnMaxNotify(int fd, int events, void *data)
     /* try to read the byte-order of the connection */
     (void) _XSERVTransRead(trans_conn, &order, 1);
     if (order == 'l' || order == 'B' || order == 'r' || order == 'R') {
-        xConnSetupPrefix csp = { 0 };
+        xConnSetupPrefix csp;
         char pad[3] = { 0, 0, 0 };
         int whichbyte = 1;
         struct iovec iov[3];
@@ -868,7 +869,7 @@ OnlyListenToOneClient(ClientPtr client)
 {
     int rc;
 
-    rc = XaceHookServerAccess(client, DixGrabAccess);
+    rc = XaceHook(XACE_SERVER_ACCESS, client, DixGrabAccess);
     if (rc != Success)
         return rc;
 
@@ -882,7 +883,7 @@ OnlyListenToOneClient(ClientPtr client)
 
 /****************
  * ListenToAllClients:
- *    Undoes OnlyListenToOneClient()
+ *    Undoes OnlyListentToOneClient()
  ****************/
 
 void
@@ -1018,7 +1019,7 @@ ListenOnOpenFD(int fd, int noxauth)
         }
     }
 
-    if (!display_env || display_env[0] != '/') {
+    if (!display_env) {
         /* Just some default so things don't break and die. */
         snprintf(port, sizeof(port), ":%d", atoi(display));
     }
@@ -1037,9 +1038,9 @@ ListenOnOpenFD(int fd, int noxauth)
 
     /* Allocate space to store it */
     ListenTransFds =
-        XNFreallocarray(ListenTransFds, ListenTransCount + 1, sizeof(int));
+        xnfreallocarray(ListenTransFds, ListenTransCount + 1, sizeof(int));
     ListenTransConns =
-        XNFreallocarray(ListenTransConns, ListenTransCount + 1,
+        xnfreallocarray(ListenTransConns, ListenTransCount + 1,
                         sizeof(XtransConnInfo));
 
     /* Store it */

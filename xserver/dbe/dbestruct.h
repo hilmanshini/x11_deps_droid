@@ -35,6 +35,7 @@
 
 /* INCLUDES */
 
+#define NEED_DBE_PROTOCOL
 #include <X11/extensions/dbeproto.h>
 #include "windowstr.h"
 #include "privates.h"

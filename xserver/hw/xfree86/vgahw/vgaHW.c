@@ -1,3 +1,4 @@
+
 /*
  *
  * Copyright 1991-1999 by The XFree86 Project, Inc.
@@ -7,6 +8,9 @@
  *   Copyright 1990,91 by Thomas Roell, Dinkelscherben, Germany.
  *
  */
+
+#define _NEED_SYSI86
+
 #ifdef HAVE_XORG_CONFIG_H
 #include <xorg-config.h>
 #endif
@@ -356,7 +360,7 @@ vgaHWSetStdFuncs(vgaHWPtr hwp)
 /*
  * MMIO versions of the register access functions.  These require
  * hwp->MemBase to be set in such a way that when the standard VGA port
- * address is added the correct memory address results.
+ * adderss is added the correct memory address results.
  */
 
 #define minb(p) MMIO_IN8(hwp->MMIOBase, (hwp->MMIOOffset + (p)))
@@ -600,6 +604,12 @@ vgaHWProtect(ScrnInfoPtr pScrn, Bool on)
     }
 }
 
+vgaHWProtectProc *
+vgaHWProtectWeak(void)
+{
+    return vgaHWProtect;
+}
+
 /*
  * vgaHWBlankScreen -- blank the screen.
  */
@@ -622,6 +632,12 @@ vgaHWBlankScreen(ScrnInfoPtr pScrn, Bool on)
     vgaHWSeqReset(hwp, TRUE);
     hwp->writeSeq(hwp, 0x01, scrn);     /* change mode */
     vgaHWSeqReset(hwp, FALSE);
+}
+
+vgaHWBlankScreenProc *
+vgaHWBlankScreenWeak(void)
+{
+    return vgaHWBlankScreen;
 }
 
 /*
@@ -825,7 +841,7 @@ vgaHWRestoreFonts(ScrnInfoPtr scrninfp, vgaRegPtr restore)
 #endif                          /* SAVE_TEXT || SAVE_FONT1 || SAVE_FONT2 */
 }
 
-static void
+void
 vgaHWRestoreMode(ScrnInfoPtr scrninfp, vgaRegPtr restore)
 {
     vgaHWPtr hwp = VGAHWPTR(scrninfp);
@@ -856,7 +872,7 @@ vgaHWRestoreMode(ScrnInfoPtr scrninfp, vgaRegPtr restore)
     hwp->disablePalette(hwp);
 }
 
-static void
+void
 vgaHWRestoreColormap(ScrnInfoPtr scrninfp, vgaRegPtr restore)
 {
     vgaHWPtr hwp = VGAHWPTR(scrninfp);
@@ -996,7 +1012,7 @@ vgaHWSaveFonts(ScrnInfoPtr scrninfp, vgaRegPtr save)
 #endif                          /* SAVE_TEXT || SAVE_FONT1 || SAVE_FONT2 */
 }
 
-static void
+void
 vgaHWSaveMode(ScrnInfoPtr scrninfp, vgaRegPtr save)
 {
     vgaHWPtr hwp = VGAHWPTR(scrninfp);
@@ -1031,7 +1047,7 @@ vgaHWSaveMode(ScrnInfoPtr scrninfp, vgaRegPtr save)
     }
 }
 
-static void
+void
 vgaHWSaveColormap(ScrnInfoPtr scrninfp, vgaRegPtr save)
 {
     vgaHWPtr hwp = VGAHWPTR(scrninfp);
@@ -1298,10 +1314,8 @@ vgaHWInit(ScrnInfoPtr scrninfp, DisplayModePtr mode)
     if (depth == 1) {
         /* Initialise the Mono map according to which bit-plane gets used */
 
-        Bool flipPixels = xf86GetFlipPixels();
-
         for (i = 0; i < 16; i++)
-            if (((i & (1 << BIT_PLANE)) != 0) != flipPixels)
+            if ((i & (1 << BIT_PLANE)) != 0)
                 regp->Attribute[i] = WHITE_VALUE;
             else
                 regp->Attribute[i] = BLACK_VALUE;
@@ -1512,6 +1526,75 @@ vgaHWAllocDefaultRegs(vgaRegPtr regp)
 }
 
 Bool
+vgaHWSetRegCounts(ScrnInfoPtr scrp, int numCRTC, int numSequencer,
+                  int numGraphics, int numAttribute)
+{
+#define VGAHWMINNUM(regtype) \
+	((newMode.num##regtype < regp->num##regtype) ? \
+	 (newMode.num##regtype) : (regp->num##regtype))
+#define VGAHWCOPYREGSET(regtype) \
+	memcpy (newMode.regtype, regp->regtype, VGAHWMINNUM(regtype))
+
+    vgaRegRec newMode, newSaved;
+    vgaRegPtr regp;
+
+    regp = &VGAHWPTR(scrp)->ModeReg;
+    memcpy(&newMode, regp, sizeof(vgaRegRec));
+
+    /* allocate space for new registers */
+
+    regp = &newMode;
+    regp->numCRTC = numCRTC;
+    regp->numSequencer = numSequencer;
+    regp->numGraphics = numGraphics;
+    regp->numAttribute = numAttribute;
+    if (!vgaHWAllocRegs(regp))
+        return FALSE;
+
+    regp = &VGAHWPTR(scrp)->SavedReg;
+    memcpy(&newSaved, regp, sizeof(vgaRegRec));
+
+    regp = &newSaved;
+    regp->numCRTC = numCRTC;
+    regp->numSequencer = numSequencer;
+    regp->numGraphics = numGraphics;
+    regp->numAttribute = numAttribute;
+    if (!vgaHWAllocRegs(regp)) {
+        vgaHWFreeRegs(&newMode);
+        return FALSE;
+    }
+
+    /* allocations succeeded, copy register data into new space */
+
+    regp = &VGAHWPTR(scrp)->ModeReg;
+    VGAHWCOPYREGSET(CRTC);
+    VGAHWCOPYREGSET(Sequencer);
+    VGAHWCOPYREGSET(Graphics);
+    VGAHWCOPYREGSET(Attribute);
+
+    regp = &VGAHWPTR(scrp)->SavedReg;
+    VGAHWCOPYREGSET(CRTC);
+    VGAHWCOPYREGSET(Sequencer);
+    VGAHWCOPYREGSET(Graphics);
+    VGAHWCOPYREGSET(Attribute);
+
+    /* free old register arrays */
+
+    regp = &VGAHWPTR(scrp)->ModeReg;
+    vgaHWFreeRegs(regp);
+    memcpy(regp, &newMode, sizeof(vgaRegRec));
+
+    regp = &VGAHWPTR(scrp)->SavedReg;
+    vgaHWFreeRegs(regp);
+    memcpy(regp, &newSaved, sizeof(vgaRegRec));
+
+    return TRUE;
+
+#undef VGAHWMINNUM
+#undef VGAHWCOPYREGSET
+}
+
+Bool
 vgaHWCopyReg(vgaRegPtr dst, vgaRegPtr src)
 {
     vgaHWFreeRegs(dst);
@@ -1546,7 +1629,7 @@ vgaHWGetHWRec(ScrnInfoPtr scrp)
      */
     if (VGAHWPTR(scrp))
         return TRUE;
-    hwp = VGAHWPTRLVAL(scrp) = XNFcallocarray(1, sizeof(vgaHWRec));
+    hwp = VGAHWPTRLVAL(scrp) = xnfcalloc(sizeof(vgaHWRec), 1);
     regp = &VGAHWPTR(scrp)->ModeReg;
 
     if ((!vgaHWAllocDefaultRegs(&VGAHWPTR(scrp)->SavedReg)) ||
@@ -1728,6 +1811,12 @@ vgaHWEnable(vgaHWPtr hwp)
     hwp->writeEnable(hwp, hwp->readEnable(hwp) | 0x01);
 }
 
+void
+vgaHWDisable(vgaHWPtr hwp)
+{
+    hwp->writeEnable(hwp, hwp->readEnable(hwp) & ~0x01);
+}
+
 static void
 vgaHWLoadPalette(ScrnInfoPtr pScrn, int numColors, int *indices, LOCO * colors,
                  VisualPtr pVisual)
@@ -1834,7 +1923,7 @@ vgaHWddc1SetSpeed(ScrnInfoPtr pScrn, xf86ddcSpeed speed)
 
         if (hwp->ddc != NULL)
             break;
-        hwp->ddc = XNFcallocarray(1, sizeof(struct _vgaDdcSave));
+        hwp->ddc = xnfcalloc(sizeof(struct _vgaDdcSave), 1);
         save = (struct _vgaDdcSave *) hwp->ddc;
         /* Lightpen register disable - allow access to cr10 & 11; just in case */
         save->cr03 = hwp->readCrtc(hwp, 0x03);
@@ -1888,6 +1977,12 @@ DDC1SetSpeedProc
 vgaHWddc1SetSpeedWeak(void)
 {
     return vgaHWddc1SetSpeed;
+}
+
+SaveScreenProcPtr
+vgaHWSaveScreenWeak(void)
+{
+    return vgaHWSaveScreen;
 }
 
 /*

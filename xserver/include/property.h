@@ -61,7 +61,7 @@ extern CallbackListPtr PropertyStateCallback;
 
 extern _X_EXPORT int dixLookupProperty(PropertyPtr * /*result */ ,
                                        WindowPtr /*pWin */ ,
-                                       Atom /*property */ ,
+                                       Atom /*proprty */ ,
                                        ClientPtr /*pClient */ ,
                                        Mask /*access_mode */ );
 

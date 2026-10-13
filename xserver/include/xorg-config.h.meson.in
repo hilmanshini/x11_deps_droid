@@ -1,5 +1,5 @@
 /* xorg-config.h.in: not at all generated.                      -*- c -*-
- *
+ * 
  * This file differs from xorg-server.h.in in that -server is installed
  * with the rest of the SDK for external drivers/modules to use, whereas
  * -config is for internal use only (i.e. building the DDX).
@@ -51,11 +51,11 @@
 /* Default logfile prefix */
 #mesondefine DEFAULT_LOGPREFIX
 
-/* Default XDG_STATE dir under HOME */
-#mesondefine DEFAULT_XDG_STATE_HOME
+/* Default XDG_DATA dir under HOME */
+#mesondefine DEFAULT_XDG_DATA_HOME
 
-/* Default log dir under XDG_STATE_HOME */
-#mesondefine DEFAULT_XDG_STATE_HOME_LOGDIR
+/* Default log dir under XDG_DATA_HOME */
+#mesondefine DEFAULT_XDG_DATA_HOME_LOGDIR
 
 /* Building DRI-capable DDX. */
 #mesondefine XF86DRI
@@ -130,9 +130,6 @@
 /* Use libpciaccess */
 #mesondefine XSERVER_LIBPCIACCESS
 
-/* Have pci_device_is_boot_display in libpciaccess */
-#mesondefine HAVE_PCI_DEVICE_IS_BOOT_DISPLAY
-
 /* Have setugid */
 #mesondefine HAVE_ISSETUGID
 
@@ -147,8 +144,5 @@
 
 /* Fallback input driver if the assigned driver fails */
 #mesondefine FALLBACK_INPUT_DRIVER
-
-/* Define if building the modesetting driver */
-#mesondefine HAVE_MODESETTING_DRIVER
 
 #endif /* _XORG_CONFIG_H_ */

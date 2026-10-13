@@ -39,6 +39,7 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "exglobals.h"
 #include "windowstr.h"
 #include <xkbsrv.h>
+#include "xkb.h"
 
 /***====================================================================***/
 
@@ -481,7 +482,7 @@ XkbHandleBell(BOOL force,
               void *pCtrl,
               CARD8 class, Atom name, WindowPtr pWin, ClientPtr pClient)
 {
-    xkbBellNotify bn = { 0 };
+    xkbBellNotify bn;
     int initialized;
     XkbSrvInfoPtr xkbi;
     XkbInterestPtr interest;

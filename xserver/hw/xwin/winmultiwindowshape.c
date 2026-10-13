@@ -46,7 +46,7 @@ winSetShapeMultiWindow(WindowPtr pWin, int kind)
 
     winScreenPriv(pScreen);
 
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
     ErrorF("winSetShapeMultiWindow - pWin: %p kind: %i\n", pWin, kind);
 #endif
 
@@ -89,7 +89,7 @@ winReshapeMultiWindow(WindowPtr pWin)
 
     winWindowPriv(pWin);
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winReshape ()\n");
 #endif
 

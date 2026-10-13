@@ -25,6 +25,7 @@
 #define XF86_PLATFORM_BUS_H
 
 #include "hotplug.h"
+#include "xf86MatchDrivers.h"
 
 struct xf86_platform_device {
     struct OdevAttributes *attribs;
@@ -43,8 +44,6 @@ int xf86platformProbe(void);
 int xf86platformProbeDev(DriverPtr drvp);
 int xf86platformAddGPUDevices(DriverPtr drvp);
 void xf86MergeOutputClassOptions(int entityIndex, void **options);
-void xf86PlatformScanPciDev(void);
-const char *xf86PlatformFindHotplugDriver(int dev_index);
 
 extern int xf86_num_platform_devices;
 extern struct xf86_platform_device *xf86_platform_devices;
@@ -57,7 +56,7 @@ extern Bool
 xf86_get_platform_device_unowned(int index);
 
 extern int
-xf86platformAddDevice(const char *driver_name, int index);
+xf86platformAddDevice(int index);
 extern void
 xf86platformRemoveDevice(int index);
 
@@ -154,6 +153,9 @@ _xf86_get_platform_device_int_attrib(struct xf86_platform_device *device, int at
 
 extern _X_EXPORT Bool
 xf86PlatformDeviceCheckBusID(struct xf86_platform_device *device, const char *busid);
+
+extern _X_EXPORT void
+xf86PlatformMatchDriver(XF86MatchedDrivers *);
 
 extern void xf86platformVTProbe(void);
 extern void xf86platformPrimary(void);

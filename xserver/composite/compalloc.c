@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates.
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -218,7 +218,7 @@ compRedirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
     }
 
     if (!compCheckRedirect(pWin)) {
-        FreeResource(ccw->id, X11_RESTYPE_NONE);
+        FreeResource(ccw->id, RT_NONE);
         status = BadAlloc;
     }
 
@@ -248,7 +248,7 @@ compRestoreWindow(WindowPtr pWin, PixmapPtr pPixmap)
             val.val = IncludeInferiors;
             ChangeGC(NullClient, pGC, GCSubwindowMode, &val);
             ValidateGC(&pWin->drawable, pGC);
-            (void) (*pGC->ops->CopyArea) (&pPixmap->drawable,
+            (*pGC->ops->CopyArea) (&pPixmap->drawable,
                                    &pWin->drawable, pGC, x, y, w, h, 0, 0);
             FreeScratchGC(pGC);
         }
@@ -330,7 +330,7 @@ compUnredirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
 
     for (ccw = cw->clients; ccw; ccw = ccw->next)
         if (ccw->update == update && CLIENT_ID(ccw->id) == pClient->index) {
-            FreeResource(ccw->id, X11_RESTYPE_NONE);
+            FreeResource(ccw->id, RT_NONE);
             return Success;
         }
     return BadValue;
@@ -478,7 +478,7 @@ compUnredirectSubwindows(ClientPtr pClient, WindowPtr pWin, int update)
         return BadValue;
     for (ccw = csw->clients; ccw; ccw = ccw->next)
         if (ccw->update == update && CLIENT_ID(ccw->id) == pClient->index) {
-            FreeResource(ccw->id, X11_RESTYPE_NONE);
+            FreeResource(ccw->id, RT_NONE);
             return Success;
         }
     return BadValue;
@@ -528,15 +528,6 @@ compUnredirectOneSubwindow(WindowPtr pParent, WindowPtr pWin)
     return Success;
 }
 
-static unsigned
-compGetBackgroundState(WindowPtr pWin)
-{
-    while (pWin->backgroundState == ParentRelative)
-        pWin = pWin->parent;
-
-    return pWin->backgroundState;
-}
-
 static PixmapPtr
 compNewPixmap(WindowPtr pWin, int x, int y, int w, int h)
 {
@@ -562,16 +553,15 @@ compNewPixmap(WindowPtr pWin, int x, int y, int w, int h)
             val.val = IncludeInferiors;
             ChangeGC(NullClient, pGC, GCSubwindowMode, &val);
             ValidateGC(&pPixmap->drawable, pGC);
-            (void) (*pGC->ops->CopyArea) (&pParent->drawable,
-                                          &pPixmap->drawable,
-                                          pGC,
-                                          x - pParent->drawable.x,
-                                          y - pParent->drawable.y,
-                                          w, h, 0, 0);
+            (*pGC->ops->CopyArea) (&pParent->drawable,
+                                   &pPixmap->drawable,
+                                   pGC,
+                                   x - pParent->drawable.x,
+                                   y - pParent->drawable.y, w, h, 0, 0);
             FreeScratchGC(pGC);
         }
     }
-    else if (compGetBackgroundState(pWin) == None) {
+    else {
         PictFormatPtr pSrcFormat = PictureWindowFormat(pParent);
         PictFormatPtr pDstFormat = PictureWindowFormat(pWin);
         XID inferiors = IncludeInferiors;

@@ -272,12 +272,7 @@ glxClientCallback(CallbackListPtr *list, void *closure, void *data)
 
 /************************************************************************/
 
-static __GLXprovider *__glXProviderStack =
-#ifdef BUILD_GLX_DRI
-                                           &__glXDRISWRastProvider;
-#else
-                                           NULL;
-#endif
+static __GLXprovider *__glXProviderStack = &__glXDRISWRastProvider;
 
 void
 GlxPushProvider(__GLXprovider * provider)
@@ -314,7 +309,7 @@ GetGLXDrawableBytes(void *value, XID id, ResourceSizePtr size)
     size->refCnt = 1;
 
     if (draw->type == GLX_DRAWABLE_PIXMAP) {
-        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(X11_RESTYPE_PIXMAP);
+        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP);
         ResourceSizeRec pixmapSize = { 0, };
         pixmapSizeFunc((PixmapPtr)draw->pDraw, draw->pDraw->id, &pixmapSize);
         size->pixmapRefSize += pixmapSize.pixmapRefSize;

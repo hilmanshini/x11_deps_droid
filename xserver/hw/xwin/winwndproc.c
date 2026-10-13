@@ -69,7 +69,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     int iScanCode;
     int i;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebugWin32Message("winWindowProc", hwnd, message, wParam, lParam);
 #endif
 
@@ -82,7 +82,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     /* Only retrieve new privates pointers if window handle is null or changed */
     if ((s_pScreenPriv == NULL || hwnd != s_hwndLastPrivates)
         && (s_pScreenPriv = GetProp(hwnd, WIN_SCR_PROP)) != NULL) {
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - Setting privates handle\n");
 #endif
         s_pScreenInfo = s_pScreenPriv->pScreenInfo;
@@ -103,7 +103,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                                     s_pScreenPriv);
 
     case WM_CREATE:
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_CREATE\n");
 #endif
 
@@ -299,7 +299,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         RECT rcWindow;
         int iWidth, iHeight;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_SIZE\n");
 #endif
 
@@ -437,7 +437,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         SCROLLINFO si;
         int iVertPos;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_VSCROLL\n");
 #endif
 
@@ -516,7 +516,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         SCROLLINFO si;
         int iHorzPos;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_HSCROLL\n");
 #endif
 
@@ -595,7 +595,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         int iCaptionHeight;
         int iBorderHeight, iBorderWidth;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_GETMINMAXINFO - pScreenInfo: %p\n",
                  s_pScreenInfo);
 #endif
@@ -634,7 +634,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_ERASEBKGND:
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_ERASEBKGND\n");
 #endif
         /*
@@ -645,7 +645,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         return TRUE;
 
     case WM_PAINT:
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_PAINT\n");
 #endif
         /* Only paint if we have privates and the server is enabled */
@@ -667,7 +667,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_PALETTECHANGED:
     {
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_PALETTECHANGED\n");
 #endif
         /*
@@ -711,11 +711,13 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         /* Are we tracking yet? */
         if (!s_fTracking) {
-            TRACKMOUSEEVENT tme = (TRACKMOUSEEVENT) {
-                tme.cbSize = sizeof(tme),
-                tme.dwFlags = TME_LEAVE,
-                tme.hwndTrack = hwnd
-            };
+            TRACKMOUSEEVENT tme;
+
+            /* Setup data structure */
+            ZeroMemory(&tme, sizeof(tme));
+            tme.cbSize = sizeof(tme);
+            tme.dwFlags = TME_LEAVE;
+            tme.hwndTrack = hwnd;
 
             /* Call the tracking function */
             if (!TrackMouseEvent(&tme))
@@ -904,7 +906,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_MOUSEWHEEL:
         if (s_pScreenPriv == NULL || s_pScreenInfo->fIgnoreInput)
             break;
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_MOUSEWHEEL\n");
 #endif
         /* Button4 = WheelUp */
@@ -915,7 +917,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_MOUSEHWHEEL:
         if (s_pScreenPriv == NULL || s_pScreenInfo->fIgnoreInput)
             break;
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_MOUSEHWHEEL\n");
 #endif
         /* Button7 = TiltRight */
@@ -1071,7 +1073,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             return 0;
         }
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winWindowProc - WM_ACTIVATE\n");
 #endif
 
@@ -1097,7 +1099,7 @@ winWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (s_pScreenPriv == NULL || s_pScreenInfo->fIgnoreInput)
             break;
 
-#if ENABLE_DEBUG || TRUE
+#if CYGDEBUG || TRUE
         winDebug("winWindowProc - WM_ACTIVATEAPP\n");
 #endif
 

@@ -61,7 +61,7 @@ winCreateBoundingWindowFullScreen(ScreenPtr pScreen)
     WNDCLASSEX wc;
     char szTitle[256];
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winCreateBoundingWindowFullScreen\n");
 #endif
 
@@ -210,7 +210,7 @@ winCreateBoundingWindowWindowed(ScreenPtr pScreen)
     /* Did the user specify a height and width? */
     if (pScreenInfo->fUserGaveHeightAndWidth) {
         /* User gave a desired height and width, try to accommodate */
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winCreateBoundingWindowWindowed - User gave height "
                  "and width\n");
 #endif
@@ -220,14 +220,14 @@ winCreateBoundingWindowWindowed(ScreenPtr pScreen)
             && !pScreenInfo->fRootless
             && !pScreenInfo->fMultiWindow
             ) {
-#if ENABLE_DEBUG
+#if CYGDEBUG
             winDebug
                 ("winCreateBoundingWindowWindowed - Window has decoration\n");
 #endif
 
             /* Are we resizable */
             if (pScreenInfo->iResizeMode != resizeNotAllowed) {
-#if ENABLE_DEBUG
+#if CYGDEBUG
                 winDebug
                     ("winCreateBoundingWindowWindowed - Window is resizable\n");
 #endif
@@ -237,7 +237,7 @@ winCreateBoundingWindowWindowed(ScreenPtr pScreen)
                     + GetSystemMetrics(SM_CYCAPTION);
             }
             else {
-#if ENABLE_DEBUG
+#if CYGDEBUG
                 winDebug
                     ("winCreateBoundingWindowWindowed - Window is not resizable\n");
 #endif
@@ -250,7 +250,7 @@ winCreateBoundingWindowWindowed(ScreenPtr pScreen)
     }
     else {
         /* By default, we are creating a window that is as large as possible */
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winCreateBoundingWindowWindowed - User did not give "
                  "height and width\n");
 #endif
@@ -273,7 +273,7 @@ winCreateBoundingWindowWindowed(ScreenPtr pScreen)
         if (iHeight >= (rcWorkArea.bottom - rcWorkArea.top))
             iHeight = rcWorkArea.bottom - rcWorkArea.top;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winCreateBoundingWindowWindowed - Adjusted width: %d "
                  "height: %d\n", iWidth, iHeight);
 #endif
@@ -307,7 +307,7 @@ winCreateBoundingWindowWindowed(ScreenPtr pScreen)
         return FALSE;
     }
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winCreateBoundingWindowWindowed - CreateWindowEx () returned\n");
 #endif
 
@@ -360,7 +360,7 @@ winCreateBoundingWindowWindowed(ScreenPtr pScreen)
      * size of the window area minus the space the caption, borders, and
      * scrollbars (if any) occupy, and the range is the size of the
      * underlying X visual.  Notice that, contrary to what some of the
-     * MSDN Library articles lead you to believe, the windows
+     * MSDN Library arcticles lead you to believe, the windows
      * ``client area'' size does not include the scrollbars.  In other words,
      * the whole client area size that is reported to you is drawable by
      * you; you do not have to subtract the size of the scrollbars from
@@ -512,12 +512,14 @@ winGetWorkArea(RECT * prcWorkArea, winScreenInfo * pScreenInfo)
 static Bool
 winTaskbarOnScreenEdge(unsigned int uEdge, winScreenInfo * pScreenInfo)
 {
-    APPBARDATA abd = (APPBARDATA) {
-        .cbSize = sizeof(APPBARDATA),
-        .uEdge = uEdge
-    };
+    APPBARDATA abd;
+    HWND hwndAutoHide;
 
-    HWND hwndAutoHide = (HWND) SHAppBarMessage(ABM_GETAUTOHIDEBAR, &abd);
+    ZeroMemory(&abd, sizeof(abd));
+    abd.cbSize = sizeof(abd);
+    abd.uEdge = uEdge;
+
+    hwndAutoHide = (HWND) SHAppBarMessage(ABM_GETAUTOHIDEBAR, &abd);
     if (hwndAutoHide != NULL) {
         /*
            Found an autohide taskbar on that edge, but is it on the
@@ -539,15 +541,15 @@ winTaskbarOnScreenEdge(unsigned int uEdge, winScreenInfo * pScreenInfo)
 static Bool
 winAdjustForAutoHide(RECT * prcWorkArea, winScreenInfo * pScreenInfo)
 {
-    APPBARDATA abd = (APPBARDATA) {
-        .cbSize = sizeof(APPBARDATA)
-    };
+    APPBARDATA abd;
 
     winDebug("winAdjustForAutoHide - Original WorkArea: %d %d %d %d\n",
              (int) prcWorkArea->top, (int) prcWorkArea->left,
              (int) prcWorkArea->bottom, (int) prcWorkArea->right);
 
     /* Find out if the Windows taskbar is set to auto-hide */
+    ZeroMemory(&abd, sizeof(abd));
+    abd.cbSize = sizeof(abd);
     if (SHAppBarMessage(ABM_GETSTATE, &abd) & ABS_AUTOHIDE)
         winDebug("winAdjustForAutoHide - Taskbar is auto hide\n");
 

@@ -9,15 +9,14 @@ if build_docs
         output: basename + '.html',
         input: [input_xml],
         command: [xmlto] + docs_xmlto_search_flags + [
-            '-x',  doc_stylesheet_srcdir / 'xorg-xhtml.xsl',
-            '--stringparam', 'target.database.document=' + (doc_sgml_path / 'X11/dbs/masterdb.html.xml'),
+            '-x',  join_paths(doc_stylesheet_srcdir, 'xorg-xhtml.xsl'),
+            '--stringparam', 'target.database.document=' + join_paths(doc_sgml_path, 'X11/dbs/masterdb.html.xml'),
             '--stringparam', 'current.docid=' + basename,
             '-o', meson.current_build_dir(),
             'xhtml-nochunks', '@INPUT0@'],
         build_by_default: true,
         install: true,
-        install_dir: get_option('datadir') / 'doc/xorg-server',
-        install_tag: 'doc',
+        install_dir: join_paths(get_option('datadir'), 'doc/xorg-server'),
     )
 
     if build_docs_pdf
@@ -28,16 +27,15 @@ if build_docs
                 output: output_fn,
                 input: [input_xml],
                 command: [xmlto] + docs_xmlto_search_flags + [
-                    '-x',  doc_stylesheet_srcdir / 'xorg-fo.xsl',
+                    '-x',  join_paths(doc_stylesheet_srcdir, 'xorg-fo.xsl'),
                     '--stringparam', 'img.src.path=' + meson.current_build_dir(),
-                    '--stringparam', 'target.database.document=' + (doc_sgml_path / 'X11/dbs/masterdb.pdf.xml'),
+                    '--stringparam', 'target.database.document=' + join_paths(doc_sgml_path, 'X11/dbs/masterdb.pdf.xml'),
                     '--stringparam', 'current.docid=' + basename,
                     '-o', meson.current_build_dir(),
                     '--with-fop', format, '@INPUT0@'],
                 build_by_default: true,
                 install: true,
-                install_dir: get_option('datadir') / 'doc/xorg-server',
-                install_tag: 'doc',
+                install_dir: join_paths(get_option('datadir'), 'doc/xorg-server'),
             )
         endforeach
     endif
@@ -55,13 +53,12 @@ if build_docs
                 '--stringparam', 'collect.xref.targets', 'only',
                 '--stringparam', 'olink.base.uri', basename + '.' + format,
                 '--nonet',
-                '--output', meson.current_build_dir() / output_fn,
-                '--xinclude', doc_stylesheet_srcdir / stylesheet,
+                '--output', join_paths(meson.current_build_dir(), output_fn),
+                '--xinclude', join_paths(doc_stylesheet_srcdir, stylesheet),
                 '@INPUT0@'],
             build_by_default: true,
             install: true,
-            install_dir: get_option('datadir') / 'doc/xorg-server',
-            install_tag: 'doc',
+            install_dir: join_paths(get_option('datadir'), 'doc/xorg-server'),
         )
     endforeach
 endif

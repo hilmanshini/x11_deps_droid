@@ -424,25 +424,28 @@ ProcXF86DRIGetDrawableInfo(register ClientPtr client)
         /* Clip cliprects to screen dimensions (redirected windows) */
         pClippedRects = xallocarray(rep.numClipRects, sizeof(drm_clip_rect_t));
 
-        if (!pClippedRects)
-            return BadAlloc;
+        if (pClippedRects) {
+            ScreenPtr pScreen = screenInfo.screens[stuff->screen];
+            int i, j;
 
-        ScreenPtr pScreen = screenInfo.screens[stuff->screen];
-        int i, j;
+            for (i = 0, j = 0; i < rep.numClipRects; i++) {
+                pClippedRects[j].x1 = max(pClipRects[i].x1, 0);
+                pClippedRects[j].y1 = max(pClipRects[i].y1, 0);
+                pClippedRects[j].x2 = min(pClipRects[i].x2, pScreen->width);
+                pClippedRects[j].y2 = min(pClipRects[i].y2, pScreen->height);
 
-        for (i = 0, j = 0; i < rep.numClipRects; i++) {
-            pClippedRects[j].x1 = max(pClipRects[i].x1, 0);
-            pClippedRects[j].y1 = max(pClipRects[i].y1, 0);
-            pClippedRects[j].x2 = min(pClipRects[i].x2, pScreen->width);
-            pClippedRects[j].y2 = min(pClipRects[i].y2, pScreen->height);
-
-            if (pClippedRects[j].x1 < pClippedRects[j].x2 &&
-                pClippedRects[j].y1 < pClippedRects[j].y2) {
-                j++;
+                if (pClippedRects[j].x1 < pClippedRects[j].x2 &&
+                    pClippedRects[j].y1 < pClippedRects[j].y2) {
+                    j++;
+                }
             }
+
+            rep.numClipRects = j;
+        }
+        else {
+            rep.numClipRects = 0;
         }
 
-        rep.numClipRects = j;
         rep.length += sizeof(drm_clip_rect_t) * rep.numClipRects;
     }
 
@@ -556,10 +559,19 @@ ProcXF86DRIDispatch(register ClientPtr client)
 }
 
 static int _X_COLD
+SProcXF86DRIQueryVersion(register ClientPtr client)
+{
+    REQUEST(xXF86DRIQueryVersionReq);
+    swaps(&stuff->length);
+    return ProcXF86DRIQueryVersion(client);
+}
+
+static int _X_COLD
 SProcXF86DRIQueryDirectRenderingCapable(register ClientPtr client)
 {
     REQUEST(xXF86DRIQueryDirectRenderingCapableReq);
     REQUEST_SIZE_MATCH(xXF86DRIQueryDirectRenderingCapableReq);
+    swaps(&stuff->length);
     swapl(&stuff->screen);
     return ProcXF86DRIQueryDirectRenderingCapable(client);
 }
@@ -575,7 +587,7 @@ SProcXF86DRIDispatch(register ClientPtr client)
      */
     switch (stuff->data) {
     case X_XF86DRIQueryVersion:
-        return ProcXF86DRIQueryVersion(client);
+        return SProcXF86DRIQueryVersion(client);
     case X_XF86DRIQueryDirectRenderingCapable:
         return SProcXF86DRIQueryDirectRenderingCapable(client);
     default:

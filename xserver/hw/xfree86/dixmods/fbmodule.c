@@ -33,21 +33,20 @@
 
 static XF86ModuleVersionInfo VersRec = {
 #ifdef FB_ACCESS_WRAPPER
-    .modname      = "wfb",
+    "wfb",
 #else
-    .modname      = "fb",
+    "fb",
 #endif
-    .vendor       = MODULEVENDORSTRING,
-    ._modinfo1_   = MODINFOSTRING1,
-    ._modinfo2_   = MODINFOSTRING2,
-    .xf86version  = XORG_VERSION_CURRENT,
-    .majorversion = 1,
-    .minorversion = 0,
-    .patchlevel   = 0,
-    .abiclass     = ABI_CLASS_ANSIC,
-    .abiversion   = ABI_ANSIC_VERSION,
+    MODULEVENDORSTRING,
+    MODINFOSTRING1,
+    MODINFOSTRING2,
+    XORG_VERSION_CURRENT,
+    1, 0, 0,
+    ABI_CLASS_ANSIC,            /* Only need the ansic layer */
+    ABI_ANSIC_VERSION,
+    MOD_CLASS_NONE,
+    {0, 0, 0, 0}                /* signature, to be patched into the file by a tool */
 };
 
 _X_EXPORT XF86ModuleData FBPREFIX(ModuleData) = {
-    .vers = &VersRec
-};
+&VersRec, NULL, NULL};

@@ -27,7 +27,7 @@
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
  */
 
-#include "vndserver_priv.h"
+#include "vndserver.h"
 
 #include <string.h>
 #include <scrnintstr.h>
@@ -114,7 +114,7 @@ GlxMappingInit(void)
 
     idResource = CreateNewResourceType(idResourceDeleteCallback,
                                        "GLXServerIDRes");
-    if (idResource == X11_RESTYPE_NONE)
+    if (idResource == RT_NONE)
     {
         GlxMappingReset();
         return FALSE;

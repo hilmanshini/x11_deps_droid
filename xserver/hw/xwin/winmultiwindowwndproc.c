@@ -415,6 +415,7 @@ LRESULT CALLBACK
 winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     POINT ptMouse;
+    PAINTSTRUCT ps;
     WindowPtr pWin = NULL;
     winPrivWinPtr pWinPriv = NULL;
     ScreenPtr s_pScreen = NULL;
@@ -429,7 +430,7 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     LRESULT ret;
     static Bool hasEnteredSizeMove = FALSE;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebugWin32Message("winTopLevelWindowProc", hwnd, message, wParam,
                          lParam);
 #endif
@@ -577,7 +578,6 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 #ifdef XWIN_GLX_WINDOWS
         if (pWinPriv->fWglUsed) {
-            PAINTSTRUCT ps;
             /*
                For regions which are being drawn by GL, the shadow framebuffer doesn't have the
                correct bits, so don't bitblt from the shadow framebuffer
@@ -621,11 +621,13 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         /* Are we tracking yet? */
         if (!s_fTracking) {
-            TRACKMOUSEEVENT tme = (TRACKMOUSEEVENT) {
-                .cbSize = sizeof(TRACKMOUSEEVENT),
-                .dwFlags = TME_LEAVE,
-                .hwndTrack = hwnd,
-            };
+            TRACKMOUSEEVENT tme;
+
+            /* Setup data structure */
+            ZeroMemory(&tme, sizeof(tme));
+            tme.cbSize = sizeof(tme);
+            tme.dwFlags = TME_LEAVE;
+            tme.hwndTrack = hwnd;
 
             /* Call the tracking function */
             if (!TrackMouseEvent(&tme))
@@ -799,16 +801,6 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         /* Add the keyboard hook if possible */
         if (g_fKeyboardHookLL)
             g_fKeyboardHookLL = winInstallKeyboardHookLL();
-
-        /* Tell our Window Manager thread to activate the window */
-        if (fWMMsgInitialized)
-            {
-                wmMsg.msg = WM_WM_ACTIVATE;
-                /* don't focus override redirect windows (e.g. menus) */
-                if (!pWin || !pWin->overrideRedirect)
-                    winSendMessageToWM(s_pScreenPriv->pWMInfo, &wmMsg);
-            }
-
         return 0;
 
     case WM_KILLFOCUS:
@@ -818,13 +810,9 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         /* Remove our keyboard hook if it is installed */
         winRemoveKeyboardHookLL();
 
-        /* Revert the X focus as well */
-        if (fWMMsgInitialized)
-            {
-                wmMsg.msg = WM_WM_ACTIVATE;
-                wmMsg.iWindow = 0;
-                winSendMessageToWM(s_pScreenPriv->pWMInfo, &wmMsg);
-            }
+        /* Revert the X focus as well, but only if the Windows focus is going to another window */
+        if (!wParam && pWin)
+            DeleteWindowFromAnyEvents(pWin, FALSE);
 
         return 0;
 
@@ -856,7 +844,7 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (wParam == VK_F4 && (GetKeyState(VK_MENU) & 0x8000))
             break;
 
-#if ENABLE_DEBUG
+#if CYGWINDOWING_DEBUG
         if (wParam == VK_ESCAPE) {
             /* Place for debug: put any tests and dumps here */
             WINDOWPLACEMENT windPlace;
@@ -908,8 +896,26 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         /* Pass the message to the root window */
         SendMessage(hwndScreen, message, wParam, lParam);
 
-        /* Allow DefWindowProc to SetFocus() as needed */
-        break;
+        if (LOWORD(wParam) != WA_INACTIVE) {
+            /* Raise the window to the top in Z order */
+            /* ago: Activate does not mean putting it to front! */
+            /*
+               wmMsg.msg = WM_WM_RAISE;
+               if (fWMMsgInitialized)
+               winSendMessageToWM (s_pScreenPriv->pWMInfo, &wmMsg);
+             */
+
+            /* Tell our Window Manager thread to activate the window */
+            wmMsg.msg = WM_WM_ACTIVATE;
+            if (fWMMsgInitialized)
+                if (!pWin || !pWin->overrideRedirect)   /* for OOo menus */
+                    winSendMessageToWM(s_pScreenPriv->pWMInfo, &wmMsg);
+        }
+        /* Prevent the mouse wheel from stalling when another window is minimized */
+        if (HIWORD(wParam) == 0 && LOWORD(wParam) == WA_ACTIVE &&
+            (HWND) lParam != NULL && (HWND) lParam != GetParent(hwnd))
+            SetFocus(hwnd);
+        return 0;
 
     case WM_ACTIVATEAPP:
         /*
@@ -1005,7 +1011,7 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             HWND forHwnd = GetForegroundWindow();
 
-#if ENABLE_DEBUG
+#if CYGWINDOWING_DEBUG
             ErrorF("overridden window is shown\n");
 #endif
             if (forHwnd != NULL) {
@@ -1040,13 +1046,13 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         LPWINDOWPOS pWinPos = (LPWINDOWPOS) lParam;
 
         if (!(pWinPos->flags & SWP_NOZORDER)) {
-#if ENABLE_DEBUG
+#if CYGWINDOWING_DEBUG
             winDebug("\twindow z order was changed\n");
 #endif
             if (pWinPos->hwndInsertAfter == HWND_TOP
                 || pWinPos->hwndInsertAfter == HWND_TOPMOST
                 || pWinPos->hwndInsertAfter == HWND_NOTOPMOST) {
-#if ENABLE_DEBUG
+#if CYGWINDOWING_DEBUG
                 winDebug("\traise to top\n");
 #endif
                 /* Raise the window to the top in Z order */
@@ -1075,7 +1081,7 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 /* If this is top of X windows in Windows stack,
                    raise it in X stack. */
                 if (hWndAbove == NULL) {
-#if ENABLE_DEBUG
+#if CYGWINDOWING_DEBUG
                     winDebug("\traise to top\n");
 #endif
                     winRaiseWindow(pWin);
@@ -1101,7 +1107,7 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_SIZE:
         /* see dix/window.c */
-#if ENABLE_DEBUG
+#if CYGWINDOWING_DEBUG
     {
         char buf[64];
 
@@ -1205,7 +1211,7 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         /* Check if this window needs to be made active when clicked */
         if (!GetProp(pWinPriv->hWnd, WIN_NEEDMANAGE_PROP)) {
-#if ENABLE_DEBUG
+#if CYGMULTIWINDOW_DEBUG
             ErrorF("winTopLevelWindowProc - WM_MOUSEACTIVATE - "
                    "MA_NOACTIVATE\n");
 #endif
@@ -1235,7 +1241,7 @@ winTopLevelWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     ret = DefWindowProc(hwnd, message, wParam, lParam);
     /*
-     * If the window was minimized we get the stack change before the window is restored
+     * If the window was minized we get the stack change before the window is restored
      * and so it gets lost. Ensure there stacking order is correct.
      */
     if (needRestack)

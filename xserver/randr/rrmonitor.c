@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include "swaprep.h"
 
 static Atom
@@ -156,8 +156,8 @@ RRMonitorGetGeometry(RRMonitorPtr monitor, RRMonitorGeometryPtr geometry)
 
         /* Adjust physical sizes to account for total area */
         if (active_crtcs > 1 && first.box.x2 != first.box.x1 && first.box.y2 != first.box.y1) {
-            geometry->mmWidth = ((double)(geometry->box.x2 - geometry->box.x1) / (first.box.x2 - first.box.x1)) * first.mmWidth;
-            geometry->mmHeight = ((double)(geometry->box.y2 - geometry->box.y1) / (first.box.y2 - first.box.y1)) * first.mmHeight;
+            geometry->mmWidth = (this.box.x2 - this.box.x1) / (first.box.x2 - first.box.x1) * first.mmWidth;
+            geometry->mmHeight = (this.box.y2 - this.box.y1) / (first.box.y2 - first.box.y1) * first.mmHeight;
         }
     } else {
         *geometry = monitor->geometry;
@@ -489,6 +489,17 @@ RRMonitorAdd(ClientPtr client, ScreenPtr screen, RRMonitorPtr monitor)
         }
     }
 
+    /* 'name' must not match the name of any Monitor on the screen, or
+     * a Value error results.
+     */
+
+    for (m = 0; m < pScrPriv->numMonitors; m++) {
+        if (pScrPriv->monitors[m]->name == monitor->name) {
+            client->errorValue = monitor->name;
+            return BadValue;
+        }
+    }
+
     /* Allocate space for the new pointer. This is done before
      * removing matching monitors as it may fail, and the request
      * needs to not have any side-effects on failure
@@ -669,7 +680,7 @@ ProcRRSetMonitor(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xRRSetMonitorReq);
 
-    if (stuff->monitor.noutput != client->req_len - (sizeof(xRRSetMonitorReq) >> 2))
+    if (stuff->monitor.noutput != stuff->length - (SIZEOF(xRRSetMonitorReq) >> 2))
         return BadLength;
 
     r = dixLookupWindow(&window, stuff->window, client, DixGetAttrAccess);

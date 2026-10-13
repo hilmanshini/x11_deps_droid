@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates.
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  * Copyright 2010, 2021 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -308,13 +308,6 @@ int
 
 Bool
  XFixesShouldDisconnectClient(ClientPtr client);
-
-Bool
- XFixesMustTerminateServerOnDisconnect(ClientPtr client);
-
-#ifndef XFixesClientDisconnectFlagForceTerminate
-#define XFixesClientDisconnectFlagForceTerminate (1L << 1)
-#endif
 
 /* Xinerama */
 #ifdef PANORAMIX

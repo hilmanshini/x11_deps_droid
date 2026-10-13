@@ -58,10 +58,6 @@ PERFORMANCE OF THIS SOFTWARE.
 #include <X11/X.h>
 #include <X11/Xproto.h>
 #include <X11/Xmd.h>
-#include <X11/extensions/syncproto.h>
-
-#include "os/osdep.h"
-
 #include "scrnintstr.h"
 #include "os.h"
 #include "extnsionst.h"
@@ -69,6 +65,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #include "pixmapstr.h"
 #include "resource.h"
 #include "opaque.h"
+#include <X11/extensions/syncproto.h>
 #include "syncsrv.h"
 #include "syncsdk.h"
 #include "protocol-versions.h"
@@ -698,7 +695,7 @@ SyncAwaitTriggerFired(SyncTrigger * pTrigger)
     /* unblock the client */
     AttendClient(pAwaitUnion->header.client);
     /* delete the await */
-    FreeResource(pAwaitUnion->header.delete_id, X11_RESTYPE_NONE);
+    FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
 }
 
 static int64_t
@@ -774,7 +771,7 @@ SyncEventSelectForAlarm(SyncAlarm * pAlarm, ClientPtr client, Bool wantevents)
              * nothing, since it's already got them.
              */
             if (!wantevents) {
-                FreeResource(pClients->delete_id, X11_RESTYPE_NONE);
+                FreeResource(pClients->delete_id, RT_NONE);
             }
             return Success;
         }
@@ -969,7 +966,7 @@ SyncCreateFenceFromFD(ClientPtr client, DrawablePtr pDraw, XID id, int fd, BOOL 
 
     status = miSyncInitFenceFromFD(pDraw, pFence, fd, initially_triggered);
     if (status != Success) {
-        FreeResource(pFence->sync.id, X11_RESTYPE_NONE);
+        FreeResource(pFence->sync.id, RT_NONE);
         return status;
     }
 
@@ -1027,18 +1024,12 @@ SyncCreateSystemCounter(const char *name,
 
         psci = malloc(sizeof(SysCounterInfo));
         if (!psci) {
-            FreeResource(pCounter->sync.id, X11_RESTYPE_NONE);
+            FreeResource(pCounter->sync.id, RT_NONE);
             return NULL;
         }
         pCounter->pSysCounterInfo = psci;
         psci->pCounter = pCounter;
         psci->name = strdup(name);
-        if (!psci->name) {
-            pCounter->pSysCounterInfo = NULL;
-            free(psci);
-            FreeResource(pCounter->sync.id, X11_RESTYPE_NONE);
-            return NULL;
-        }
         psci->resolution = resolution;
         psci->counterType = counterType;
         psci->QueryValue = QueryValue;
@@ -1056,7 +1047,7 @@ SyncDestroySystemCounter(void *pSysCounter)
 {
     SyncCounter *pCounter = (SyncCounter *) pSysCounter;
 
-    FreeResource(pCounter->sync.id, X11_RESTYPE_NONE);
+    FreeResource(pCounter->sync.id, RT_NONE);
 }
 
 static void
@@ -1169,7 +1160,7 @@ FreeAlarm(void *addr, XID id)
     /* delete event selections */
 
     while (pAlarm->pEventClients)
-        FreeResource(pAlarm->pEventClients->delete_id, X11_RESTYPE_NONE);
+        FreeResource(pAlarm->pEventClients->delete_id, RT_NONE);
 
     SyncDeleteTriggerFromSyncObject(&pAlarm->trigger);
 
@@ -1200,7 +1191,7 @@ FreeCounter(void *env, XID id)
                 (*ptl->pTrigger->CounterDestroyed) (ptl->pTrigger);
             free(ptl); /* destroy the trigger list as we go */
         }
-        if (IsSystemCounter(pCounter) && pCounter->pSysCounterInfo) {
+        if (IsSystemCounter(pCounter)) {
             xorg_list_del(&pCounter->pSysCounterInfo->entry);
             free(pCounter->pSysCounterInfo->name);
             free(pCounter->pSysCounterInfo->private);
@@ -1328,7 +1319,7 @@ ProcSyncListSystemCounters(ClientPtr client)
     }
 
     if (len) {
-        walklist = list = calloc(1, len);
+        walklist = list = malloc(len);
         if (!list)
             return BadAlloc;
     }
@@ -1552,7 +1543,7 @@ ProcSyncDestroyCounter(ClientPtr client)
         client->errorValue = stuff->counter;
         return BadAccess;
     }
-    FreeResource(pCounter->sync.id, X11_RESTYPE_NONE);
+    FreeResource(pCounter->sync.id, RT_NONE);
     return Success;
 }
 
@@ -1653,7 +1644,7 @@ ProcSyncAwait(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, X11_RESTYPE_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
             client->errorValue = pProtocolWaitConds->counter;
             return SyncErrorBase + XSyncBadCounter;
         }
@@ -1673,7 +1664,7 @@ ProcSyncAwait(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, X11_RESTYPE_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
             return status;
         }
         /* this is not a mistake -- same function works for both cases */
@@ -1804,7 +1795,7 @@ ProcSyncCreateAlarm(ClientPtr client)
 
         if (!SyncCheckWarnIsCounter(pTrigger->pSync,
                                     WARN_INVALID_COUNTER_ALARM)) {
-            FreeResource(stuff->id, X11_RESTYPE_NONE);
+            FreeResource(stuff->id, RT_NONE);
             return BadAlloc;
         }
 
@@ -1909,7 +1900,6 @@ ProcSyncQueryAlarm(ClientPtr client)
         swaps(&rep.sequenceNumber);
         swapl(&rep.length);
         swapl(&rep.counter);
-        swapl(&rep.value_type);
         swapl(&rep.wait_value_hi);
         swapl(&rep.wait_value_lo);
         swapl(&rep.test_type);
@@ -1936,7 +1926,7 @@ ProcSyncDestroyAlarm(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->alarm, X11_RESTYPE_NONE);
+    FreeResource(stuff->alarm, RT_NONE);
     return Success;
 }
 
@@ -2041,7 +2031,7 @@ ProcSyncDestroyFence(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->fid, X11_RESTYPE_NONE);
+    FreeResource(stuff->fid, RT_NONE);
     return Success;
 }
 
@@ -2119,7 +2109,7 @@ ProcSyncAwaitFence(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, X11_RESTYPE_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
             client->errorValue = *pProtocolFences;
             return SyncErrorBase + XSyncBadFence;
         }
@@ -2138,7 +2128,7 @@ ProcSyncAwaitFence(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, X11_RESTYPE_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
             return status;
         }
         /* this is not a mistake -- same function works for both cases */
@@ -2214,9 +2204,30 @@ ProcSyncDispatch(ClientPtr client)
  */
 
 static int _X_COLD
+SProcSyncInitialize(ClientPtr client)
+{
+    REQUEST(xSyncInitializeReq);
+    swaps(&stuff->length);
+    REQUEST_SIZE_MATCH(xSyncInitializeReq);
+
+    return ProcSyncInitialize(client);
+}
+
+static int _X_COLD
+SProcSyncListSystemCounters(ClientPtr client)
+{
+    REQUEST(xSyncListSystemCountersReq);
+    swaps(&stuff->length);
+    REQUEST_SIZE_MATCH(xSyncListSystemCountersReq);
+
+    return ProcSyncListSystemCounters(client);
+}
+
+static int _X_COLD
 SProcSyncCreateCounter(ClientPtr client)
 {
     REQUEST(xSyncCreateCounterReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncCreateCounterReq);
     swapl(&stuff->cid);
     swapl(&stuff->initial_value_lo);
@@ -2229,6 +2240,7 @@ static int _X_COLD
 SProcSyncSetCounter(ClientPtr client)
 {
     REQUEST(xSyncSetCounterReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncSetCounterReq);
     swapl(&stuff->cid);
     swapl(&stuff->value_lo);
@@ -2241,6 +2253,7 @@ static int _X_COLD
 SProcSyncChangeCounter(ClientPtr client)
 {
     REQUEST(xSyncChangeCounterReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncChangeCounterReq);
     swapl(&stuff->cid);
     swapl(&stuff->value_lo);
@@ -2253,6 +2266,7 @@ static int _X_COLD
 SProcSyncQueryCounter(ClientPtr client)
 {
     REQUEST(xSyncQueryCounterReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncQueryCounterReq);
     swapl(&stuff->counter);
 
@@ -2263,6 +2277,7 @@ static int _X_COLD
 SProcSyncDestroyCounter(ClientPtr client)
 {
     REQUEST(xSyncDestroyCounterReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncDestroyCounterReq);
     swapl(&stuff->counter);
 
@@ -2273,6 +2288,7 @@ static int _X_COLD
 SProcSyncAwait(ClientPtr client)
 {
     REQUEST(xSyncAwaitReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xSyncAwaitReq);
     SwapRestL(stuff);
 
@@ -2283,6 +2299,7 @@ static int _X_COLD
 SProcSyncCreateAlarm(ClientPtr client)
 {
     REQUEST(xSyncCreateAlarmReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xSyncCreateAlarmReq);
     swapl(&stuff->id);
     swapl(&stuff->valueMask);
@@ -2295,6 +2312,7 @@ static int _X_COLD
 SProcSyncChangeAlarm(ClientPtr client)
 {
     REQUEST(xSyncChangeAlarmReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xSyncChangeAlarmReq);
     swapl(&stuff->alarm);
     swapl(&stuff->valueMask);
@@ -2306,6 +2324,7 @@ static int _X_COLD
 SProcSyncQueryAlarm(ClientPtr client)
 {
     REQUEST(xSyncQueryAlarmReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncQueryAlarmReq);
     swapl(&stuff->alarm);
 
@@ -2316,6 +2335,7 @@ static int _X_COLD
 SProcSyncDestroyAlarm(ClientPtr client)
 {
     REQUEST(xSyncDestroyAlarmReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncDestroyAlarmReq);
     swapl(&stuff->alarm);
 
@@ -2326,6 +2346,7 @@ static int _X_COLD
 SProcSyncSetPriority(ClientPtr client)
 {
     REQUEST(xSyncSetPriorityReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncSetPriorityReq);
     swapl(&stuff->id);
     swapl(&stuff->priority);
@@ -2337,6 +2358,7 @@ static int _X_COLD
 SProcSyncGetPriority(ClientPtr client)
 {
     REQUEST(xSyncGetPriorityReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncGetPriorityReq);
     swapl(&stuff->id);
 
@@ -2347,6 +2369,7 @@ static int _X_COLD
 SProcSyncCreateFence(ClientPtr client)
 {
     REQUEST(xSyncCreateFenceReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncCreateFenceReq);
     swapl(&stuff->d);
     swapl(&stuff->fid);
@@ -2358,6 +2381,7 @@ static int _X_COLD
 SProcSyncTriggerFence(ClientPtr client)
 {
     REQUEST(xSyncTriggerFenceReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncTriggerFenceReq);
     swapl(&stuff->fid);
 
@@ -2368,6 +2392,7 @@ static int _X_COLD
 SProcSyncResetFence(ClientPtr client)
 {
     REQUEST(xSyncResetFenceReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncResetFenceReq);
     swapl(&stuff->fid);
 
@@ -2378,6 +2403,7 @@ static int _X_COLD
 SProcSyncDestroyFence(ClientPtr client)
 {
     REQUEST(xSyncDestroyFenceReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncDestroyFenceReq);
     swapl(&stuff->fid);
 
@@ -2388,6 +2414,7 @@ static int _X_COLD
 SProcSyncQueryFence(ClientPtr client)
 {
     REQUEST(xSyncQueryFenceReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSyncQueryFenceReq);
     swapl(&stuff->fid);
 
@@ -2398,6 +2425,7 @@ static int _X_COLD
 SProcSyncAwaitFence(ClientPtr client)
 {
     REQUEST(xSyncAwaitFenceReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xSyncAwaitFenceReq);
     SwapRestL(stuff);
 
@@ -2411,9 +2439,9 @@ SProcSyncDispatch(ClientPtr client)
 
     switch (stuff->data) {
     case X_SyncInitialize:
-        return ProcSyncInitialize(client);
+        return SProcSyncInitialize(client);
     case X_SyncListSystemCounters:
-        return ProcSyncListSystemCounters(client);
+        return SProcSyncListSystemCounters(client);
     case X_SyncCreateCounter:
         return SProcSyncCreateCounter(client);
     case X_SyncSetCounter:

@@ -14,17 +14,17 @@ static void
 print_xid(void* ptr, void* v)
 {
     XID *x = v;
-    dbg("%ld", (long)(*x));
+    printf("%ld", (long)(*x));
 }
 
 static void
 print_int(void* ptr, void* v)
 {
     int *x = v;
-    dbg("%d", *x);
+    printf("%d", *x);
 }
 
-static void
+static int
 test1(void)
 {
     HashTable h;
@@ -32,7 +32,7 @@ test1(void)
     int ok = 1;
     const int numKeys = 420;
 
-    dbg("test1\n");
+    printf("test1\n");
     h = ht_create(sizeof(XID), sizeof(int), ht_resourceid_hash, ht_resourceid_compare, NULL);
 
     for (c = 0; c < numKeys; ++c) {
@@ -44,11 +44,9 @@ test1(void)
       }
     }
 
-    if (verbose) {
-      dbg("Distribution after insertion\n");
-      ht_dump_distribution(h);
-      ht_dump_contents(h, print_xid, print_int, NULL);
-    }
+    printf("Distribution after insertion\n");
+    ht_dump_distribution(h);
+    ht_dump_contents(h, print_xid, print_int, NULL);
 
     for (c = 0; c < numKeys; ++c) {
       XID id = c;
@@ -57,36 +55,34 @@ test1(void)
         if (*v == 2 * c) {
           // ok
         } else {
-          dbg("Key %d doesn't have expected value %d but has %d instead\n",
+          printf("Key %d doesn't have expected value %d but has %d instead\n",
                  c, 2 * c, *v);
           ok = 0;
         }
       } else {
         ok = 0;
-        dbg("Cannot find key %d\n", c);
+        printf("Cannot find key %d\n", c);
       }
     }
 
     if (ok) {
-      dbg("%d keys inserted and found\n", c);
+      printf("%d keys inserted and found\n", c);
 
       for (c = 0; c < numKeys; ++c) {
         XID id = c;
         ht_remove(h, &id);
       }
 
-      if (verbose) {
-        dbg("Distribution after deletion\n");
-        ht_dump_distribution(h);
-      }
+      printf("Distribution after deletion\n");
+      ht_dump_distribution(h);
     }
 
     ht_destroy(h);
 
-    assert(ok);
+    return ok;
 }
 
-static void
+static int
 test2(void)
 {
     HashTable h;
@@ -94,7 +90,7 @@ test2(void)
     int ok = 1;
     const int numKeys = 420;
 
-    dbg("test2\n");
+    printf("test2\n");
     h = ht_create(sizeof(XID), 0, ht_resourceid_hash, ht_resourceid_compare, NULL);
 
     for (c = 0; c < numKeys; ++c) {
@@ -106,7 +102,7 @@ test2(void)
       XID id = c;
       if (!ht_find(h, &id)) {
         ok = 0;
-        dbg("Cannot find key %d\n", c);
+        printf("Cannot find key %d\n", c);
       }
     }
 
@@ -114,22 +110,22 @@ test2(void)
         XID id = c + 1;
         if (ht_find(h, &id)) {
             ok = 0;
-            dbg("Could find a key that shouldn't be there\n");
+            printf("Could find a key that shouldn't be there\n");
         }
     }
 
     ht_destroy(h);
 
     if (ok) {
-        dbg("Test with empty keys OK\n");
+        printf("Test with empty keys OK\n");
     } else {
-        dbg("Test with empty keys FAILED\n");
+        printf("Test with empty keys FAILED\n");
     }
 
-    assert(ok);
+    return ok;
 }
 
-static void
+static int
 test3(void)
 {
     int ok = 1;
@@ -137,38 +133,34 @@ test3(void)
         .keySize = 4
     };
     HashTable h;
-    dbg("test3\n");
+    printf("test3\n");
     h = ht_create(4, 0, ht_generic_hash, ht_generic_compare, &hashSetup);
 
     if (!ht_add(h, "helo") ||
         !ht_add(h, "wrld")) {
-        dbg("Could not insert keys\n");
+        printf("Could not insert keys\n");
     }
 
     if (!ht_find(h, "helo") ||
         !ht_find(h, "wrld")) {
         ok = 0;
-        dbg("Could not find inserted keys\n");
+        printf("Could not find inserted keys\n");
     }
 
-    if (verbose) {
-       dbg("Hash distribution with two strings\n");
-       ht_dump_distribution(h);
-    }
+    printf("Hash distribution with two strings\n");
+    ht_dump_distribution(h);
 
     ht_destroy(h);
 
-    assert(ok);
+    return ok;
 }
 
-const testfunc_t*
+int
 hashtabletest_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        test1,
-        test2,
-        test3,
-        NULL,
-    };
-    return testfuncs;
+    int ok = test1();
+    ok = ok && test2();
+    ok = ok && test3();
+
+    return ok ? 0 : 1;
 }

@@ -47,6 +47,7 @@
 #include "dix.h"
 #include "os.h"
 #include "xkbstr.h"
+#define XKBSRV_NEED_FILE_FUNCS
 #include <xkbsrv.h>
 
 /***====================================================================***/

@@ -64,6 +64,20 @@ SOFTWARE.
 
 /***********************************************************************
  *
+ * Handle a request from a client with a different byte order.
+ *
+ */
+
+int _X_COLD
+SProcXSetDeviceValuators(ClientPtr client)
+{
+    REQUEST(xSetDeviceValuatorsReq);
+    swaps(&stuff->length);
+    return (ProcXSetDeviceValuators(client));
+}
+
+/***********************************************************************
+ *
  * This procedure sets the value of valuators on an extension input device.
  *
  */
@@ -86,7 +100,7 @@ ProcXSetDeviceValuators(ClientPtr client)
         .status = Success
     };
 
-    if (client->req_len != bytes_to_int32(sizeof(xSetDeviceValuatorsReq)) +
+    if (stuff->length != bytes_to_int32(sizeof(xSetDeviceValuatorsReq)) +
         stuff->num_valuators)
         return BadLength;
 

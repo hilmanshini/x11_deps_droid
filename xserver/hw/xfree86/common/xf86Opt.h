@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1998-2003 by The XFree86 Project, Inc.
  *
@@ -29,9 +30,6 @@
 
 #ifndef _XF86_OPT_H_
 #define _XF86_OPT_H_
-
-#include <X11/Xdefs.h>
-
 #include "xf86Optionstr.h"
 
 typedef struct {

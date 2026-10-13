@@ -23,7 +23,6 @@ srcs_fb = [
 	'fbseg.c',
 	'fbsetsp.c',
 	'fbsolid.c',
-	'fbtile.c',
 	'fbtrap.c',
 	'fbutil.c',
 	'fbwindow.c',

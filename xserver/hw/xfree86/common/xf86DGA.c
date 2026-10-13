@@ -366,7 +366,7 @@ xf86SetDGAMode(ScrnInfoPtr pScrn, int num, DGADevicePtr devRet)
 
             if (oldPix) {
                 if (oldPix->drawable.id)
-                    FreeResource(oldPix->drawable.id, X11_RESTYPE_NONE);
+                    FreeResource(oldPix->drawable.id, RT_NONE);
                 else
                     (*pScreen->DestroyPixmap) (oldPix);
             }
@@ -428,7 +428,7 @@ xf86SetDGAMode(ScrnInfoPtr pScrn, int num, DGADevicePtr devRet)
 
         if (oldPix) {
             if (oldPix->drawable.id)
-                FreeResource(oldPix->drawable.id, X11_RESTYPE_NONE);
+                FreeResource(oldPix->drawable.id, RT_NONE);
             else
                 (*pScreen->DestroyPixmap) (oldPix);
         }
@@ -686,7 +686,7 @@ DGACreateColormap(int index, ClientPtr client, int id, int mode, int alloc)
     case DirectColor:
     case TrueColor:
         pVisual->ColormapEntries = 1 << pVisual->bitsPerRGBValue;
-        _X_FALLTHROUGH; /* fall through */
+        /* fall through */
     case StaticColor:
         pVisual->redMask = pMode->red_mask;
         pVisual->greenMask = pMode->green_mask;
@@ -1456,7 +1456,7 @@ ProcXDGASetMode(ClientPtr client)
     DGA_SETCLIENT(stuff->screen, client);
 
     if (pPix) {
-        if (AddResource(stuff->pid, X11_RESTYPE_PIXMAP, (void *) (pPix))) {
+        if (AddResource(stuff->pid, RT_PIXMAP, (void *) (pPix))) {
             pPix->drawable.id = (int) stuff->pid;
             rep.flags = DGA_PIXMAP_AVAILABLE;
         }
@@ -1534,7 +1534,7 @@ ProcXDGAInstallColormap(ClientPtr client)
     if (DGA_GETCLIENT(stuff->screen) != client)
         return DGAErrorBase + XF86DGADirectNotActivated;
 
-    rc = dixLookupResourceByType((void **) &cmap, stuff->cmap, X11_RESTYPE_COLORMAP,
+    rc = dixLookupResourceByType((void **) &cmap, stuff->cmap, RT_COLORMAP,
                                  client, DixInstallAccess);
     if (rc != Success)
         return rc;
@@ -1970,7 +1970,7 @@ ProcXF86DGAInstallColormap(ClientPtr client)
     if (!DGAActive(stuff->screen))
         return DGAErrorBase + XF86DGADirectNotActivated;
 
-    rc = dixLookupResourceByType((void **) &pcmp, stuff->id, X11_RESTYPE_COLORMAP,
+    rc = dixLookupResourceByType((void **) &pcmp, stuff->id, RT_COLORMAP,
                                  client, DixInstallAccess);
     if (rc == Success) {
         DGAInstallCmap(pcmp);

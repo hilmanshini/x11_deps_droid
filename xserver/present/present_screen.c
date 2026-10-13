@@ -19,7 +19,6 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
  * OF THIS SOFTWARE.
  */
-#include <dix-config.h>
 
 #include "present_priv.h"
 
@@ -188,29 +187,8 @@ present_screen_priv_init(ScreenPtr screen)
     wrap(screen_priv, screen, ClipNotify, present_clip_notify);
 
     dixSetPrivate(&screen->devPrivates, &present_screen_private_key, screen_priv);
-    screen_priv->pScreen = screen;
 
     return screen_priv;
-}
-
-static int
-check_flip_visit(WindowPtr window, void *data)
-{
-    ScreenPtr screen = window->drawable.pScreen;
-    present_screen_priv_ptr screen_priv = present_screen_priv(screen);
-
-    if (!screen_priv)
-        return WT_DONTWALKCHILDREN;
-
-    screen_priv->check_flip_window(window);
-
-    return WT_WALKCHILDREN;
-}
-
-void
-present_check_flips(WindowPtr window)
-{
-    TraverseTree(window, check_flip_visit, NULL);
 }
 
 /*

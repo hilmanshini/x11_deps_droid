@@ -89,7 +89,7 @@ glamor_init_pixmap_private_small(PixmapPtr pixmap, glamor_pixmap_private *pixmap
     pixmap_priv->fbo_array = &pixmap_priv->fbo;
 }
 
-void
+_X_EXPORT void
 glamor_set_pixmap_type(PixmapPtr pixmap, glamor_pixmap_type_t type)
 {
     glamor_pixmap_private *pixmap_priv;
@@ -99,7 +99,7 @@ glamor_set_pixmap_type(PixmapPtr pixmap, glamor_pixmap_type_t type)
     glamor_init_pixmap_private_small(pixmap, pixmap_priv);
 }
 
-Bool
+_X_EXPORT Bool
 glamor_set_pixmap_texture(PixmapPtr pixmap, unsigned int tex)
 {
     ScreenPtr screen = pixmap->drawable.pScreen;
@@ -129,7 +129,7 @@ glamor_set_pixmap_texture(PixmapPtr pixmap, unsigned int tex)
     return TRUE;
 }
 
-void
+_X_EXPORT void
 glamor_clear_pixmap(PixmapPtr pixmap)
 {
     ScreenPtr screen = pixmap->drawable.pScreen;
@@ -276,7 +276,9 @@ void
 glamor_block_handler(ScreenPtr screen)
 {
     glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
-    glamor_flush(glamor_priv);
+
+    glamor_make_current(glamor_priv);
+    glFlush();
 }
 
 static void
@@ -284,7 +286,8 @@ _glamor_block_handler(ScreenPtr screen, void *timeout)
 {
     glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
 
-    glamor_flush(glamor_priv);
+    glamor_make_current(glamor_priv);
+    glFlush();
 
     screen->BlockHandler = glamor_priv->saved_procs.block_handler;
     screen->BlockHandler(screen, timeout);
@@ -613,7 +616,10 @@ glamor_init(ScreenPtr screen, unsigned int flags)
 {
     glamor_screen_private *glamor_priv;
     int gl_version;
+    int glsl_major, glsl_minor;
     int max_viewport_size[2];
+    const char *shading_version_string;
+    int shading_version_offset;
 
     PictureScreenPtr ps = GetPictureScreenIfSet(screen);
 
@@ -662,6 +668,9 @@ glamor_init(ScreenPtr screen, unsigned int flags)
      * register correct close screen function. */
     if (flags & GLAMOR_USE_EGL_SCREEN) {
         glamor_egl_screen_init(screen, &glamor_priv->ctx);
+    } else {
+        if (!glamor_glx_screen_init(&glamor_priv->ctx))
+            goto fail;
     }
 
     glamor_make_current(glamor_priv);
@@ -675,7 +684,29 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     glamor_priv->is_core_profile =
         gl_version >= 31 && !epoxy_has_gl_extension("GL_ARB_compatibility");
 
-    glamor_priv->glsl_version = epoxy_glsl_version();
+    shading_version_string = (char *) glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+    if (!shading_version_string) {
+        LogMessage(X_WARNING,
+                   "glamor%d: Failed to get GLSL version\n",
+                   screen->myNum);
+        goto fail;
+    }
+
+    shading_version_offset = 0;
+    if (strncmp("OpenGL ES GLSL ES ", shading_version_string, 18) == 0)
+        shading_version_offset = 18;
+
+    if (sscanf(shading_version_string + shading_version_offset,
+               "%i.%i",
+               &glsl_major,
+               &glsl_minor) != 2) {
+        LogMessage(X_WARNING,
+                   "glamor%d: Failed to parse GLSL version string %s\n",
+                   screen->myNum, shading_version_string);
+        goto fail;
+    }
+    glamor_priv->glsl_version = glsl_major * 100 + glsl_minor;
 
     /* We'd like to require GL_ARB_map_buffer_range or
      * GL_OES_map_buffer_range, since it offers more information to
@@ -915,14 +946,12 @@ glamor_close_screen(ScreenPtr screen)
     glamor_priv = glamor_get_screen_private(screen);
     glamor_sync_close(screen);
     glamor_composite_glyphs_fini(screen);
-    glamor_set_glvnd_vendor(screen, NULL);
     screen->CloseScreen = glamor_priv->saved_procs.close_screen;
 
     screen->CreateGC = glamor_priv->saved_procs.create_gc;
     screen->CreatePixmap = glamor_priv->saved_procs.create_pixmap;
     screen->DestroyPixmap = glamor_priv->saved_procs.destroy_pixmap;
     screen->GetSpans = glamor_priv->saved_procs.get_spans;
-    screen->GetImage = glamor_priv->saved_procs.get_image;
     screen->ChangeWindowAttributes =
         glamor_priv->saved_procs.change_window_attributes;
     screen->CopyWindow = glamor_priv->saved_procs.copy_window;
@@ -952,31 +981,6 @@ glamor_fini(ScreenPtr screen)
 }
 
 void
-glamor_set_glvnd_vendor(ScreenPtr screen, const char *vendor_name)
-{
-    glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
-
-    if (!glamor_priv)
-        return;
-
-    if (glamor_priv->glvnd_vendor)
-        free(glamor_priv->glvnd_vendor);
-
-    glamor_priv->glvnd_vendor = XNFstrdup(vendor_name);
-}
-
-const char *
-glamor_get_glvnd_vendor(ScreenPtr screen)
-{
-    glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
-
-    if (!glamor_priv)
-        return NULL;
-
-    return glamor_priv->glvnd_vendor;
-}
-
-void
 glamor_enable_dri3(ScreenPtr screen)
 {
     glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
@@ -992,7 +996,7 @@ glamor_supports_pixmap_import_export(ScreenPtr screen)
     return glamor_priv->dri3_enabled;
 }
 
-void
+_X_EXPORT void
 glamor_set_drawable_modifiers_func(ScreenPtr screen,
                                    GetDrawableModifiersFuncPtr func)
 {
@@ -1001,7 +1005,7 @@ glamor_set_drawable_modifiers_func(ScreenPtr screen,
     glamor_priv->get_drawable_modifiers = func;
 }
 
-Bool
+_X_EXPORT Bool
 glamor_get_drawable_modifiers(DrawablePtr draw, uint32_t format,
                               uint32_t *num_modifiers, uint64_t **modifiers)
 {
@@ -1022,7 +1026,6 @@ _glamor_fds_from_pixmap(ScreenPtr screen, PixmapPtr pixmap, int *fds,
                         uint32_t *strides, uint32_t *offsets,
                         CARD32 *size, uint64_t *modifier)
 {
-#ifdef HAVE_GBM
     glamor_pixmap_private *pixmap_priv = glamor_get_pixmap_private(pixmap);
     glamor_screen_private *glamor_priv =
         glamor_get_screen_private(pixmap->drawable.pScreen);
@@ -1050,11 +1053,10 @@ _glamor_fds_from_pixmap(ScreenPtr screen, PixmapPtr pixmap, int *fds,
     default:
         break;
     }
-#endif /* HAVE_GBM */
     return 0;
 }
 
-int
+_X_EXPORT int
 glamor_fds_from_pixmap(ScreenPtr screen, PixmapPtr pixmap, int *fds,
                        uint32_t *strides, uint32_t *offsets,
                        uint64_t *modifier)
@@ -1063,7 +1065,7 @@ glamor_fds_from_pixmap(ScreenPtr screen, PixmapPtr pixmap, int *fds,
                                    NULL, modifier);
 }
 
-int
+_X_EXPORT int
 glamor_fd_from_pixmap(ScreenPtr screen,
                       PixmapPtr pixmap, CARD16 *stride, CARD32 *size)
 {
@@ -1080,7 +1082,7 @@ glamor_fd_from_pixmap(ScreenPtr screen,
     return fd;
 }
 
-int
+_X_EXPORT int
 glamor_shareable_fd_from_pixmap(ScreenPtr screen,
                                 PixmapPtr pixmap, CARD16 *stride, CARD32 *size)
 {

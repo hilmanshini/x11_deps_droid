@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include "protocol-versions.h"
 
 Bool
@@ -135,7 +135,7 @@ ProcRRSelectInput(ClientPtr client)
                 if (!pHead ||
                     !AddResource(pWin->drawable.id, RREventType,
                                  (void *) pHead)) {
-                    FreeResource(clientResource, X11_RESTYPE_NONE);
+                    FreeResource(clientResource, RT_NONE);
                     return BadAlloc;
                 }
                 *pHead = 0;

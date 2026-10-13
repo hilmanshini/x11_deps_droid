@@ -63,24 +63,17 @@ xfree86_option_list_duplicate(void)
 
     assert(strcmp(val1, v1) == 0);
     assert(strcmp(val1, val2) == 0);
-    free(val1);
-    free(val2);
 
     val1 = xf86CheckStrOption(options, o2, "1");
     val2 = xf86CheckStrOption(duplicate, o2, "2");
 
     assert(strcmp(val1, v2) == 0);
     assert(strcmp(val1, val2) == 0);
-    free(val1);
-    free(val2);
 
     a = xf86FindOption(options, o_null);
     b = xf86FindOption(duplicate, o_null);
     assert(a);
     assert(b);
-
-    xf86OptionListFree(duplicate);
-    xf86OptionListFree(options);
 }
 
 static void
@@ -108,13 +101,11 @@ xfree86_add_comment(void)
     free(current);
 }
 
-const testfunc_t*
+int
 xfree86_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        xfree86_option_list_duplicate,
-        xfree86_add_comment,
-        NULL,
-    };
-    return testfuncs;
+    xfree86_option_list_duplicate();
+    xfree86_add_comment();
+
+    return 0;
 }

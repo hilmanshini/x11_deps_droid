@@ -23,8 +23,7 @@
 #ifndef _PRESENTEXT_H_
 #define _PRESENTEXT_H_
 
-#include <X11/Xfuncproto.h>
-
-_X_EXPORT void present_extension_init(void);
+extern _X_EXPORT void
+present_extension_init(void);
 
 #endif /* _PRESENTEXT_H_ */

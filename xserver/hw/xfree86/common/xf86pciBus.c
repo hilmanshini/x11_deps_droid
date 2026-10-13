@@ -37,9 +37,6 @@
 #include <unistd.h>
 #include <X11/X.h>
 #include <pciaccess.h>
-#ifdef WITH_LIBDRM
-#include <xf86drm.h>
-#endif
 #include "os.h"
 #include "Pci.h"
 #include "xf86.h"
@@ -106,14 +103,14 @@ xf86PciProbe(void)
     while ((info = pci_device_next(iter)) != NULL) {
         if (PCIINFOCLASSES(info->device_class)) {
             num++;
-            xf86PciVideoInfo = XNFreallocarray(xf86PciVideoInfo,
+            xf86PciVideoInfo = xnfreallocarray(xf86PciVideoInfo,
                                                num + 1,
                                                sizeof(struct pci_device *));
             xf86PciVideoInfo[num] = NULL;
             xf86PciVideoInfo[num - 1] = info;
 
             pci_device_probe(info);
-            if (primaryBus.type == BUS_NONE && pci_device_is_boot_display(info)) {
+            if (primaryBus.type == BUS_NONE && pci_device_is_boot_vga(info)) {
                 primaryBus.type = BUS_PCI;
                 primaryBus.id.pci = info;
             }
@@ -121,18 +118,6 @@ xf86PciProbe(void)
         }
     }
     free(iter);
-
-    /* If no boot display was found, fall back to the boot VGA device */
-    if (primaryBus.type == BUS_NONE) {
-        for (i = 0; i < num; i++) {
-            info = xf86PciVideoInfo[i];
-            if (pci_device_is_boot_vga(info)) {
-                primaryBus.type = BUS_PCI;
-                primaryBus.id.pci = info;
-                break;
-            }
-        }
-    }
 
     /* If we haven't found a primary device try a different heuristic */
     if (primaryBus.type == BUS_NONE && num) {
@@ -288,7 +273,7 @@ xf86ParsePciBusString(const char *busID, int *bus, int *device, int *func)
     if (StringToBusType(busID, &id) != BUS_PCI)
         return FALSE;
 
-    s = Xstrdup(id);
+    s = xstrdup(id);
     p = strtok(s, ":");
     if (p == NULL || *p == 0) {
         free(s);
@@ -298,14 +283,14 @@ xf86ParsePciBusString(const char *busID, int *bus, int *device, int *func)
     if (d != NULL) {
         *(d++) = 0;
         for (i = 0; d[i] != 0; i++) {
-            if (!isdigit((unsigned char)d[i])) {
+            if (!isdigit(d[i])) {
                 free(s);
                 return FALSE;
             }
         }
     }
     for (i = 0; p[i] != 0; i++) {
-        if (!isdigit((unsigned char)p[i])) {
+        if (!isdigit(p[i])) {
             free(s);
             return FALSE;
         }
@@ -319,7 +304,7 @@ xf86ParsePciBusString(const char *busID, int *bus, int *device, int *func)
         return FALSE;
     }
     for (i = 0; p[i] != 0; i++) {
-        if (!isdigit((unsigned char)p[i])) {
+        if (!isdigit(p[i])) {
             free(s);
             return FALSE;
         }
@@ -332,7 +317,7 @@ xf86ParsePciBusString(const char *busID, int *bus, int *device, int *func)
         return TRUE;
     }
     for (i = 0; p[i] != 0; i++) {
-        if (!isdigit((unsigned char)p[i])) {
+        if (!isdigit(p[i])) {
             free(s);
             return FALSE;
         }
@@ -698,7 +683,7 @@ xf86MatchPciInstances(const char *driverName, int vendorID,
         }
 
         pci_iterator_destroy(iter);
-        instances = XNFreallocarray(NULL, max_entries, sizeof(struct Inst));
+        instances = xnfallocarray(max_entries, sizeof(struct Inst));
     }
 
     iter = pci_slot_match_iterator_create(NULL);
@@ -995,7 +980,7 @@ xf86MatchPciInstances(const char *driverName, int vendorID,
 
         /* Allocate an entry in the lists to be returned */
         numFound++;
-        retEntities = XNFreallocarray(retEntities, numFound, sizeof(int));
+        retEntities = xnfreallocarray(retEntities, numFound, sizeof(int));
         retEntities[numFound - 1] = xf86ClaimPciSlot(pPci, drvp,
                                                      instances[i].chip,
                                                      instances[i].dev,
@@ -1150,16 +1135,46 @@ xf86VideoPtrToDriverList(struct pci_device *dev, XF86MatchedDrivers *md)
 			driverList[0] = "psb";
 			driverList[1] = "psb_drv";
 			break;
-		/* Default to intel only on pre-gen3 chips */
-		case 0x7121:
-		case 0x7123:
-		case 0x7125:
-		case 0x1132:
-		case 0x3577:
-		case 0x2562:
-		case 0x3582:
-		case 0x358e:
-		case 0x2572:
+		/* GMA600/Oaktrail */
+		case 0x4100:
+		case 0x4101:
+		case 0x4102:
+		case 0x4103:
+		case 0x4104:
+		case 0x4105:
+		case 0x4106:
+		case 0x4107:
+		/* Atom E620/Oaktrail */
+		case 0x4108:
+		/* Medfield */
+		case 0x0130:
+		case 0x0131:
+		case 0x0132:
+		case 0x0133:
+		case 0x0134:
+		case 0x0135:
+		case 0x0136:
+		case 0x0137:
+		/* GMA 3600/CDV */
+		case 0x0be0:
+		case 0x0be1:
+		case 0x0be2:
+		case 0x0be3:
+		case 0x0be4:
+		case 0x0be5:
+		case 0x0be6:
+		case 0x0be7:
+		case 0x0be8:
+		case 0x0be9:
+		case 0x0bea:
+		case 0x0beb:
+		case 0x0bec:
+		case 0x0bed:
+		case 0x0bee:
+		case 0x0bef:
+			/* Use fbdev/vesa driver on Oaktrail, Medfield, CDV */
+			break;
+		default:
 			driverList[0] = "intel";
 			break;
         }
@@ -1176,26 +1191,6 @@ xf86VideoPtrToDriverList(struct pci_device *dev, XF86MatchedDrivers *md)
         int idx = 0;
 
 #if defined(__linux__) || defined(__NetBSD__)
-#ifdef WITH_LIBDRM
-        char busid[32];
-        int fd;
-
-        snprintf(busid, sizeof(busid), "pci:%04x:%02x:%02x.%d",
-                 dev->domain, dev->bus, dev->dev, dev->func);
-
-	/* 'modesetting' is preferred for GeForce 8 and newer GPUs */
-        fd = drmOpenWithType("nouveau", busid, DRM_NODE_RENDER);
-        if (fd >= 0) {
-            uint64_t args[] = { 11 /* NOUVEAU_GETPARAM_CHIPSET_ID */, 0 };
-            int ret = drmCommandWriteRead(fd, 0 /* DRM_NOUVEAU_GETPARAM */,
-                                          &args, sizeof(args));
-            drmClose(fd);
-            if (ret == 0) {
-                if (args[1] == 0x050 || args[1] >= 0x80)
-                    break;
-            }
-        }
-#endif
         driverList[idx++] = "nouveau";
 #endif
         driverList[idx++] = "nv";

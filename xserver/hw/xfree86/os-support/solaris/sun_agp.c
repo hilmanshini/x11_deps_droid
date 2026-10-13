@@ -6,7 +6,7 @@
  * Copyright © 2000 VA Linux Systems, Inc.
  * Copyright © 2001 The XFree86 Project, Inc.
  */
-/* Copyright (c) 2005, Oracle and/or its affiliates.
+/* Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -32,9 +32,7 @@
 #include <xorg-config.h>
 #endif
 
-#include <errno.h>
 #include <X11/X.h>
-
 #include "xf86.h"
 #include "xf86Priv.h"
 #include "xf86_OSlib.h"
@@ -125,7 +123,7 @@ xf86GetAGPInfo(int screenNum)
         return NULL;
     }
 
-    if ((info = calloc(1, sizeof(AgpInfo))) == NULL) {
+    if ((info = calloc(sizeof(AgpInfo), 1)) == NULL) {
         xf86DrvMsg(screenNum, X_ERROR,
                    "xf86GetAGPInfo: Failed to allocate AgpInfo\n");
         return NULL;
@@ -303,6 +301,26 @@ xf86UnbindGARTMemory(int screenNum, int key)
 
     xf86DrvMsgVerb(screenNum, X_INFO, 3,
                    "xf86UnbindGARTMemory: unbind key %d\n", key);
+
+    return TRUE;
+}
+
+/* XXX Interface may change. */
+Bool
+xf86EnableAGP(int screenNum, CARD32 mode)
+{
+    agp_setup_t setup;
+
+    if (!GARTInit(screenNum) || (acquiredScreen != screenNum))
+        return FALSE;
+
+    setup.agps_mode = mode;
+    if (ioctl(gartFd, AGPIOC_SETUP, &setup) != 0) {
+        xf86DrvMsg(screenNum, X_WARNING, "xf86EnableAGP: "
+                   "AGPIOC_SETUP with mode %x failed (%s)\n",
+                   (unsigned int) mode, strerror(errno));
+        return FALSE;
+    }
 
     return TRUE;
 }

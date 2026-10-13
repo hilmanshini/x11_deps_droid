@@ -12,9 +12,9 @@ shared_module(
     dependencies: [common_dep],
 
     install: true,
-    install_dir: module_dir / 'input',
+    install_dir: join_paths(module_dir, 'input'),
 
-    link_with: xorg_server,
+    link_with: e,
 )
 
 install_man(configure_file(

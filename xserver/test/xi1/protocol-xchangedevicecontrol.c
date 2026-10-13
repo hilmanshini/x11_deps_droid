@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014, Oracle and/or its affiliates.
+ * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -40,13 +40,11 @@
 
 #include "protocol-common.h"
 
-DECLARE_WRAP_FUNCTION(WriteToClient, void, ClientPtr client, int len, void *data);
-
 extern ClientRec client_window;
 static ClientRec client_request;
 
 static void
-reply_ChangeDeviceControl(ClientPtr client, int len, void *data)
+reply_ChangeDeviceControl(ClientPtr client, int len, char *data, void *userdata)
 {
     xChangeDeviceControlReply *rep = (xChangeDeviceControlReply *) data;
 
@@ -87,29 +85,27 @@ static unsigned char *data[4096];       /* the request buffer */
 static void
 test_ChangeDeviceControl(void)
 {
-    init_simple();
-
     xChangeDeviceControlReq *request = (xChangeDeviceControlReq *) data;
     xDeviceCtl *control = (xDeviceCtl *) (&request[1]);
 
     request_init(request, ChangeDeviceControl);
 
-    wrapped_WriteToClient  = reply_ChangeDeviceControl;
+    reply_handler = reply_ChangeDeviceControl;
 
     client_request = init_client(request->length, request);
 
-    dbg("Testing invalid lengths:\n");
-    dbg(" -- no control struct\n");
+    printf("Testing invalid lengths:\n");
+    printf(" -- no control struct\n");
     request_ChangeDeviceControl(&client_request, request, control, BadLength);
 
-    dbg(" -- xDeviceResolutionCtl\n");
+    printf(" -- xDeviceResolutionCtl\n");
     request_init(request, ChangeDeviceControl);
     request->control = DEVICE_RESOLUTION;
     control->length = (sizeof(xDeviceResolutionCtl) >> 2);
     request->length += control->length - 2;
     request_ChangeDeviceControl(&client_request, request, control, BadLength);
 
-    dbg(" -- xDeviceEnableCtl\n");
+    printf(" -- xDeviceEnableCtl\n");
     request_init(request, ChangeDeviceControl);
     request->control = DEVICE_ENABLE;
     control->length = (sizeof(xDeviceEnableCtl) >> 2);
@@ -119,12 +115,12 @@ test_ChangeDeviceControl(void)
     /* XXX: Test functionality! */
 }
 
-const testfunc_t*
+int
 protocol_xchangedevicecontrol_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        test_ChangeDeviceControl,
-        NULL,
-    };
-    return testfuncs;
+    init_simple();
+
+    test_ChangeDeviceControl();
+
+    return 0;
 }

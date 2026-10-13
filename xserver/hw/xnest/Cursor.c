@@ -17,12 +17,11 @@ is" without express or implied warranty.
 #endif
 
 #include <X11/X.h>
-#include <X11/Xdefs.h>
 #include <X11/Xproto.h>
-
 #include "screenint.h"
 #include "input.h"
 #include "misc.h"
+#include "cursor.h"
 #include "cursorstr.h"
 #include "scrnintstr.h"
 #include "servermd.h"
@@ -107,7 +106,7 @@ xnestRealizeCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
     XFreePixmap(xnestDisplay, source);
     XFreePixmap(xnestDisplay, mask);
 
-    return TRUE;
+    return True;
 }
 
 Bool
@@ -115,7 +114,7 @@ xnestUnrealizeCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
 {
     XFreeCursor(xnestDisplay, xnestCursor(pCursor, pScreen));
     free(xnestGetCursorPriv(pCursor, pScreen));
-    return TRUE;
+    return True;
 }
 
 void
@@ -157,7 +156,7 @@ xnestDeviceCursorInitialize(DeviceIntPtr pDev, ScreenPtr pScreen)
     xnestCursorFuncPtr pScreenPriv;
 
     pScreenPriv = (xnestCursorFuncPtr)
-        dixLookupPrivate(&pScreen->devPrivates, &xnestScreenCursorFuncKeyRec);
+        dixLookupPrivate(&pScreen->devPrivates, xnestCursorScreenKey);
 
     return pScreenPriv->spriteFuncs->DeviceCursorInitialize(pDev, pScreen);
 }
@@ -168,7 +167,7 @@ xnestDeviceCursorCleanup(DeviceIntPtr pDev, ScreenPtr pScreen)
     xnestCursorFuncPtr pScreenPriv;
 
     pScreenPriv = (xnestCursorFuncPtr)
-        dixLookupPrivate(&pScreen->devPrivates, &xnestScreenCursorFuncKeyRec);
+        dixLookupPrivate(&pScreen->devPrivates, xnestCursorScreenKey);
 
     pScreenPriv->spriteFuncs->DeviceCursorCleanup(pDev, pScreen);
 }

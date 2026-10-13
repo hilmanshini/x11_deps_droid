@@ -69,6 +69,8 @@ typedef struct _GlyphShare {
 
 static GlyphSharePtr sharedGlyphs = (GlyphSharePtr) NULL;
 
+DevScreenPrivateKeyRec cursorScreenDevPriv;
+
 static CARD32 cursorSerial;
 
 static void
@@ -142,7 +144,7 @@ UnrefCursor(CursorPtr cursor)
 }
 
 int
-CursorRefCount(ConstCursorPtr cursor)
+CursorRefCount(const CursorPtr cursor)
 {
     return cursor ? cursor->refcnt : 0;
 }
@@ -226,9 +228,7 @@ RealizeCursorAllScreens(CursorPtr pCurs)
 
 /**
  * does nothing about the resource table, just creates the data structure.
- *
- * Takes ownership of \p psrcbits, \p pmaskbits, and \p argb -- all three
- * are freed on error, the caller must not free them after calling this.
+ * does not copy the src and mask bits
  *
  *  \param psrcbits  server-defined padding
  *  \param pmaskbits server-defined padding
@@ -247,12 +247,8 @@ AllocARGBCursor(unsigned char *psrcbits, unsigned char *pmaskbits,
 
     *ppCurs = NULL;
     pCurs = (CursorPtr) calloc(CURSOR_REC_SIZE + CURSOR_BITS_SIZE, 1);
-    if (!pCurs) {
-        free(psrcbits);
-        free(pmaskbits);
-        free(argb);
+    if (!pCurs)
         return BadAlloc;
-    }
 
     bits = (CursorBitsPtr) ((char *) pCurs + CURSOR_REC_SIZE);
     dixInitPrivates(pCurs, pCurs + 1, PRIVATE_CURSOR);
@@ -282,8 +278,8 @@ AllocARGBCursor(unsigned char *psrcbits, unsigned char *pmaskbits,
     pCurs->id = cid;
 
     /* security creation/labeling check */
-    rc = XaceHookResourceAccess(client, cid, X11_RESTYPE_CURSOR,
-                  pCurs, X11_RESTYPE_NONE, NULL, DixCreateAccess);
+    rc = XaceHook(XACE_RESOURCE_ACCESS, client, cid, RT_CURSOR,
+                  pCurs, RT_NONE, NULL, DixCreateAccess);
     if (rc != Success)
         goto error;
 
@@ -340,13 +336,13 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
     CursorPtr pCurs;
     GlyphSharePtr pShare;
 
-    rc = dixLookupResourceByType((void **) &sourcefont, source, X11_RESTYPE_FONT,
+    rc = dixLookupResourceByType((void **) &sourcefont, source, RT_FONT,
                                  client, DixUseAccess);
     if (rc != Success) {
         client->errorValue = source;
         return rc;
     }
-    rc = dixLookupResourceByType((void **) &maskfont, mask, X11_RESTYPE_FONT, client,
+    rc = dixLookupResourceByType((void **) &maskfont, mask, RT_FONT, client,
                                  DixUseAccess);
     if (rc != Success && mask != None) {
         client->errorValue = mask;
@@ -462,8 +458,8 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
     pCurs->id = cid;
 
     /* security creation/labeling check */
-    rc = XaceHookResourceAccess(client, cid, X11_RESTYPE_CURSOR,
-                  pCurs, X11_RESTYPE_NONE, NULL, DixCreateAccess);
+    rc = XaceHook(XACE_RESOURCE_ACCESS, client, cid, RT_CURSOR,
+                  pCurs, RT_NONE, NULL, DixCreateAccess);
     if (rc != Success)
         goto error;
 
@@ -492,7 +488,7 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
  *************************************************************/
 
 CursorPtr
-CreateRootCursor(void)
+CreateRootCursor(char *unused1, unsigned int unused2)
 {
     CursorPtr curs;
     FontPtr cursorfont;
@@ -506,7 +502,7 @@ CreateRootCursor(void)
     if (err != Success)
         return NullCursor;
 
-    err = dixLookupResourceByType((void **) &cursorfont, fontID, X11_RESTYPE_FONT,
+    err = dixLookupResourceByType((void **) &cursorfont, fontID, RT_FONT,
                                   serverClient, DixReadAccess);
     if (err != Success)
         return NullCursor;
@@ -514,7 +510,7 @@ CreateRootCursor(void)
                          &curs, serverClient, (XID) 0) != Success)
         return NullCursor;
 
-    if (!AddResource(FakeClientID(0), X11_RESTYPE_CURSOR, (void *) curs))
+    if (!AddResource(FakeClientID(0), RT_CURSOR, (void *) curs))
         return NullCursor;
 
     return curs;

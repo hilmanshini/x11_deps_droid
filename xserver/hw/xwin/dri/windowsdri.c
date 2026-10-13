@@ -191,6 +191,7 @@ static int
 SProcWindowsDRIQueryVersion(ClientPtr client)
 {
     REQUEST(xWindowsDRIQueryVersionReq);
+    swaps(&stuff->length);
     return ProcWindowsDRIQueryVersion(client);
 }
 
@@ -198,6 +199,7 @@ static int
 SProcWindowsDRIQueryDirectRenderingCapable(ClientPtr client)
 {
     REQUEST(xWindowsDRIQueryDirectRenderingCapableReq);
+    swaps(&stuff->length);
     swapl(&stuff->screen);
     return ProcWindowsDRIQueryDirectRenderingCapable(client);
 }
@@ -206,6 +208,7 @@ static int
 SProcWindowsDRIQueryDrawable(ClientPtr client)
 {
     REQUEST(xWindowsDRIQueryDrawableReq);
+    swaps(&stuff->length);
     swapl(&stuff->screen);
     swapl(&stuff->drawable);
     return ProcWindowsDRIQueryDrawable(client);
@@ -215,6 +218,7 @@ static int
 SProcWindowsDRIFBConfigToPixelFormat(ClientPtr client)
 {
     REQUEST(xWindowsDRIFBConfigToPixelFormatReq);
+    swaps(&stuff->length);
     swapl(&stuff->screen);
     swapl(&stuff->fbConfigID);
     return ProcWindowsDRIFBConfigToPixelFormat(client);

@@ -143,7 +143,7 @@ VBEExtendedInit(xf86Int10InfoPtr pInt, int entityIndex, int Flags)
                                                    L_ADD(vbe->
                                                          OemProductRevPtr)));
     }
-    vip = (vbeInfoPtr) XNFalloc(sizeof(vbeInfoRec));
+    vip = (vbeInfoPtr) xnfalloc(sizeof(vbeInfoRec));
     vip->version = B_O16(vbe->VbeVersion);
     vip->pInt10 = pInt;
     vip->ddc = DDC_UNCHECKED;
@@ -270,7 +270,7 @@ vbeReadEDID(vbeInfoPtr pVbe)
     if (!page)
         return NULL;
 
-    options = XNFalloc(sizeof(VBEOptions));
+    options = xnfalloc(sizeof(VBEOptions));
     (void) memcpy(options, VBEOptions, sizeof(VBEOptions));
     xf86ProcessOptions(screen, pScrn->options, options);
     xf86GetOptValBool(options, VBEOPT_NOVBE, &novbe);
@@ -302,7 +302,7 @@ vbeReadEDID(vbeInfoPtr pVbe)
     switch (pVbe->pInt10->ax & 0xff00) {
     case 0x0:
         xf86DrvMsgVerb(screen, X_INFO, 3, "VESA VBE DDC read successfully\n");
-        tmp = (unsigned char *) XNFalloc(128);
+        tmp = (unsigned char *) xnfalloc(128);
         memcpy(tmp, page, 128);
         break;
     case 0x100:
@@ -374,7 +374,7 @@ VBEGetVBEInfo(vbeInfoPtr pVbe)
     if (R16(pVbe->pInt10->ax) != 0x4f)
         return NULL;
 
-    block = calloc(1, sizeof(VbeInfoBlock));
+    block = calloc(sizeof(VbeInfoBlock), 1);
     block->VESASignature[0] = ((char *) pVbe->memory)[0];
     block->VESASignature[1] = ((char *) pVbe->memory)[1];
     block->VESASignature[2] = ((char *) pVbe->memory)[2];
@@ -886,7 +886,7 @@ VBEBuildVbeModeList(vbeInfoPtr pVbe, VbeInfoBlock * vbe)
 
         bpp = mode->BitsPerPixel;
 
-        m = XNFcallocarray(1, sizeof(vbeModeInfoRec));
+        m = xnfcalloc(sizeof(vbeModeInfoRec), 1);
         m->width = mode->XResolution;
         m->height = mode->YResolution;
         m->bpp = bpp;
@@ -1078,7 +1078,7 @@ VBEReadPanelID(vbeInfoPtr pVbe)
     case 0x0:
         xf86DrvMsgVerb(screen, X_INFO, 3,
                        "VESA VBE PanelID read successfully\n");
-        tmp = XNFalloc(32);
+        tmp = xnfalloc(32);
         memcpy(tmp, page, 32);
         break;
     case 0x100:

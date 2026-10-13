@@ -26,7 +26,7 @@
 #include <dix-config.h>
 #endif
 
-#include "os/xsha1.h"
+#include "xsha1.h"
 
 #include "misc.h"
 #include "scrnintstr.h"
@@ -385,8 +385,6 @@ AllocateGlyph(xGlyphInfo * gi, int fdepth)
 static Bool
 AllocateGlyphHash(GlyphHashPtr hash, GlyphHashSetPtr hashSet)
 {
-    if (hashSet == NULL)
-        return FALSE;
     hash->table = calloc(hashSet->size, sizeof(GlyphRefRec));
     if (!hash->table)
         return FALSE;

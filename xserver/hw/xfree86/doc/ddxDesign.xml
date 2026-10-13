@@ -1833,7 +1833,6 @@ Some of them are:
     xf86Depth                 -depth from the command line
     xf86Weight                -weight from the command line
     xf86Gamma                 -{r,g,b,}gamma from the command line
-    xf86FlipPixels            -flippixels from the command line
     xf86ProbeOnly             -probeonly from the command line
     defaultColorVisualClass   -cc from the command line
 	</literallayout>
@@ -1890,17 +1889,6 @@ functions:
       <option>-ggamma</option>, <option>-bgamma</option> command line settings.
       If not set on the command line, <literal remap="tt">{0.0, 0.0, 0.0}</literal>
       is returned.
-	    </para></blockquote>
-
-	</para></blockquote>
-
-      <blockquote><para>
-	  <programlisting>
-    Bool xf86GetFlipPixels();
-	  </programlisting>
-	  <blockquote><para>
-      Returns <constant>TRUE</constant> if <option>-flippixels</option> is
-      present on the command line, and <constant>FALSE</constant> otherwise.
 	    </para></blockquote>
 
 	</para></blockquote>
@@ -6016,19 +6004,6 @@ strongly encouraged to improve the consistency of driver behaviour.
 
       <blockquote><para>
 	  <programlisting>
-    void xf86SetBlackWhitePixels(ScrnInfoPtr pScrn);
-	  </programlisting>
-	  <blockquote><para>
-      This functions sets the <structfield>blackPixel</structfield> and
-      <structfield>whitePixel</structfield> fields of the <structname>ScrnInfoRec</structname>
-      according to whether or not the <option>-flipPixels</option> command
-      line options is present.
-	    </para>
-
-	  </blockquote></para></blockquote>
-
-      <blockquote><para>
-	  <programlisting>
     const char *xf86GetVisualName(int visual);
 	  </programlisting>
 	  <blockquote><para>
@@ -6776,6 +6751,30 @@ programming the standard VGA registers, and for handling VGA colourmaps.
 
       <blockquote><para>
 	  <programlisting>
+    Bool vgaHWSetRegCounts(ScrnInfoPtr pScrn, int numCRTC,
+                          int numSequencer, int numGraphics, int numAttribute);
+	  </programlisting>
+	  <blockquote><para>
+      This function allows the number of CRTC, Sequencer, Graphics and
+      Attribute registers to be changed.  This makes it possible for
+      extended registers to be saved and restored with
+      <function>vgaHWSave()</function> and <function>vgaHWRestore()</function>.
+      This function should be called after a <structname>vgaHWRec</structname>
+      has been allocated with <function>vgaHWGetHWRec()</function>.  The
+      default values are defined in <filename>vgaHW.h</filename> as follows:
+
+	      <programlisting>
+#define VGA_NUM_CRTC 25
+#define VGA_NUM_SEQ   5
+#define VGA_NUM_GFX   9
+#define VGA_NUM_ATTR 21
+	      </programlisting>
+	    </para>
+
+	  </blockquote></para></blockquote>
+
+      <blockquote><para>
+	  <programlisting>
     Bool vgaHWCopyReg(vgaRegPtr dst, vgaRegPtr src);
 	  </programlisting>
 	  <blockquote><para>
@@ -6843,7 +6842,7 @@ programming the standard VGA registers, and for handling VGA colourmaps.
       non-default <structfield>MapPhys</structfield> or <structfield>MapSize</structfield>
       settings (the physical location and size of the VGA memory window)
       then those fields of the <structname>vgaHWRec</structname> must be initialised
-      before calling this function.  Otherwise, this function initialises
+      before calling this function.  Otherwise, this function initialiases
       the default values of <constant>0xA0000</constant> for
       <structfield>MapPhys</structfield> and <code>(64&nbsp;*&nbsp;1024)</code> for
       <structfield>MapSize</structfield>.  This function must be called before
@@ -6923,6 +6922,17 @@ programming the standard VGA registers, and for handling VGA colourmaps.
 
       <blockquote><para>
 	  <programlisting>
+    void vgaHWDisable(vgaHWPtr hwp);
+	  </programlisting>
+	  <blockquote><para>
+      This function disables the VGA subsystem.  (Note, this function is
+      present in XFree86 4.1.0 and later.).
+	    </para>
+
+	  </blockquote></para></blockquote>
+
+      <blockquote><para>
+	  <programlisting>
     void vgaHWSave(ScrnInfoPtr pScrn, vgaRegPtr save, int flags);
 	  </programlisting>
 	  <blockquote><para>
@@ -6984,6 +6994,11 @@ programming the standard VGA registers, and for handling VGA colourmaps.
         Graphics[0-8]
         Sequencer[0-4]
 	      </literallayout>
+	    </para>
+
+	    <para>
+    The number of registers actually saved may be modified by a prior call
+    to <function>vgaHWSetRegCounts()</function>.
 	    </para>
 
 	  </blockquote></para></blockquote>
@@ -7063,6 +7078,11 @@ programming the standard VGA registers, and for handling VGA colourmaps.
         Graphics[0-8]
         Sequencer[0-4]
 	      </literallayout>
+	    </para>
+
+	    <para>
+    The number of registers actually restored may be modified by a prior call
+    to <function>vgaHWSetRegCounts()</function>.
 	    </para>
 
 	  </blockquote></para></blockquote>
@@ -7732,7 +7752,7 @@ static const OptionInfoRec ZZZOptions[] = {
 	<programlisting>
 static MODULESETUPPROTO(zzzSetup);
 
-XF86ModuleData zzzModuleData = { .vers = &amp;zzzVersRec, .setup = zzzSetup, .teardown = NULL };
+XF86ModuleData zzzModuleData = { &amp;zzzVersRec, zzzSetup, NULL };
 
 static pointer
 zzzSetup(pointer module, pointer opts, int *errmaj, int *errmin)
@@ -7773,7 +7793,7 @@ zzzSetup(pointer module, pointer opts, int *errmaj, int *errmin)
     The <structname>ScrnInfoRec</structname>'s <structfield>driverPrivate</structfield> is
     initialised to <constant>NULL</constant>, so it is easy to check if the
     initialisation has already been done.  After allocating it, initialise
-    the fields.  By using <function>XNFcallocarray()</function> to do the allocation
+    the fields.  By using <function>xnfcalloc()</function> to do the allocation
     it is zeroed, and if the allocation fails the server exits.
 	</para>
 
@@ -7792,7 +7812,7 @@ ZZZGetRec(ScrnInfoPtr pScrn)
 {
     if (pScrn-&gt;driverPrivate != NULL)
         return TRUE;
-    pScrn-&gt;driverPrivate = XNFcallocarray(1, sizeof(ZZZRec));
+    pScrn-&gt;driverPrivate = xnfcalloc(sizeof(ZZZRec), 1);
     /* Initialise as required */
     ...
     return TRUE;

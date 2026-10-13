@@ -7,34 +7,27 @@
 #include "tests-common.h"
 
 void
-run_test_in_child(const testfunc_t* (*suite)(void), const char *funcname)
+run_test_in_child(int (*func)(void), const char *funcname)
 {
     int cpid;
     int csts;
     int exit_code = -1;
-    const testfunc_t *func = suite();
 
     printf("\n---------------------\n%s...\n", funcname);
-
-    while (*func)
-    {
-        cpid = fork();
-        if (cpid) {
-            waitpid(cpid, &csts, 0);
-            if (!WIFEXITED(csts))
-                goto child_failed;
-            exit_code = WEXITSTATUS(csts);
-            if (exit_code != 0) {
-    child_failed:
-                printf(" FAIL\n");
-                exit(EXIT_FAILURE);
-            }
-        } else {
-            testfunc_t f = *func;
-            f();
-            exit(0);
+    cpid = fork();
+    if (cpid) {
+        waitpid(cpid, &csts, 0);
+        if (!WIFEXITED(csts))
+            goto child_failed;
+        exit_code = WEXITSTATUS(csts);
+        if (exit_code == 0)
+            printf(" Pass\n");
+        else {
+child_failed:
+            printf(" FAIL\n");
+            exit(exit_code);
         }
-        func++;
+    } else {
+        exit(func());
     }
-    printf(" Pass\n");
 }

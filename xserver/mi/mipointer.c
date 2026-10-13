@@ -255,7 +255,7 @@ miPointerCursorLimits(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor,
  *
  * This function is called from:
  *    - sprite init code to place onto initial position
- *    - the various WarpPointer implementations (core, XI, Xinerama,…)
+ *    - the various WarpPointer implementations (core, XI, Xinerama, dmx,…)
  *    - during the cursor update path in CheckMotion
  *    - in the Xinerama part of NewCurrentScreen
  *    - when a RandR/RandR1.2 mode was applied (it may have moved the pointer, so

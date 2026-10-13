@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates.
+ * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -69,13 +69,10 @@ strndup_checks(void)
     free(allofit);
 }
 
-const testfunc_t*
+int
 string_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        strndup_checks,
-        NULL,
-    };
+    strndup_checks();
 
-    return testfuncs;
+    return 0;
 }

@@ -249,7 +249,7 @@ extern _X_EXPORT void fbSetBits(FbStip * bits, int stride, FbStip data);
 	break; \
     case sizeof (FbBits) - 3: \
 	FbStorePart(dst,sizeof (FbBits) - 3,CARD8,xor); \
-	_X_FALLTHROUGH; /* fallthrough */ \
+	/* fallthrough */ \
     case sizeof (FbBits) - 2: \
 	FbStorePart(dst,sizeof (FbBits) - 2,CARD16,xor); \
 	break; \
@@ -442,7 +442,7 @@ typedef struct {
 #define __fbPixDrawableX(pPix)	((pPix)->drawable.x)
 #define __fbPixDrawableY(pPix)	((pPix)->drawable.y)
 
-#if defined(COMPOSITE) || defined(ROOTLESS)
+#ifdef COMPOSITE
 #define __fbPixOffXWin(pPix)	(__fbPixDrawableX(pPix) - (pPix)->screen_x)
 #define __fbPixOffYWin(pPix)	(__fbPixDrawableY(pPix) - (pPix)->screen_y)
 #else
@@ -734,9 +734,6 @@ fbResolveColor(unsigned short *pred,
 
 extern _X_EXPORT Bool
  fbInitializeColormap(ColormapPtr pmap);
-
-extern _X_EXPORT Bool
- mfbCreateColormap(ColormapPtr pmap);
 
 extern _X_EXPORT int
 
@@ -1100,45 +1097,6 @@ extern _X_EXPORT void
 fbSolid(FbBits * dst,
         FbStride dstStride,
         int dstX, int bpp, int width, int height, FbBits and, FbBits xor);
-
-/*
- * fbtile.c
- */
-
-extern _X_EXPORT void
-
-fbEvenTile(FbBits * dst,
-           FbStride dstStride,
-           int dstX,
-           int width,
-           int height,
-           FbBits * tile,
-           FbStride tileStride,
-           int tileHeight, int alu, FbBits pm, int xRot, int yRot);
-
-extern _X_EXPORT void
-
-fbOddTile(FbBits * dst,
-          FbStride dstStride,
-          int dstX,
-          int width,
-          int height,
-          FbBits * tile,
-          FbStride tileStride,
-          int tileWidth,
-          int tileHeight, int alu, FbBits pm, int bpp, int xRot, int yRot);
-
-extern _X_EXPORT void
-
-fbTile(FbBits * dst,
-       FbStride dstStride,
-       int dstX,
-       int width,
-       int height,
-       FbBits * tile,
-       FbStride tileStride,
-       int tileWidth,
-       int tileHeight, int alu, FbBits pm, int bpp, int xRot, int yRot);
 
 /*
  * fbutil.c

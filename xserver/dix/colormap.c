@@ -64,14 +64,6 @@ SOFTWARE.
 #include "privates.h"
 #include "xace.h"
 
-#define REDMAP 0
-#define GREENMAP 1
-#define BLUEMAP 2
-#define PSEUDOMAP 3
-
-#define AllocPrivate (-1)
-#define AllocTemporary (-2)
-
 typedef int (*ColorCompareProcPtr) (EntryPtr /*pent */ ,
                                     xrgb * /*prgb */ );
 
@@ -112,7 +104,8 @@ static void FreeCell(ColormapPtr /*pmap */ ,
                      int        /*channel */
     );
 
-static void doUpdateColors(ColormapPtr pmap);
+static void UpdateColors(ColormapPtr    /*pmap */
+    );
 
 static int AllocDirect(int /*client */ ,
                        ColormapPtr /*pmap */ ,
@@ -377,16 +370,16 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
     }
     pmap->flags |= BeingCreated;
 
-    if (!AddResource(mid, X11_RESTYPE_COLORMAP, (void *) pmap))
+    if (!AddResource(mid, RT_COLORMAP, (void *) pmap))
         return BadAlloc;
 
     /*
      * Security creation/labeling check
      */
-    i = XaceHookResourceAccess(clients[client], mid, X11_RESTYPE_COLORMAP,
-                 pmap, X11_RESTYPE_NONE, NULL, DixCreateAccess);
+    i = XaceHook(XACE_RESOURCE_ACCESS, clients[client], mid, RT_COLORMAP,
+                 pmap, RT_NONE, NULL, DixCreateAccess);
     if (i != Success) {
-        FreeResource(mid, X11_RESTYPE_NONE);
+        FreeResource(mid, RT_NONE);
         return i;
     }
 
@@ -394,7 +387,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
      * this is it.  In specific, if this is a Static colormap, this is the
      * time to fill in the colormap's values */
     if (!(*pScreen->CreateColormap) (pmap)) {
-        FreeResource(mid, X11_RESTYPE_NONE);
+        FreeResource(mid, RT_NONE);
         return BadAlloc;
     }
     pmap->flags &= ~BeingCreated;
@@ -562,7 +555,7 @@ CopyColormapAndFree(Colormap mid, ColormapPtr pSrc, int client)
         }
         pSrc->flags &= ~AllAllocated;
         FreePixels(pSrc, client);
-        doUpdateColors(pmap);
+        UpdateColors(pmap);
         return Success;
     }
 
@@ -572,8 +565,8 @@ CopyColormapAndFree(Colormap mid, ColormapPtr pSrc, int client)
         CopyFree(BLUEMAP, client, pSrc, pmap);
     }
     if (pmap->class & DynamicClass)
-        doUpdateColors(pmap);
-    /* XXX should worry about removing any X11_RESTYPE_CMAPENTRY resource */
+        UpdateColors(pmap);
+    /* XXX should worry about removing any RT_CMAPENTRY resource */
     return Success;
 }
 
@@ -702,7 +695,7 @@ FreeCell(ColormapPtr pmap, Pixel i, int channel)
 }
 
 static void
-doUpdateColors(ColormapPtr pmap)
+UpdateColors(ColormapPtr pmap)
 {
     xColorItem *defs;
     xColorItem *pdef;
@@ -1023,7 +1016,7 @@ AllocColor(ColormapPtr pmap,
             ColormapPtr prootmap;
 
             dixLookupResourceByType((void **) &prootmap,
-                                    pmap->pScreen->defColormap, X11_RESTYPE_COLORMAP,
+                                    pmap->pScreen->defColormap, RT_COLORMAP,
                                     clients[client], DixReadAccess);
 
             if (pmap->class == prootmap->class)
@@ -1041,7 +1034,7 @@ AllocColor(ColormapPtr pmap,
             ColormapPtr prootmap;
 
             dixLookupResourceByType((void **) &prootmap,
-                                    pmap->pScreen->defColormap, X11_RESTYPE_COLORMAP,
+                                    pmap->pScreen->defColormap, RT_COLORMAP,
                                     clients[client], DixReadAccess);
 
             if (pmap->class == prootmap->class) {
@@ -1094,7 +1087,7 @@ AllocColor(ColormapPtr pmap,
         }
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), X11_RESTYPE_CMAPENTRY, (void *) pcr))
+        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
             return BadAlloc;
     }
     return Success;
@@ -1136,7 +1129,7 @@ FakeAllocColor(ColormapPtr pmap, xColorItem * item)
             item->pixel = temp;
             break;
         }
-        _X_FALLTHROUGH; /* fall through ... */
+        /* fall through ... */
     case StaticColor:
     case StaticGray:
         item->pixel = FindBestPixel(pmap->red, entries, &rgb, PSEUDOMAP);
@@ -1257,7 +1250,7 @@ FindBestPixel(EntryPtr pentFirst, int size, xrgb * prgb, int channel)
         case PSEUDOMAP:
             dg = (long) pent->co.local.green - prgb->green;
             db = (long) pent->co.local.blue - prgb->blue;
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case REDMAP:
             dr = (long) pent->co.local.red - prgb->red;
             break;
@@ -1487,7 +1480,7 @@ FreeClientPixels(void *value, XID fakeid)
     colorResource *pcr = value;
     int rc;
 
-    rc = dixLookupResourceByType(&pmap, pcr->mid, X11_RESTYPE_COLORMAP, serverClient,
+    rc = dixLookupResourceByType(&pmap, pcr->mid, RT_COLORMAP, serverClient,
                                  DixRemoveAccess);
     if (rc == Success)
         FreePixels((ColormapPtr) pmap, pcr->client);
@@ -1550,7 +1543,7 @@ AllocColorCells(int client, ColormapPtr pmap, int colors, int planes,
     if ((ok == Success) && pcr) {
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), X11_RESTYPE_CMAPENTRY, (void *) pcr))
+        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
             ok = BadAlloc;
     }
     else
@@ -1632,7 +1625,7 @@ AllocColorPlanes(int client, ColormapPtr pmap, int colors,
     if ((ok == Success) && pcr) {
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), X11_RESTYPE_CMAPENTRY, (void *) pcr))
+        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
             ok = BadAlloc;
     }
     else
@@ -2107,7 +2100,7 @@ FreeColors(ColormapPtr pmap, int client, int count, Pixel * pixels, Pixel mask)
         clients[client]->errorValue = *pixels | mask;
         result = BadValue;
     }
-    /* XXX should worry about removing any X11_RESTYPE_CMAPENTRY resource */
+    /* XXX should worry about removing any RT_CMAPENTRY resource */
     return result;
 }
 
@@ -2554,7 +2547,7 @@ ResizeVisualArray(ScreenPtr pScreen, int new_visual_count, DepthPtr depth)
 
     cdata.visuals = visuals;
     cdata.pScreen = pScreen;
-    FindClientResourcesByType(serverClient, X11_RESTYPE_COLORMAP,
+    FindClientResourcesByType(serverClient, RT_COLORMAP,
                               _colormap_find_resource, &cdata);
 
     pScreen->visuals = visuals;

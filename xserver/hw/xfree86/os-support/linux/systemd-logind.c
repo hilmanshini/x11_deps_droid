@@ -32,9 +32,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "config/dbus-core.h"
-
 #include "os.h"
+#include "dbus-core.h"
 #include "linux.h"
 #include "xf86.h"
 #include "xf86platformBus.h"
@@ -311,19 +310,15 @@ cleanup:
  */
 void systemd_logind_drop_master(void)
 {
-    struct systemd_logind_info *info = &logind_info;
     int i;
-    /* Our VT_PROCESS usage guarantees we've already given up the vt */
-    info->active = info->vt_active = FALSE;
     for (i = 0; i < xf86_num_platform_devices; i++) {
         if (xf86_platform_devices[i].flags & XF86_PDEV_SERVER_FD) {
             dbus_int32_t major, minor;
+            struct systemd_logind_info *info = &logind_info;
 
             xf86_platform_devices[i].flags |= XF86_PDEV_PAUSED;
             major = xf86_platform_odev_attributes(i)->major;
             minor = xf86_platform_odev_attributes(i)->minor;
-            LogMessage(X_INFO, "systemd-logind: drop master for %u:%u\n",
-               major, minor);
             systemd_logind_ack_pause(info, minor, major);
         }
     }
@@ -397,11 +392,6 @@ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
             dbus_error_free(&error);
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         }
-
-        /*
-         * fd will be received via DBus if and only if pause == 0, so it
-         * only needs to be closed in that code path
-         */
     } else
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
@@ -436,7 +426,6 @@ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
         info->active = TRUE;
 
         if (pdev) {
-            close(fd);
             pdev->flags &= ~XF86_PDEV_PAUSED;
         } else
             systemd_logind_set_input_fd_for_all_devs(major, minor, fd,
@@ -451,7 +440,6 @@ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
 static void
 connect_hook(DBusConnection *connection, void *data)
 {
-    const char *session_type = "x11";
     struct systemd_logind_info *info = data;
     DBusError error;
     DBusMessage *msg = NULL;
@@ -517,33 +505,6 @@ connect_hook(DBusConnection *connection, void *data)
         LogMessage(X_ERROR, "systemd-logind: TakeControl failed: %s\n",
                    error.message);
         goto cleanup;
-    }
-    dbus_message_unref(msg);
-    dbus_message_unref(reply);
-    reply = NULL;
-
-    msg = dbus_message_new_method_call("org.freedesktop.login1",
-            session, "org.freedesktop.login1.Session", "SetType");
-    if (!msg) {
-        LogMessage(X_ERROR, "systemd-logind: out of memory\n");
-        goto cleanup;
-    }
-
-    if (!dbus_message_append_args(msg, DBUS_TYPE_STRING, &session_type,
-                                  DBUS_TYPE_INVALID)) {
-        LogMessage(X_ERROR, "systemd-logind: out of memory\n");
-        goto cleanup;
-    }
-
-    reply = dbus_connection_send_with_reply_and_block(connection, msg,
-                                                      DBUS_TIMEOUT_USE_DEFAULT, &error);
-    /* Requires systemd >= 246, SetType() is not critical for xserver function */
-    if (!reply) {
-        /* unprevileged users get access denied rather than unknown method */
-        if (!dbus_error_has_name(&error, DBUS_ERROR_ACCESS_DENIED) &&
-            !dbus_error_has_name(&error, DBUS_ERROR_UNKNOWN_METHOD))
-            LogMessage(X_WARNING, "systemd-logind: SetType failed: %s\n", error.message);
-        dbus_error_free(&error);
     }
 
     dbus_bus_add_match(connection,

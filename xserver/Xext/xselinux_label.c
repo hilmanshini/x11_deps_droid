@@ -326,13 +326,13 @@ SELinuxTypeToClass(RESTYPE type)
 
         if (type & RC_DRAWABLE)
             class = SECCLASS_X_DRAWABLE;
-        else if (type == X11_RESTYPE_GC)
+        else if (type == RT_GC)
             class = SECCLASS_X_GC;
-        else if (type == X11_RESTYPE_FONT)
+        else if (type == RT_FONT)
             class = SECCLASS_X_FONT;
-        else if (type == X11_RESTYPE_CURSOR)
+        else if (type == RT_CURSOR)
             class = SECCLASS_X_CURSOR;
-        else if (type == X11_RESTYPE_COLORMAP)
+        else if (type == RT_COLORMAP)
             class = SECCLASS_X_COLORMAP;
         else {
             /* Need to do a string lookup */

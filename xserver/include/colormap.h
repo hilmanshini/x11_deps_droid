@@ -51,6 +51,16 @@ SOFTWARE.
 #include "screenint.h"
 #include "window.h"
 
+/* these follow X.h's AllocNone and AllocAll */
+#define CM_PSCREEN 2
+#define CM_PWIN	   3
+/* Passed internally in colormap.c */
+#define REDMAP 0
+#define GREENMAP 1
+#define BLUEMAP 2
+#define PSEUDOMAP 3
+#define AllocPrivate (-1)
+#define AllocTemporary (-2)
 #define DynamicClass  1
 
 /* Values for the flags field of a colormap. These should have 1 bit set
@@ -61,6 +71,9 @@ SOFTWARE.
 
 typedef CARD32 Pixel;
 typedef struct _CMEntry *EntryPtr;
+
+/* moved to screenint.h: typedef struct _ColormapRec *ColormapPtr */
+typedef struct _colorResource *colorResourcePtr;
 
 extern _X_EXPORT int CreateColormap(Colormap /*mid */ ,
                                     ScreenPtr /*pScreen */ ,

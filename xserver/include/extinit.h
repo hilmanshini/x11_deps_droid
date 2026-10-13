@@ -108,7 +108,6 @@ extern _X_EXPORT Bool noScreenSaverExtension;
 extern void ScreenSaverExtensionInit(void);
 #endif
 
-extern _X_EXPORT Bool noShapeExtension;
 extern void ShapeExtensionInit(void);
 
 #ifdef MITSHM

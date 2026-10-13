@@ -80,6 +80,17 @@ SOFTWARE.
 #include "xf86Extensions.h"
 #endif
 
+#ifdef HAVE_DMX_CONFIG_H
+#include <dmx-config.h>
+#undef XV
+#undef DBE
+#undef SCREENSAVER
+#undef RANDR
+#undef DAMAGE
+#undef COMPOSITE
+#undef MITSHM
+#endif
+
 #ifdef HAVE_XNEST_CONFIG_H
 #include <xnest-config.h>
 #undef COMPOSITE
@@ -98,7 +109,7 @@ SOFTWARE.
 /* List of built-in (statically linked) extensions */
 static const ExtensionModule staticExtensions[] = {
     {GEExtensionInit, "Generic Event Extension", &noGEExtension},
-    {ShapeExtensionInit, "SHAPE", &noShapeExtension},
+    {ShapeExtensionInit, "SHAPE", NULL},
 #ifdef MITSHM
     {ShmExtensionInit, "MIT-SHM", &noMITShmExtension},
 #endif

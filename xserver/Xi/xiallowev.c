@@ -50,9 +50,10 @@ SProcXIAllowEvents(ClientPtr client)
     REQUEST(xXIAllowEventsReq);
     REQUEST_AT_LEAST_SIZE(xXIAllowEventsReq);
 
+    swaps(&stuff->length);
     swaps(&stuff->deviceid);
     swapl(&stuff->time);
-    if (client->req_len > 3) {
+    if (stuff->length > 3) {
         xXI2_2AllowEventsReq *req_xi22 = (xXI2_2AllowEventsReq *) stuff;
 
         REQUEST_AT_LEAST_SIZE(xXI2_2AllowEventsReq);

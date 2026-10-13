@@ -25,9 +25,9 @@
 #include "glamor_program.h"
 
 static Bool
-use_solid(DrawablePtr drawable, GCPtr gc, glamor_program *prog, void *arg)
+use_solid(PixmapPtr pixmap, GCPtr gc, glamor_program *prog, void *arg)
 {
-    return glamor_set_solid(drawable, gc, TRUE, prog->fg_uniform);
+    return glamor_set_solid(pixmap, gc, TRUE, prog->fg_uniform);
 }
 
 const glamor_facet glamor_fill_solid = {
@@ -38,9 +38,9 @@ const glamor_facet glamor_fill_solid = {
 };
 
 static Bool
-use_tile(DrawablePtr drawable, GCPtr gc, glamor_program *prog, void *arg)
+use_tile(PixmapPtr pixmap, GCPtr gc, glamor_program *prog, void *arg)
 {
-    return glamor_set_tiled(drawable, gc, prog->fill_offset_uniform, prog->fill_size_inv_uniform);
+    return glamor_set_tiled(pixmap, gc, prog->fill_offset_uniform, prog->fill_size_inv_uniform);
 }
 
 static const glamor_facet glamor_fill_tile = {
@@ -52,9 +52,9 @@ static const glamor_facet glamor_fill_tile = {
 };
 
 static Bool
-use_stipple(DrawablePtr drawable, GCPtr gc, glamor_program *prog, void *arg)
+use_stipple(PixmapPtr pixmap, GCPtr gc, glamor_program *prog, void *arg)
 {
-    return glamor_set_stippled(drawable, gc, prog->fg_uniform,
+    return glamor_set_stippled(pixmap, gc, prog->fg_uniform,
                                prog->fill_offset_uniform,
                                prog->fill_size_inv_uniform);
 }
@@ -71,11 +71,11 @@ static const glamor_facet glamor_fill_stipple = {
 };
 
 static Bool
-use_opaque_stipple(DrawablePtr drawable, GCPtr gc, glamor_program *prog, void *arg)
+use_opaque_stipple(PixmapPtr pixmap, GCPtr gc, glamor_program *prog, void *arg)
 {
-    if (!use_stipple(drawable, gc, prog, arg))
+    if (!use_stipple(pixmap, gc, prog, arg))
         return FALSE;
-    glamor_set_color(drawable, gc->bgPixel, prog->bg_uniform);
+    glamor_set_color(pixmap, gc->bgPixel, prog->bg_uniform);
     return TRUE;
 }
 
@@ -117,36 +117,12 @@ static glamor_location_var location_vars[] = {
         .location = glamor_program_location_fillsamp,
         .fs_vars = "uniform sampler2D sampler;\n"
     },
-    /*
-     * fill_pos selects texels via (offset + pixel) * (1/width, 1/height).
-     *
-     * On GLES, GLAMOR_DEFAULT_PRECISION sets mediump float in the fragment
-     * shader. mediump typically has only ~10 bits of relative precision, so
-     * for large destinations (e.g. 2560px wide) UVs near the right edge can
-     * be off by about a pixel. With GL_NEAREST sampling that shows up as
-     * shifted or broken edges in CopyArea / texture-fill paths (including
-     * Xwayland n-buffer blits).
-     *
-     * Keep the global mediump default for other FS math; only force highp
-     * for these UV uniforms/ins/outs so pixel-exact sampling stays correct
-     * without paying highp everywhere.
-     */
     {
         .location = glamor_program_location_fillpos,
-        .vs_vars = ("#ifdef GL_ES\n"
-                    "uniform highp vec2 fill_offset;\n"
-                    "uniform highp vec2 fill_size_inv;\n"
-                    "out highp vec2 fill_pos;\n"
-                    "#else\n"
-                    "uniform vec2 fill_offset;\n"
+        .vs_vars = ("uniform vec2 fill_offset;\n"
                     "uniform vec2 fill_size_inv;\n"
-                    "out vec2 fill_pos;\n"
-                    "#endif\n"),
-        .fs_vars = ("#ifdef GL_ES\n"
-                    "in highp vec2 fill_pos;\n"
-                    "#else\n"
-                    "in vec2 fill_pos;\n"
-                    "#endif\n")
+                    "out vec2 fill_pos;\n"),
+        .fs_vars = ("in vec2 fill_pos;\n")
     },
     {
         .location = glamor_program_location_font,
@@ -436,29 +412,29 @@ fail:
 }
 
 Bool
-glamor_use_program(DrawablePtr          drawable,
+glamor_use_program(PixmapPtr            pixmap,
                    GCPtr                gc,
                    glamor_program       *prog,
                    void                 *arg)
 {
     glUseProgram(prog->prog);
 
-    if (prog->prim_use && !prog->prim_use(drawable, gc, prog, arg))
+    if (prog->prim_use && !prog->prim_use(pixmap, gc, prog, arg))
         return FALSE;
 
-    if (prog->fill_use && !prog->fill_use(drawable, gc, prog, arg))
+    if (prog->fill_use && !prog->fill_use(pixmap, gc, prog, arg))
         return FALSE;
 
     return TRUE;
 }
 
 glamor_program *
-glamor_use_program_fill(DrawablePtr             drawable,
+glamor_use_program_fill(PixmapPtr               pixmap,
                         GCPtr                   gc,
                         glamor_program_fill     *program_fill,
                         const glamor_facet      *prim)
 {
-    ScreenPtr                   screen = drawable->pScreen;
+    ScreenPtr                   screen = pixmap->drawable.pScreen;
     glamor_program              *prog = &program_fill->progs[gc->fillStyle];
 
     int                         fill_style = gc->fillStyle;
@@ -476,7 +452,7 @@ glamor_use_program_fill(DrawablePtr             drawable,
             return NULL;
     }
 
-    if (!glamor_use_program(drawable, gc, prog, NULL))
+    if (!glamor_use_program(pixmap, gc, prog, NULL))
         return NULL;
 
     return prog;

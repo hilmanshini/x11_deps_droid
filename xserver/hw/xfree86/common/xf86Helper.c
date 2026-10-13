@@ -38,9 +38,7 @@
 #include <xorg-config.h>
 #endif
 
-#include <sys/stat.h>
 #include <X11/X.h>
-
 #include "mi.h"
 #include "os.h"
 #include "servermd.h"
@@ -79,9 +77,9 @@ xf86AddDriver(DriverPtr driver, void *module, int flags)
         xf86NumDrivers = 0;
 
     xf86NumDrivers++;
-    xf86DriverList = XNFreallocarray(xf86DriverList,
+    xf86DriverList = xnfreallocarray(xf86DriverList,
                                      xf86NumDrivers, sizeof(DriverPtr));
-    xf86DriverList[xf86NumDrivers - 1] = XNFalloc(sizeof(DriverRec));
+    xf86DriverList[xf86NumDrivers - 1] = xnfalloc(sizeof(DriverRec));
     *xf86DriverList[xf86NumDrivers - 1] = *driver;
     xf86DriverList[xf86NumDrivers - 1]->module = module;
     xf86DriverList[xf86NumDrivers - 1]->refCount = 0;
@@ -112,11 +110,11 @@ xf86AddInputDriver(InputDriverPtr driver, void *module, int flags)
         xf86NumInputDrivers = 0;
 
     xf86NumInputDrivers++;
-    xf86InputDriverList = XNFreallocarray(xf86InputDriverList,
+    xf86InputDriverList = xnfreallocarray(xf86InputDriverList,
                                           xf86NumInputDrivers,
                                           sizeof(InputDriverPtr));
     xf86InputDriverList[xf86NumInputDrivers - 1] =
-        XNFalloc(sizeof(InputDriverRec));
+        xnfalloc(sizeof(InputDriverRec));
     *xf86InputDriverList[xf86NumInputDrivers - 1] = *driver;
     xf86InputDriverList[xf86NumInputDrivers - 1]->module = module;
 }
@@ -168,9 +166,9 @@ xf86AllocateScreen(DriverPtr drv, int flags)
         if (xf86GPUScreens == NULL)
             xf86NumGPUScreens = 0;
         i = xf86NumGPUScreens++;
-        xf86GPUScreens = XNFreallocarray(xf86GPUScreens, xf86NumGPUScreens,
+        xf86GPUScreens = xnfreallocarray(xf86GPUScreens, xf86NumGPUScreens,
                                          sizeof(ScrnInfoPtr));
-        xf86GPUScreens[i] = XNFcallocarray(1, sizeof(ScrnInfoRec));
+        xf86GPUScreens[i] = xnfcalloc(sizeof(ScrnInfoRec), 1);
         pScrn = xf86GPUScreens[i];
         pScrn->scrnIndex = i + GPU_SCREEN_OFFSET;      /* Changes when a screen is removed */
         pScrn->is_gpu = TRUE;
@@ -179,16 +177,16 @@ xf86AllocateScreen(DriverPtr drv, int flags)
             xf86NumScreens = 0;
 
         i = xf86NumScreens++;
-        xf86Screens = XNFreallocarray(xf86Screens, xf86NumScreens,
+        xf86Screens = xnfreallocarray(xf86Screens, xf86NumScreens,
                                       sizeof(ScrnInfoPtr));
-        xf86Screens[i] = XNFcallocarray(1, sizeof(ScrnInfoRec));
+        xf86Screens[i] = xnfcalloc(sizeof(ScrnInfoRec), 1);
         pScrn = xf86Screens[i];
 
         pScrn->scrnIndex = i;      /* Changes when a screen is removed */
     }
 
     pScrn->origIndex = pScrn->scrnIndex;      /* This never changes */
-    pScrn->privates = XNFcallocarray(xf86ScrnInfoPrivateCount, sizeof(DevUnion));
+    pScrn->privates = xnfcalloc(sizeof(DevUnion), xf86ScrnInfoPrivateCount);
     /*
      * EnableDisableFBAccess now gets initialized in InitOutput()
      * pScrn->EnableDisableFBAccess = xf86EnableDisableFBAccess;
@@ -290,7 +288,7 @@ xf86AllocateScrnInfoPrivateIndex(void)
     idx = xf86ScrnInfoPrivateCount++;
     for (i = 0; i < xf86NumScreens; i++) {
         pScr = xf86Screens[i];
-        nprivs = XNFreallocarray(pScr->privates,
+        nprivs = xnfreallocarray(pScr->privates,
                                  xf86ScrnInfoPrivateCount, sizeof(DevUnion));
         /* Zero the new private */
         memset(&nprivs[idx], 0, sizeof(DevUnion));
@@ -298,7 +296,7 @@ xf86AllocateScrnInfoPrivateIndex(void)
     }
     for (i = 0; i < xf86NumGPUScreens; i++) {
         pScr = xf86GPUScreens[i];
-        nprivs = XNFreallocarray(pScr->privates,
+        nprivs = xnfreallocarray(pScr->privates,
                                  xf86ScrnInfoPrivateCount, sizeof(DevUnion));
         /* Zero the new private */
         memset(&nprivs[idx], 0, sizeof(DevUnion));
@@ -558,13 +556,13 @@ xf86SetDepthBpp(ScrnInfoPtr scrp, int depth, int dummy, int fbbpp,
     if (i == scrp->confScreen->numdisplays) {
         scrp->confScreen->numdisplays++;
         scrp->confScreen->displays =
-            XNFreallocarray(scrp->confScreen->displays,
+            xnfreallocarray(scrp->confScreen->displays,
                             scrp->confScreen->numdisplays, sizeof(DispPtr));
         xf86DrvMsg(scrp->scrnIndex, X_INFO,
                    "Creating default Display subsection in Screen section\n"
                    "\t\"%s\" for depth/fbbpp %d/%d\n",
                    scrp->confScreen->id, scrp->depth, scrp->bitsPerPixel);
-        scrp->confScreen->displays[i] = XNFcallocarray(1, sizeof(DispRec));
+        scrp->confScreen->displays[i] = xnfcalloc(1, sizeof(DispRec));
         memset(scrp->confScreen->displays[i], 0, sizeof(DispRec));
         scrp->confScreen->displays[i]->blackColour.red = -1;
         scrp->confScreen->displays[i]->blackColour.green = -1;
@@ -573,7 +571,7 @@ xf86SetDepthBpp(ScrnInfoPtr scrp, int depth, int dummy, int fbbpp,
         scrp->confScreen->displays[i]->whiteColour.green = -1;
         scrp->confScreen->displays[i]->whiteColour.blue = -1;
         scrp->confScreen->displays[i]->defaultVisual = -1;
-        scrp->confScreen->displays[i]->modes = XNFalloc(sizeof(char *));
+        scrp->confScreen->displays[i]->modes = xnfalloc(sizeof(char *));
         scrp->confScreen->displays[i]->modes[0] = NULL;
         scrp->confScreen->displays[i]->depth = depth;
         scrp->confScreen->displays[i]->fbbpp = fbbpp;
@@ -954,14 +952,8 @@ xf86SetDpi(ScrnInfoPtr pScrn, int x, int y)
 void
 xf86SetBlackWhitePixels(ScreenPtr pScreen)
 {
-    if (xf86FlipPixels) {
-        pScreen->whitePixel = 0;
-        pScreen->blackPixel = 1;
-    }
-    else {
-        pScreen->whitePixel = 1;
-        pScreen->blackPixel = 0;
-    }
+    pScreen->whitePixel = 1;
+    pScreen->blackPixel = 0;
 }
 
 /*
@@ -1162,12 +1154,12 @@ xf86LogInit(void)
     if (xf86LogFileFrom == X_DEFAULT) {
         /* When not running as root, we won't be able to write to /var/log */
         if (geteuid() != 0) {
-            if ((env = getenv("XDG_STATE_HOME")))
+            if ((env = getenv("XDG_DATA_HOME")))
                 snprintf(buf, sizeof(buf), "%s/%s", env,
-                         DEFAULT_XDG_STATE_HOME_LOGDIR);
+                         DEFAULT_XDG_DATA_HOME_LOGDIR);
             else if ((env = getenv("HOME")))
                 snprintf(buf, sizeof(buf), "%s/%s/%s", env,
-                         DEFAULT_XDG_STATE_HOME, DEFAULT_XDG_STATE_HOME_LOGDIR);
+                         DEFAULT_XDG_DATA_HOME, DEFAULT_XDG_DATA_HOME_LOGDIR);
 
             if (env) {
                 xf86_mkdir_p(buf);
@@ -1328,7 +1320,7 @@ xf86MatchDevice(const char *drivername, GDevPtr ** sectlist)
             /*
              * we have a matching driver that wasn't claimed, yet
              */
-            pgdp = XNFreallocarray(pgdp, i + 2, sizeof(GDevPtr));
+            pgdp = xnfreallocarray(pgdp, i + 2, sizeof(GDevPtr));
             pgdp[i++] = screensecptr->device;
         }
         for (k = 0; k < screensecptr->num_gpu_devices; k++) {
@@ -1338,7 +1330,7 @@ xf86MatchDevice(const char *drivername, GDevPtr ** sectlist)
                 /*
                  * we have a matching driver that wasn't claimed, yet
                  */
-                pgdp = XNFrealloc(pgdp, (i + 2) * sizeof(GDevPtr));
+                pgdp = xnfrealloc(pgdp, (i + 2) * sizeof(GDevPtr));
                 pgdp[i++] = screensecptr->gpu_devices[k];
             }
         }
@@ -1351,7 +1343,7 @@ xf86MatchDevice(const char *drivername, GDevPtr ** sectlist)
         if (gdp->driver && !gdp->claimed &&
             !xf86NameCmp(gdp->driver, drivername)) {
             /* we have a matching driver that wasn't claimed yet */
-            pgdp = XNFreallocarray(pgdp, i + 2, sizeof(GDevPtr));
+            pgdp = xnfreallocarray(pgdp, i + 2, sizeof(GDevPtr));
             pgdp[i++] = gdp;
         }
         j++;
@@ -1401,12 +1393,6 @@ Gamma
 xf86GetGamma(void)
 {
     return xf86Gamma;
-}
-
-Bool
-xf86GetFlipPixels(void)
-{
-    return xf86FlipPixels;
 }
 
 Bool
@@ -1549,7 +1535,7 @@ xf86SetBackingStore(ScreenPtr pScreen)
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     OptionInfoPtr options;
 
-    options = XNFalloc(sizeof(BSOptions));
+    options = xnfalloc(sizeof(BSOptions));
     (void) memcpy(options, BSOptions, sizeof(BSOptions));
     xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, options);
 
@@ -1595,7 +1581,7 @@ xf86SetSilkenMouse(ScreenPtr pScreen)
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     OptionInfoPtr options;
 
-    options = XNFalloc(sizeof(SMOptions));
+    options = xnfalloc(sizeof(SMOptions));
     (void) memcpy(options, SMOptions, sizeof(SMOptions));
     xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, options);
 

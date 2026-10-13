@@ -31,9 +31,6 @@ from The Open Group.
 #ifdef HAVE_XWIN_CONFIG_H
 #include <xwin-config.h>
 #endif
-
-#include "os/osdep.h"
-
 #include "win.h"
 #include "winmsg.h"
 #include "winconfig.h"
@@ -114,11 +111,7 @@ static PixmapFormatRec g_PixmapFormats[] = {
     {32, 32, BITMAP_SCANLINE_PAD}
 };
 
-#ifdef GLXEXT
-#ifdef XWIN_WINDOWS_DRI
 static Bool noDriExtension;
-#endif
-#endif
 
 static const ExtensionModule xwinExtensions[] = {
 #ifdef GLXEXT
@@ -194,7 +187,7 @@ ddxGiveUp(enum ExitCode error)
 {
     int i;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("ddxGiveUp\n");
 #endif
 
@@ -580,9 +573,9 @@ winFixupPaths(void)
         putenv(buffer);
     }
     if (getenv("HOME") == NULL) {
-        char buffer[MAX_PATH + 5] = {0};
+        char buffer[MAX_PATH + 5];
 
-        strncpy(buffer, "HOME=", 6);
+        strncpy(buffer, "HOME=", 5);
 
         /* query appdata directory */
         if (SHGetFolderPathA
@@ -909,7 +902,7 @@ InitOutput(ScreenInfo * pScreenInfo, int argc, char *argv[])
     /* Log the command line */
     winLogCommandLine(argc, argv);
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("InitOutput\n");
 #endif
 
@@ -1027,7 +1020,7 @@ InitOutput(ScreenInfo * pScreenInfo, int argc, char *argv[])
         winGenerateAuthorization();
 
 
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
     winDebug("InitOutput - Returning.\n");
 #endif
 }

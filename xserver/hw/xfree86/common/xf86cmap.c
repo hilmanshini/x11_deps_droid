@@ -29,12 +29,17 @@
 #include <xorg-config.h>
 #endif
 
+#if defined(_XOPEN_SOURCE) || defined(__sun) && defined(__SVR4)
 #include <math.h>
+#else
+#define _XOPEN_SOURCE           /* to get prototype for pow on some systems */
+#include <math.h>
+#undef _XOPEN_SOURCE
+#endif
+
 #include <X11/X.h>
-#include <X11/Xproto.h>
-
 #include "misc.h"
-
+#include <X11/Xproto.h>
 #include "colormapst.h"
 #include "scrnintstr.h"
 
@@ -213,7 +218,7 @@ xf86HandleColormaps(ScreenPtr pScreen,
 
     /* get the default map */
     dixLookupResourceByType((void **) &pDefMap, pScreen->defColormap,
-                            X11_RESTYPE_COLORMAP, serverClient, DixInstallAccess);
+                            RT_COLORMAP, serverClient, DixInstallAccess);
 
     if (!CMapAllocateColormapPrivate(pDefMap)) {
         CMapUnwrapScreen(pScreen);

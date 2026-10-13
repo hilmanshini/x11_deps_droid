@@ -62,7 +62,7 @@ MitAddCookie(unsigned short data_length, const char *data, XID id)
     }
     new->next = mit_auth;
     mit_auth = new;
-    memcpy(new->data, data, (size_t) data_length);
+    memmove(new->data, data, (int) data_length);
     new->len = data_length;
     new->id = id;
     return 1;

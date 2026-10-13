@@ -75,23 +75,25 @@ OR PERFORMANCE OF THIS SOFTWARE.
  * authorization from the copyright holder(s) and author(s).
  */
 
-#define _POSIX_THREAD_SAFE_FUNCTIONS // for localtime_r on mingw32
-
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
 #endif
 
-#include <errno.h>
+#include <X11/Xos.h>
 #include <stdio.h>
+#include <time.h>
+#include <sys/stat.h>
 #include <stdarg.h>
 #include <stdlib.h>             /* for malloc() */
-#include <sys/stat.h>
-#include <time.h>
-#include <X11/Xfuncproto.h>
-#include <X11/Xos.h>
+#include <errno.h>
 
 #include "input.h"
 #include "opaque.h"
+
+#ifdef WIN32
+#include <process.h>
+#define getpid(x) _getpid(x)
+#endif
 
 #ifdef XF86BIGFONT
 #include "xf86bigfontsrv.h"
@@ -418,7 +420,7 @@ vpnprintf(char *string, int size_in, const char *f, va_list args)
     int f_idx = 0;
     int s_idx = 0;
     int f_len = strlen_sigsafe(f);
-    const char *string_arg;
+    char *string_arg;
     char number[21];
     int p_len;
     int i;
@@ -474,8 +476,6 @@ vpnprintf(char *string, int size_in, const char *f, va_list args)
         switch (f[f_idx]) {
         case 's':
             string_arg = va_arg(args, char*);
-            if (!string_arg)
-                string_arg = "(null)";
 
             for (i = 0; string_arg[i] != 0 && s_idx < size - 1 && s_idx < precision; i++)
                 string[s_idx++] = string_arg[i];
@@ -528,7 +528,6 @@ vpnprintf(char *string, int size_in, const char *f, va_list args)
             break;
 
         case 'x':
-        case 'X': // not actually upper case, but at least accepting '%X'
             if (length_modifier & LMOD_LONGLONG)
                 ui = va_arg(args, unsigned long long);
             else if (length_modifier & LMOD_LONG)
@@ -613,16 +612,8 @@ LogSWrite(int verb, const char *buf, size_t len, Bool end_line)
 #endif
         }
         else if (!inSignalContext && logFile) {
-            if (newline) {
-                time_t t = time(NULL);
-                struct tm tm;
-                char fmt_tm[32];
-
-                localtime_r(&t, &tm);
-                strftime(fmt_tm, sizeof(fmt_tm) - 1, "%Y-%m-%d %H:%M:%S", &tm);
-
-                fprintf(logFile, "[%s] ", fmt_tm);
-            }
+            if (newline)
+                fprintf(logFile, "[%10.3f] ", GetTimeInMillis() / 1000.0);
             newline = end_line;
             fwrite(buf, len, 1, logFile);
             if (logFlush) {

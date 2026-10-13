@@ -47,9 +47,6 @@ from The Open Group.
 #include    <X11/Xw32defs.h>
 #endif
 #include   <stdlib.h>       /* for arc4random_buf() */
-#ifdef HAVE_GETRANDOM
-#include   <sys/random.h>   /* for getrandom() */
-#endif
 
 struct protocol {
     unsigned short name_length;
@@ -76,6 +73,15 @@ static struct protocol protocols[] = {
     {(unsigned short) 19, "XDM-AUTHORIZATION-1",
      XdmAddCookie, XdmCheckCookie, XdmResetCookie,
      XdmFromID, XdmRemoveCookie,
+#ifdef XCSECURITY
+     NULL
+#endif
+     },
+#endif
+#ifdef SECURE_RPC
+    {(unsigned short) 9, "SUN-DES-1",
+     SecureRPCAdd, SecureRPCCheck, SecureRPCReset,
+     SecureRPCFromID, SecureRPCRemove,
 #ifdef XCSECURITY
      NULL
 #endif
@@ -305,40 +311,13 @@ GenerateAuthorization(unsigned name_length,
 void
 GenerateRandomData(int len, char *buf)
 {
-#ifdef HAVE_GETRANDOM
-    ssize_t ret;
-    int pos = 0;
-
-    while (pos < len) {
-        ret = getrandom(buf + pos, len - pos, 0);
-        if (ret <= 0) {
-            if (ret < 0 && errno == EINTR)
-                continue;
-            FatalError("Cannot read random data via getrandom(): %s\n",
-                       strerror(errno));
-        }
-        pos += ret;
-    }
-#elif defined(HAVE_ARC4RANDOM_BUF)
+#ifdef HAVE_ARC4RANDOM_BUF
     arc4random_buf(buf, len);
 #else
     int fd;
-    int ret;
-    int pos = 0;
 
     fd = open("/dev/urandom", O_RDONLY);
-    if (fd < 0)
-        FatalError("Cannot open /dev/urandom for random data generation\n");
-    while (pos < len) {
-        ret = read(fd, buf + pos, len - pos);
-        if (ret <= 0) {
-            if (ret < 0 && errno == EINTR)
-                continue;
-            close(fd);
-            FatalError("Cannot read random data from /dev/urandom\n");
-        }
-        pos += ret;
-    }
+    read(fd, buf, len);
     close(fd);
 #endif
 }

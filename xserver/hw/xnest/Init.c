@@ -16,13 +16,8 @@ is" without express or implied warranty.
 #include <xnest-config.h>
 #endif
 
-#include <stddef.h>
 #include <X11/X.h>
-#include <X11/Xdefs.h>
 #include <X11/Xproto.h>
-#include <X11/fonts/fontstruct.h>
-#include <X11/fonts/libxfont2.h>
-
 #include "screenint.h"
 #include "input.h"
 #include "misc.h"
@@ -30,6 +25,7 @@ is" without express or implied warranty.
 #include "windowstr.h"
 #include "servermd.h"
 #include "mi.h"
+#include <X11/fonts/fontstruct.h>
 #include "dixfontstr.h"
 
 #include "Xnest.h"
@@ -49,7 +45,7 @@ is" without express or implied warranty.
 #include "dpmsproc.h"
 #endif
 
-Bool xnestDoFullGeneration = TRUE;
+Bool xnestDoFullGeneration = True;
 
 #ifdef GLXEXT
 void
@@ -133,7 +129,7 @@ CloseInput(void)
 void
 ddxGiveUp(enum ExitCode error)
 {
-    xnestDoFullGeneration = TRUE;
+    xnestDoFullGeneration = True;
     xnestCloseDisplay();
 }
 

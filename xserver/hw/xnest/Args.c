@@ -17,9 +17,7 @@ is" without express or implied warranty.
 #endif
 
 #include <X11/X.h>
-#include <X11/Xdefs.h>
 #include <X11/Xproto.h>
-
 #include "screenint.h"
 #include "input.h"
 #include "misc.h"
@@ -32,23 +30,23 @@ is" without express or implied warranty.
 #include "Args.h"
 
 char *xnestDisplayName = NULL;
-Bool xnestSynchronize = FALSE;
-Bool xnestFullGeneration = FALSE;
+Bool xnestSynchronize = False;
+Bool xnestFullGeneration = False;
 int xnestDefaultClass;
-Bool xnestUserDefaultClass = FALSE;
+Bool xnestUserDefaultClass = False;
 int xnestDefaultDepth;
-Bool xnestUserDefaultDepth = FALSE;
-Bool xnestSoftwareScreenSaver = FALSE;
+Bool xnestUserDefaultDepth = False;
+Bool xnestSoftwareScreenSaver = False;
 int xnestX;
 int xnestY;
 unsigned int xnestWidth;
 unsigned int xnestHeight;
 int xnestUserGeometry = 0;
 int xnestBorderWidth;
-Bool xnestUserBorderWidth = FALSE;
+Bool xnestUserBorderWidth = False;
 char *xnestWindowName = NULL;
 int xnestNumScreens = 0;
-Bool xnestDoDirectColormaps = FALSE;
+Bool xnestDoDirectColormaps = False;
 Window xnestParentWindow = 0;
 
 int
@@ -62,43 +60,43 @@ ddxProcessArgument(int argc, char *argv[], int i)
         return 0;
     }
     if (!strcmp(argv[i], "-sync")) {
-        xnestSynchronize = TRUE;
+        xnestSynchronize = True;
         return 1;
     }
     if (!strcmp(argv[i], "-full")) {
-        xnestFullGeneration = TRUE;
+        xnestFullGeneration = True;
         return 1;
     }
     if (!strcmp(argv[i], "-class")) {
         if (++i < argc) {
             if (!strcmp(argv[i], "StaticGray")) {
                 xnestDefaultClass = StaticGray;
-                xnestUserDefaultClass = TRUE;
+                xnestUserDefaultClass = True;
                 return 2;
             }
             else if (!strcmp(argv[i], "GrayScale")) {
                 xnestDefaultClass = GrayScale;
-                xnestUserDefaultClass = TRUE;
+                xnestUserDefaultClass = True;
                 return 2;
             }
             else if (!strcmp(argv[i], "StaticColor")) {
                 xnestDefaultClass = StaticColor;
-                xnestUserDefaultClass = TRUE;
+                xnestUserDefaultClass = True;
                 return 2;
             }
             else if (!strcmp(argv[i], "PseudoColor")) {
                 xnestDefaultClass = PseudoColor;
-                xnestUserDefaultClass = TRUE;
+                xnestUserDefaultClass = True;
                 return 2;
             }
             else if (!strcmp(argv[i], "TrueColor")) {
                 xnestDefaultClass = TrueColor;
-                xnestUserDefaultClass = TRUE;
+                xnestUserDefaultClass = True;
                 return 2;
             }
             else if (!strcmp(argv[i], "DirectColor")) {
                 xnestDefaultClass = DirectColor;
-                xnestUserDefaultClass = TRUE;
+                xnestUserDefaultClass = True;
                 return 2;
             }
         }
@@ -107,7 +105,7 @@ ddxProcessArgument(int argc, char *argv[], int i)
     if (!strcmp(argv[i], "-cc")) {
         if (++i < argc && sscanf(argv[i], "%i", &xnestDefaultClass) == 1) {
             if (xnestDefaultClass >= 0 && xnestDefaultClass <= 5) {
-                xnestUserDefaultClass = TRUE;
+                xnestUserDefaultClass = True;
                 /* lex the OS layer process it as well, so return 0 */
             }
         }
@@ -116,14 +114,14 @@ ddxProcessArgument(int argc, char *argv[], int i)
     if (!strcmp(argv[i], "-depth")) {
         if (++i < argc && sscanf(argv[i], "%i", &xnestDefaultDepth) == 1) {
             if (xnestDefaultDepth > 0) {
-                xnestUserDefaultDepth = TRUE;
+                xnestUserDefaultDepth = True;
                 return 2;
             }
         }
         return 0;
     }
     if (!strcmp(argv[i], "-sss")) {
-        xnestSoftwareScreenSaver = TRUE;
+        xnestSoftwareScreenSaver = True;
         return 1;
     }
     if (!strcmp(argv[i], "-geometry")) {
@@ -139,7 +137,7 @@ ddxProcessArgument(int argc, char *argv[], int i)
     if (!strcmp(argv[i], "-bw")) {
         if (++i < argc && sscanf(argv[i], "%i", &xnestBorderWidth) == 1) {
             if (xnestBorderWidth >= 0) {
-                xnestUserBorderWidth = TRUE;
+                xnestUserBorderWidth = True;
                 return 2;
             }
         }
@@ -165,7 +163,7 @@ ddxProcessArgument(int argc, char *argv[], int i)
         return 0;
     }
     if (!strcmp(argv[i], "-install")) {
-        xnestDoDirectColormaps = TRUE;
+        xnestDoDirectColormaps = True;
         return 1;
     }
     if (!strcmp(argv[i], "-parent")) {

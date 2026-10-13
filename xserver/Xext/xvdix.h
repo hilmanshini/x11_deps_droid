@@ -85,6 +85,13 @@ typedef struct {
     ClientPtr client;
 } XvGrabRec, *XvGrabPtr;
 
+typedef struct _XvVideoNotifyRec {
+    struct _XvVideoNotifyRec *next;
+    ClientPtr client;
+    unsigned long id;
+    unsigned long mask;
+} XvVideoNotifyRec, *XvVideoNotifyPtr;
+
 typedef struct _XvPortNotifyRec {
     struct _XvPortNotifyRec *next;
     ClientPtr client;
@@ -205,9 +212,16 @@ typedef struct {
     CloseScreenProcPtr CloseScreen;
 } XvScreenRec, *XvScreenPtr;
 
+#define SCREEN_PROLOGUE(pScreen, field) ((pScreen)->field = ((XvScreenPtr) \
+    dixLookupPrivate(&(pScreen)->devPrivates, XvScreenKey))->field)
+
+#define SCREEN_EPILOGUE(pScreen, field, wrapper)\
+    ((pScreen)->field = wrapper)
+
 /* Errors */
 
 #define _XvBadPort (XvBadPort+XvErrorBase)
+#define _XvBadEncoding (XvBadEncoding+XvErrorBase)
 
 extern _X_EXPORT int ProcXvDispatch(ClientPtr);
 extern _X_EXPORT int SProcXvDispatch(ClientPtr);

@@ -13,7 +13,9 @@
 #mesondefine HAS_DEVWINDOWS
 
 /* Switch on debug messages */
-#mesondefine ENABLE_DEBUG
+#mesondefine CYGDEBUG
+#mesondefine CYGWINDOWING_DEBUG
+#mesondefine CYGMULTIWINDOW_DEBUG
 
 /* Default log location */
 #mesondefine DEFAULT_LOGDIR

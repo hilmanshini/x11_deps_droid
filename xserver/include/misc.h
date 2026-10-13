@@ -176,6 +176,17 @@ typedef struct _xReq *xReqPtr;
 
 #endif
 
+#ifndef PATH_MAX
+#include <sys/param.h>
+#ifndef PATH_MAX
+#ifdef MAXPATHLEN
+#define PATH_MAX MAXPATHLEN
+#else
+#define PATH_MAX 1024
+#endif
+#endif
+#endif
+
 /**
  * Calculate the number of bytes needed to hold bits.
  * @param bits The minimum number of bits needed.
@@ -279,7 +290,7 @@ wrong_size(void)
 }
 #endif
 
-#if !(defined(__GNUC__))
+#if !(defined(__GNUC__) || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)))
 static inline int
 __builtin_constant_p(int x)
 {
@@ -383,6 +394,8 @@ extern _X_EXPORT void SwapShorts(short *list, unsigned long count);
 
 extern _X_EXPORT void MakePredeclaredAtoms(void);
 
+extern _X_EXPORT int Ones(unsigned long /*mask */ );
+
 typedef struct _xPoint *DDXPointPtr;
 typedef struct pixman_box16 *BoxPtr;
 typedef struct _xEvent *xEventPtr;
@@ -402,12 +415,6 @@ typedef struct _CharInfo *CharInfoPtr;  /* also in fonts/include/font.h */
 
 extern _X_EXPORT unsigned long globalSerialNumber;
 extern _X_EXPORT unsigned long serverGeneration;
-
-/* Stop all event delivery to clients effective immediately. */
-extern Bool stopAllEventDelivery;
-
-/* Allow clients to force the X server to terminate */
-extern Bool allowForceTerminate;
 
 /* Don't use this directly, use BUG_WARN or BUG_WARN_MSG instead */
 #define __BUG_WARN_MSG(cond, with_msg, ...)                                \

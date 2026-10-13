@@ -28,12 +28,6 @@ in this Software without prior written authorization from The Open Group.
 #include <dix-config.h>
 #endif
 
-#include <X11/Xmd.h>
-#include <X11/extensions/securproto.h>
-#include <X11/Xfuncproto.h>
-
-#include "os/osdep.h"
-
 #include "scrnintstr.h"
 #include "inputstr.h"
 #include "windowstr.h"
@@ -43,6 +37,7 @@ in this Software without prior written authorization from The Open Group.
 #include "registry.h"
 #include "xacestr.h"
 #include "securitysrv.h"
+#include <X11/extensions/securproto.h>
 #include "extinit.h"
 #include "protocol-versions.h"
 
@@ -152,7 +147,7 @@ SecurityLabelInitial(void)
 /*
  * Looks up a request name
  */
-static inline const char *
+static _X_INLINE const char *
 SecurityLookupRequestName(ClientPtr client)
 {
     return LookupRequestName(client->majorOp, client->minorOp);
@@ -203,7 +198,7 @@ SecurityDeleteAuthorization(void *value, XID id)
             .authId = pAuth->id
         };
         WriteEventsToClient(rClient(pEventClient), 1, (xEvent *) &are);
-        FreeResource(pEventClient->resource, X11_RESTYPE_NONE);
+        FreeResource(pEventClient->resource, RT_NONE);
     }
 
     /* kill all clients using this auth */
@@ -309,7 +304,7 @@ SecurityAuthorizationExpired(OsTimerPtr timer, CARD32 time, void *pval)
                                                    pAuth->secondsRemaining);
     }
     else {
-        FreeResource(pAuth->id, X11_RESTYPE_NONE);
+        FreeResource(pAuth->id, RT_NONE);
         return 0;
     }
 }                               /* SecurityAuthorizationExpired */
@@ -373,7 +368,7 @@ SecurityEventSelectForAuthorization(SecurityAuthorizationPtr pAuth,
          pEventClient; pEventClient = pEventClient->next) {
         if (SameClient(pEventClient, client)) {
             if (mask == 0)
-                FreeResource(pEventClient->resource, X11_RESTYPE_NONE);
+                FreeResource(pEventClient->resource, RT_NONE);
             else
                 pEventClient->mask = mask;
             return Success;
@@ -585,7 +580,7 @@ ProcSecurityRevokeAuthorization(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->authId, X11_RESTYPE_NONE);
+    FreeResource(stuff->authId, RT_NONE);
     return Success;
 }                               /* ProcSecurityRevokeAuthorization */
 
@@ -610,6 +605,8 @@ static int _X_COLD
 SProcSecurityQueryVersion(ClientPtr client)
 {
     REQUEST(xSecurityQueryVersionReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSecurityQueryVersionReq);
     swaps(&stuff->majorVersion);
     swaps(&stuff->minorVersion);
@@ -623,6 +620,8 @@ SProcSecurityGenerateAuthorization(ClientPtr client)
     CARD32 *values;
     unsigned long nvalues;
     int values_offset;
+
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xSecurityGenerateAuthorizationReq);
     swaps(&stuff->nbytesAuthProto);
     swaps(&stuff->nbytesAuthData);
@@ -630,10 +629,10 @@ SProcSecurityGenerateAuthorization(ClientPtr client)
     values_offset = bytes_to_int32(stuff->nbytesAuthProto) +
         bytes_to_int32(stuff->nbytesAuthData);
     if (values_offset >
-        client->req_len - bytes_to_int32(sz_xSecurityGenerateAuthorizationReq))
+        stuff->length - bytes_to_int32(sz_xSecurityGenerateAuthorizationReq))
         return BadLength;
     values = (CARD32 *) (&stuff[1]) + values_offset;
-    nvalues = (((CARD32 *) stuff) + client->req_len) - values;
+    nvalues = (((CARD32 *) stuff) + stuff->length) - values;
     SwapLongs(values, nvalues);
     return ProcSecurityGenerateAuthorization(client);
 }                               /* SProcSecurityGenerateAuthorization */
@@ -642,6 +641,8 @@ static int _X_COLD
 SProcSecurityRevokeAuthorization(ClientPtr client)
 {
     REQUEST(xSecurityRevokeAuthorizationReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xSecurityRevokeAuthorizationReq);
     swapl(&stuff->authId);
     return ProcSecurityRevokeAuthorization(client);
@@ -746,12 +747,12 @@ SecurityResource(CallbackListPtr *pcbl, void *unused, void *calldata)
     subj = dixLookupPrivate(&rec->client->devPrivates, stateKey);
 
     /* disable background None for untrusted windows */
-    if ((requested & DixCreateAccess) && (rec->rtype == X11_RESTYPE_WINDOW))
+    if ((requested & DixCreateAccess) && (rec->rtype == RT_WINDOW))
         if (subj->haveState && subj->trustLevel != XSecurityClientTrusted)
             ((WindowPtr) rec->res)->forcedBG = TRUE;
 
     /* additional permissions for specific resource types */
-    if (rec->rtype == X11_RESTYPE_WINDOW)
+    if (rec->rtype == RT_WINDOW)
         allowed |= SecurityWindowExtraMask;
 
     /* special checks for server-owned resources */
@@ -760,7 +761,7 @@ SecurityResource(CallbackListPtr *pcbl, void *unused, void *calldata)
             /* additional operations allowed on root windows */
             allowed |= SecurityRootWindowExtraMask;
 
-        else if (rec->rtype == X11_RESTYPE_COLORMAP)
+        else if (rec->rtype == RT_COLORMAP)
             /* allow access to default colormaps */
             allowed = requested;
 

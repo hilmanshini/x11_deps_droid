@@ -36,13 +36,7 @@
 
 DevPrivateKeyRec GEClientPrivateKeyRec;
 
-/** Struct to keep information about registered extensions */
-typedef struct _GEExtension {
-    /** Event swapping routine */
-    void (*evswap) (xGenericEvent *from, xGenericEvent *to);
-} GEExtension, *GEExtensionPtr;
-
-static GEExtension GEExtensions[MAXEXTENSIONS];
+GEExtension GEExtensions[MAXEXTENSIONS];
 
 /* Major available requests */
 static const int version_requests[] = {
@@ -108,6 +102,7 @@ SProcGEQueryVersion(ClientPtr client)
 {
     REQUEST(xGEQueryVersionReq);
 
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xGEQueryVersionReq);
     swaps(&stuff->majorVersion);
     swaps(&stuff->minorVersion);
@@ -191,16 +186,24 @@ SGEGenericEvent(xEvent *from, xEvent *to)
 void
 GEExtensionInit(void)
 {
+    ExtensionEntry *extEntry;
+
     if (!dixRegisterPrivateKey
         (&GEClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(GEClientInfoRec)))
         FatalError("GEExtensionInit: GE private request failed.\n");
 
-    if (!AddExtension(GE_NAME, 0, GENumberErrors, ProcGEDispatch, SProcGEDispatch,
-                      GEResetProc, StandardMinorOpcode))
-        FatalError("GEInit: AddExtensions failed.\n");
+    if ((extEntry = AddExtension(GE_NAME,
+                                 0, GENumberErrors,
+                                 ProcGEDispatch, SProcGEDispatch,
+                                 GEResetProc, StandardMinorOpcode)) != 0) {
+        memset(GEExtensions, 0, sizeof(GEExtensions));
 
-    memset(GEExtensions, 0, sizeof(GEExtensions));
-    EventSwapVector[GenericEvent] = (EventSwapPtr) SGEGenericEvent;
+        EventSwapVector[GenericEvent] = (EventSwapPtr) SGEGenericEvent;
+    }
+    else {
+        FatalError("GEInit: AddExtensions failed.\n");
+    }
+
 }
 
 /************************************************************/

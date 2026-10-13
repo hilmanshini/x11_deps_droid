@@ -236,11 +236,19 @@ extern DevPrivateKeyRec exaScreenPrivateKeyRec;
     real->mem = priv->Saved##mem; \
 }
 
+#ifdef HAVE_TYPEOF
 #define swap(priv, real, mem) {\
     typeof(real->mem) tmp = priv->Saved##mem; \
     priv->Saved##mem = real->mem; \
     real->mem = tmp; \
 }
+#else
+#define swap(priv, real, mem) {\
+    const void *tmp = priv->Saved##mem; \
+    priv->Saved##mem = real->mem; \
+    real->mem = tmp; \
+}
+#endif
 
 #define EXA_PRE_FALLBACK(_screen_) \
     ExaScreenPriv(_screen_); \
@@ -444,7 +452,7 @@ ExaCheckAddTraps(PicturePtr pPicture,
 
 /* exa_accel.c */
 
-static inline Bool
+static _X_INLINE Bool
 exaGCReadsDestination(DrawablePtr pDrawable, unsigned long planemask,
                       unsigned int fillStyle, unsigned char alu,
                       Bool clientClip)

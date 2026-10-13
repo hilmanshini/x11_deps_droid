@@ -51,8 +51,6 @@ SOFTWARE.
 #ifndef _OSDEP_H_
 #define _OSDEP_H_ 1
 
-#include <X11/Xdefs.h>
-
 #if defined(XDMCP) || defined(HASXDMAUTH)
 #include <X11/Xdmcp.h>
 #endif
@@ -60,11 +58,6 @@ SOFTWARE.
 #include <limits.h>
 #include <stddef.h>
 #include <X11/Xos.h>
-#include <X11/Xmd.h>
-
-#ifndef __has_builtin
-# define __has_builtin(x) 0     /* Compatibility with older compilers */
-#endif
 
 /* If EAGAIN and EWOULDBLOCK are distinct errno values, then we check errno
  * for both EAGAIN and EWOULDBLOCK, because some supposedly POSIX
@@ -153,6 +146,8 @@ listen_to_client(ClientPtr client);
 
 extern Bool NewOutputPending;
 
+extern WorkQueuePtr workQueue;
+
 /* in access.c */
 extern Bool ComputeLocalClient(ClientPtr client);
 
@@ -174,6 +169,16 @@ extern int XdmAddCookie(AuthAddCArgs);
 extern int XdmFromID(AuthFromIDArgs);
 extern int XdmRemoveCookie(AuthRemCArgs);
 extern int XdmResetCookie(AuthRstCArgs);
+#endif
+
+/* in rpcauth.c */
+#ifdef SECURE_RPC
+extern void SecureRPCInit(AuthInitArgs);
+extern XID SecureRPCCheck(AuthCheckArgs);
+extern int SecureRPCAdd(AuthAddCArgs);
+extern int SecureRPCFromID(AuthFromIDArgs);
+extern int SecureRPCRemove(AuthRemCArgs);
+extern int SecureRPCReset(AuthRstCArgs);
 #endif
 
 #ifdef XDMCP
@@ -202,72 +207,5 @@ extern void XdmcpRegisterBroadcastAddress(const struct sockaddr_in *addr);
 #ifdef HASXDMAUTH
 extern void XdmAuthenticationInit(const char *cookie, int cookie_length);
 #endif
-
-#ifdef WIN32
-#include <X11/Xwinsock.h>
-struct utsname {
-    char nodename[512];
-};
-
-static inline void uname(struct utsname *uts) {
-    gethostname(uts->nodename, sizeof(uts->nodename));
-}
-#endif /* WIN32 */
-
-void AutoResetServer(int sig);
-
-/* clone fd so it gets out of our select mask */
-int os_move_fd(int fd);
-
-/* lookup builtin color by name */
-Bool OsLookupColor(int screen,
-                   char *name,
-                   unsigned len,
-                   unsigned short *pred,
-                   unsigned short *pgreen,
-                   unsigned short *pblue);
-
-/* set signal mask - either on current thread or whole process,
-   depending on whether multithreading is used */
-int xthread_sigmask(int how, const sigset_t *set, sigset_t *oldest);
-
-#ifdef DDXOSVERRORF
-/* callback for DDX specific error printing, if any (may be NULL) */
-extern void (*OsVendorVErrorFProc) (const char *, va_list args)
-    _X_ATTRIBUTE_PRINTF(1, 0);
-#endif
-
-void MakeClientGrabPervious(ClientPtr client);
-void MakeClientGrabImpervious(ClientPtr client);
-
-int OnlyListenToOneClient(ClientPtr client);
-
-void ListenToAllClients(void);
-
-/* allow DDX to force using another clock */
-void ForceClockId(clockid_t forced_clockid);
-
-Bool WaitForSomething(Bool clients_are_ready);
-void CloseDownConnection(ClientPtr client);
-
-#if __has_builtin(__builtin_popcountl)
-# define Xpopcountl __builtin_popcountl
-#else
-/*
- * Count the number of bits set to 1 in a 32-bit word.
- * Algorithm from MIT AI Lab Memo 239: "HAKMEM", ITEM 169.
- * https://dspace.mit.edu/handle/1721.1/6086
- */
-static inline int
-Xpopcountl(unsigned long mask)
-{
-    unsigned long y;
-
-    y = (mask >> 1) & 033333333333;
-    y = mask - y - ((y >> 1) & 033333333333);
-    return (((y + (y >> 3)) & 030707070707) % 077);
-}
-#endif
-#define Ones Xpopcountl
 
 #endif                          /* _OSDEP_H_ */

@@ -199,6 +199,7 @@ cat > sdksyms.c << EOF
 #include "mipointrst.h"
 #include "mizerarc.h"
 #include "micoord.h"
+#include "mifillarc.h"
 #include "mistruct.h"
 #include "mioverlay.h"
 
@@ -206,6 +207,12 @@ cat > sdksyms.c << EOF
 /* randr/Makefile.am */
 #include "randrstr.h"
 #include "rrtransform.h"
+
+
+/* dbe/Makefile.am -- module */
+#ifdef DBE
+#include "dbestruct.h"
+#endif
 
 
 /* exa/Makefile.am -- module */
@@ -222,7 +229,9 @@ cat > sdksyms.c << EOF
 
 
 /* include/Makefile.am */
+#include "XIstubs.h"
 #include "Xprintf.h"
+#include "closestr.h"
 #include "closure.h"
 #include "colormap.h"
 #include "colormapst.h"
@@ -262,6 +271,7 @@ cat > sdksyms.c << EOF
 #include "ptrveloc.h"
 #include "region.h"
 #include "regionstr.h"
+#include "registry.h"
 #include "resource.h"
 #include "rgb.h"
 #include "screenint.h"

@@ -33,6 +33,7 @@ extern void UngrabAllDevices(Bool kill_client);
 
 extern GrabPtr AllocGrab(const GrabPtr src);
 extern void FreeGrab(GrabPtr grab);
+extern Bool CopyGrab(GrabPtr dst, const GrabPtr src);
 
 extern GrabPtr CreateGrab(int /* client */ ,
                           DeviceIntPtr /* device */ ,
@@ -41,7 +42,7 @@ extern GrabPtr CreateGrab(int /* client */ ,
                           enum InputLevel /* grabtype */ ,
                           GrabMask * /* mask */ ,
                           struct _GrabParameters * /* param */ ,
-                          int /* eventType */ ,
+                          int /* type */ ,
                           KeyCode /* keybut */ ,
                           WindowPtr /* confineTo */ ,
                           CursorPtr /* cursor */ );

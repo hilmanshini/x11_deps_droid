@@ -28,14 +28,13 @@
 #endif
 
 #include <X11/X.h>
-
 #include "xf86.h"
 #include "xf86Priv.h"
 #include "xf86_OSlib.h"
-#include "xf86_OSproc.h"
 
 /*
- * Handle the VT-switching interface for BSD OSs that use USL-style ioctl()s.
+ * Handle the VT-switching interface for OSs that use USL-style ioctl()s
+ * (the bsd, sysv, sco, and linux subdirs).
  */
 
 /*
@@ -54,7 +53,7 @@ xf86VTRequest(int sig)
 }
 
 Bool
-xf86VTSwitchPending(void)
+xf86VTSwitchPending()
 {
 #if defined (SYSCONS_SUPPORT) || defined (PCVT_SUPPORT)
     if (xf86Info.consType == SYSCONS || xf86Info.consType == PCVT) {
@@ -65,7 +64,7 @@ xf86VTSwitchPending(void)
 }
 
 Bool
-xf86VTSwitchAway(void)
+xf86VTSwitchAway()
 {
 #if defined (SYSCONS_SUPPORT) || defined (PCVT_SUPPORT)
     if (xf86Info.consType == SYSCONS || xf86Info.consType == PCVT) {
@@ -80,7 +79,7 @@ xf86VTSwitchAway(void)
 }
 
 Bool
-xf86VTSwitchTo(void)
+xf86VTSwitchTo()
 {
 #if defined (SYSCONS_SUPPORT) || defined (PCVT_SUPPORT)
     if (xf86Info.consType == SYSCONS || xf86Info.consType == PCVT) {

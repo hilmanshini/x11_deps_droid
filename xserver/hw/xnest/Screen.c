@@ -17,9 +17,7 @@ is" without express or implied warranty.
 #endif
 
 #include <X11/X.h>
-#include <X11/Xdefs.h>
 #include <X11/Xproto.h>
-
 #include "scrnintstr.h"
 #include "dix.h"
 #include "mi.h"
@@ -46,8 +44,7 @@ is" without express or implied warranty.
 
 Window xnestDefaultWindows[MAXSCREENS];
 Window xnestScreenSaverWindows[MAXSCREENS];
-DevPrivateKeyRec xnestScreenCursorFuncKeyRec;
-DevScreenPrivateKeyRec xnestScreenCursorPrivKeyRec;
+DevPrivateKeyRec xnestCursorScreenKeyRec;
 
 ScreenPtr
 xnestScreen(Window window)
@@ -76,7 +73,7 @@ static Bool
 xnestSaveScreen(ScreenPtr pScreen, int what)
 {
     if (xnestSoftwareScreenSaver)
-        return FALSE;
+        return False;
     else {
         switch (what) {
         case SCREEN_SAVER_ON:
@@ -100,7 +97,7 @@ xnestSaveScreen(ScreenPtr pScreen, int what)
             xnestSetInstalledColormapWindows(pScreen);
             break;
         }
-        return TRUE;
+        return True;
     }
 }
 
@@ -158,11 +155,7 @@ xnestOpenScreen(ScreenPtr pScreen, int argc, char *argv[])
         (&xnestColormapPrivateKeyRec, PRIVATE_COLORMAP,
          sizeof(xnestPrivColormap)))
         return FALSE;
-    if (!dixRegisterPrivateKey(&xnestScreenCursorFuncKeyRec, PRIVATE_SCREEN, 0))
-        return FALSE;
-
-    if (!dixRegisterScreenPrivateKey(&xnestScreenCursorPrivKeyRec, pScreen,
-                                     PRIVATE_CURSOR, 0))
+    if (!dixRegisterPrivateKey(&xnestCursorScreenKeyRec, PRIVATE_SCREEN, 0))
         return FALSE;
 
     visuals = xallocarray(xnestNumVisuals, sizeof(VisualRec));
@@ -244,9 +237,8 @@ xnestOpenScreen(ScreenPtr pScreen, int argc, char *argv[])
 
     /* myNum */
     /* id */
-    if (!miScreenInit(pScreen, NULL, xnestWidth, xnestHeight, 1, 1, xnestWidth, rootDepth, numDepths, depths, defaultVisual, /* root visual */
-                      numVisuals, visuals))
-        return FALSE;
+    miScreenInit(pScreen, NULL, xnestWidth, xnestHeight, 1, 1, xnestWidth, rootDepth, numDepths, depths, defaultVisual, /* root visual */
+                 numVisuals, visuals);
 
     pScreen->defColormap = (Colormap) FakeClientID(0);
     pScreen->minInstalledCmaps = MINCMAPS;
@@ -257,6 +249,7 @@ xnestOpenScreen(ScreenPtr pScreen, int argc, char *argv[])
     pScreen->blackPixel = xnestBlackPixel;
     /* GCperDepth */
     /* defaultStipple */
+    pScreen->devPrivate = NULL;
     /* WindowPrivateLen */
     /* WindowPrivateSizes */
     /* totalWindowSize */
@@ -319,7 +312,7 @@ xnestOpenScreen(ScreenPtr pScreen, int argc, char *argv[])
     miDCInitialize(pScreen, &xnestPointerCursorFuncs);  /* init SW rendering */
     PointPriv = dixLookupPrivate(&pScreen->devPrivates, miPointerScreenKey);
     xnestCursorFuncs.spriteFuncs = PointPriv->spriteFuncs;
-    dixSetPrivate(&pScreen->devPrivates, &xnestScreenCursorFuncKeyRec,
+    dixSetPrivate(&pScreen->devPrivates, xnestCursorScreenKey,
                   &xnestCursorFuncs);
     PointPriv->spriteFuncs = &xnestPointerSpriteFuncs;
 
@@ -333,6 +326,9 @@ xnestOpenScreen(ScreenPtr pScreen, int argc, char *argv[])
 
     /* overwrite miCloseScreen with our own */
     pScreen->CloseScreen = xnestCloseScreen;
+
+    if (!miScreenDevPrivateInit(pScreen, xnestWidth, NULL))
+        return FALSE;
 
     /* overwrite miSetShape with our own */
     pScreen->SetShape = xnestSetShape;
@@ -404,9 +400,9 @@ xnestOpenScreen(ScreenPtr pScreen, int argc, char *argv[])
     }
 
     if (!xnestCreateDefaultColormap(pScreen))
-        return FALSE;
+        return False;
 
-    return TRUE;
+    return True;
 }
 
 Bool
@@ -425,5 +421,5 @@ xnestCloseScreen(ScreenPtr pScreen)
        the display connection.  There is no need to generate extra protocol.
      */
 
-    return TRUE;
+    return True;
 }

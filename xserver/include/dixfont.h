@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include "dix.h"
 #include <X11/fonts/font.h>
+#include "closure.h"
 #include <X11/fonts/fontstruct.h>
 
 #define NullDIXFontProp ((DIXFontPropPtr)0)

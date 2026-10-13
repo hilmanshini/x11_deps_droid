@@ -36,15 +36,13 @@
 #include "dix-config.h"
 #endif
 
-#include <errno.h>
 #include <time.h>
-
 #include "list.h"
 #include "xf86.h"
 #include "driver.h"
 #include "dri2.h"
 
-#ifdef DRI2
+#ifdef GLAMOR_HAS_GBM
 
 enum ms_dri2_frame_event_type {
     MS_DRI2_QUEUE_SWAP,
@@ -318,7 +316,7 @@ ms_dri2_copy_region2(ScreenPtr screen, DrawablePtr drawable, RegionPtr pRegion,
      * callback chain so we know that will happen before the client
      * tries to render again.
      */
-    (void) gc->ops->CopyArea(src, dst, gc,
+    gc->ops->CopyArea(src, dst, gc,
                       0, 0,
                       drawable->width, drawable->height,
                       off_x, off_y);
@@ -485,6 +483,7 @@ ms_dri2_schedule_flip(ms_dri2_frame_event_ptr info)
     modesettingPtr ms = modesettingPTR(scrn);
     ms_dri2_buffer_private_ptr back_priv = info->back->driverPrivate;
     struct ms_dri2_vblank_event *event;
+    drmmode_crtc_private_ptr drmmode_crtc = info->crtc->driver_private;
 
     event = calloc(1, sizeof(struct ms_dri2_vblank_event));
     if (!event)
@@ -496,7 +495,7 @@ ms_dri2_schedule_flip(ms_dri2_frame_event_ptr info)
     event->event_data = info->event_data;
 
     if (ms_do_pageflip(screen, back_priv->pixmap, event,
-                       info->crtc, FALSE,
+                       drmmode_crtc->vblank_pipe, FALSE,
                        ms_dri2_flip_handler,
                        ms_dri2_flip_abort,
                        "DRI2-flip")) {
@@ -548,8 +547,10 @@ can_exchange(ScrnInfoPtr scrn, DrawablePtr draw,
         drmmode_crtc_private_ptr drmmode_crtc = config->crtc[i]->driver_private;
 
         /* Don't do pageflipping if CRTCs are rotated. */
+#ifdef GLAMOR_HAS_GBM
         if (drmmode_crtc->rotate_bo.gbm)
             return FALSE;
+#endif
 
         if (xf86_crtc_on(config->crtc[i]))
             num_crtcs_on++;
@@ -656,7 +657,7 @@ ms_dri2_frame_event_handler(uint64_t msc,
             ms_dri2_exchange_buffers(drawable, frame_info->front, frame_info->back);
             break;
         }
-        _X_FALLTHROUGH; /* else fall through */
+        /* else fall through */
     case MS_DRI2_QUEUE_SWAP:
         ms_dri2_blit_swap(drawable, frame_info->front, frame_info->back);
         DRI2SwapComplete(frame_info->client, drawable, msc, tv_sec, tv_usec,
@@ -1111,4 +1112,4 @@ ms_dri2_close_screen(ScreenPtr screen)
     DRI2CloseScreen(screen);
 }
 
-#endif /* DRI2 */
+#endif /* GLAMOR_HAS_GBM */

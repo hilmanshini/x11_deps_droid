@@ -73,7 +73,7 @@
 
 // These are vended by the Objective-C runtime, but they are unfortunately
 // not available as API in the macOS SDK.  We are following suit with swift
-// and clang in declaring them inline here.  They cannot be removed or changed
+// and clang in declaring them inline here.  They canot be removed or changed
 // in the OS without major bincompat ramifications.
 //
 // These were added in macOS 10.7.
@@ -117,7 +117,7 @@ QuartzAddScreen(int index,
     // The clang static analyzer thinks we leak displayInfo here
 #ifndef __clang_analyzer__
     // allocate space for private per screen Quartz specific storage
-    QuartzScreenPtr displayInfo = calloc(1, sizeof(QuartzScreenRec));
+    QuartzScreenPtr displayInfo = calloc(sizeof(QuartzScreenRec), 1);
 
     // QUARTZ_PRIV(pScreen) = displayInfo;
     dixSetPrivate(&pScreen->devPrivates, quartzScreenKey, displayInfo);

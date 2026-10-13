@@ -52,7 +52,7 @@ winScreenInit(ScreenPtr pScreen, int argc, char **argv)
     HDC hdc;
     DWORD dwInitialBPP;
 
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
     winDebug("winScreenInit - dwWidth: %u dwHeight: %u\n",
              (unsigned int)pScreenInfo->dwWidth, (unsigned int)pScreenInfo->dwHeight);
 #endif
@@ -194,7 +194,7 @@ winScreenInit(ScreenPtr pScreen, int argc, char **argv)
                pScreen->myNum, pScreen->x, pScreen->y);
     }
 
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
     winDebug("winScreenInit - returning\n");
 #endif
 
@@ -333,14 +333,14 @@ winFinishScreenInitFB(int i, ScreenPtr pScreen, int argc, char **argv)
 #endif
 
     /* Setup the cursor routines */
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winFinishScreenInitFB - Calling miDCInitialize ()\n");
 #endif
     miDCInitialize(pScreen, &g_winPointerCursorFuncs);
 
     /* KDrive does winCreateDefColormap right after miDCInitialize */
     /* Create a default colormap */
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winFinishScreenInitFB - Calling winCreateDefColormap ()\n");
 #endif
     if (!winCreateDefColormap(pScreen)) {
@@ -351,7 +351,7 @@ winFinishScreenInitFB(int i, ScreenPtr pScreen, int argc, char **argv)
     /* Initialize the shadow framebuffer layer */
     if ((pScreenInfo->dwEngine == WIN_SERVER_SHADOW_GDI
          || pScreenInfo->dwEngine == WIN_SERVER_SHADOW_DDNL)) {
-#if ENABLE_DEBUG
+#if CYGDEBUG
         winDebug("winFinishScreenInitFB - Calling shadowSetup ()\n");
 #endif
         if (!shadowSetup(pScreen)) {
@@ -473,7 +473,7 @@ winFinishScreenInitFB(int i, ScreenPtr pScreen, int argc, char **argv)
 
 
     if (pScreenInfo->fMultiWindow) {
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
         winDebug("winFinishScreenInitFB - Calling winInitWM.\n");
 #endif
 
@@ -496,7 +496,7 @@ winFinishScreenInitFB(int i, ScreenPtr pScreen, int argc, char **argv)
     /* Tell the server that we have a valid depth */
     pScreenPriv->fBadDepth = FALSE;
 
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
     winDebug("winFinishScreenInitFB - returning\n");
 #endif
 

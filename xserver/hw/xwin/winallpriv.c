@@ -47,7 +47,7 @@ winAllocatePrivates(ScreenPtr pScreen)
 {
     winPrivScreenPtr pScreenPriv;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winAllocateScreenPrivates - g_ulServerGeneration: %lu "
              "serverGeneration: %lu\n", g_ulServerGeneration, serverGeneration);
 #endif
@@ -58,11 +58,14 @@ winAllocatePrivates(ScreenPtr pScreen)
     }
 
     /* Allocate memory for the screen private structure */
-    pScreenPriv = calloc(1, sizeof(winPrivScreenRec));
+    pScreenPriv = malloc(sizeof(winPrivScreenRec));
     if (!pScreenPriv) {
         ErrorF("winAllocateScreenPrivates - malloc () failed\n");
         return FALSE;
     }
+
+    /* Initialize the memory of the private structure */
+    ZeroMemory(pScreenPriv, sizeof(winPrivScreenRec));
 
     /* Initialize private structure members */
     pScreenPriv->fActive = TRUE;
@@ -102,7 +105,7 @@ winAllocatePrivates(ScreenPtr pScreen)
 Bool
 winInitCmapPrivates(ColormapPtr pcmap, int i)
 {
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winInitCmapPrivates\n");
 #endif
 
@@ -129,7 +132,7 @@ winAllocateCmapPrivates(ColormapPtr pCmap)
     winPrivCmapPtr pCmapPriv;
     static unsigned long s_ulPrivateGeneration = 0;
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winAllocateCmapPrivates\n");
 #endif
 
@@ -140,11 +143,14 @@ winAllocateCmapPrivates(ColormapPtr pCmap)
     }
 
     /* Allocate memory for our private structure */
-    pCmapPriv = calloc(1, sizeof(winPrivCmapRec));
+    pCmapPriv = malloc(sizeof(winPrivCmapRec));
     if (!pCmapPriv) {
         ErrorF("winAllocateCmapPrivates - malloc () failed\n");
         return FALSE;
     }
+
+    /* Initialize the memory of the private structure */
+    ZeroMemory(pCmapPriv, sizeof(winPrivCmapRec));
 
     /* Register our colourmap private */
     if (!dixRegisterPrivateKey(g_iCmapPrivateKey, PRIVATE_COLORMAP, 0)) {
@@ -155,7 +161,7 @@ winAllocateCmapPrivates(ColormapPtr pCmap)
     /* Save the cmap private pointer */
     winSetCmapPriv(pCmap, pCmapPriv);
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
     winDebug("winAllocateCmapPrivates - Returning\n");
 #endif
 

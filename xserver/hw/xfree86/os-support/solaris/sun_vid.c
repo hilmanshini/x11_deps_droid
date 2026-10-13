@@ -22,7 +22,7 @@
  * OF THIS SOFTWARE.
  *
  */
-/* Copyright (c) 2008, Oracle and/or its affiliates.
+/* Copyright (c) 2008, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -51,11 +51,8 @@
 #include <sys/types.h>          /* get __x86 definition if not set by compiler */
 
 #if defined(__i386__) || defined(__i386) || defined(__x86)
-#include <sys/tss.h>
-#include <sys/sysi86.h>
-#include <sys/psw.h>
-#endif /* defined(__i386__) || defined(__i386) || defined(__x86) */
-
+#define _NEED_SYSI86
+#endif
 #include "xf86.h"
 #include "xf86Priv.h"
 #include "xf86_OSlib.h"
@@ -91,7 +88,7 @@ xf86EnableIO(void)
 {
 #if defined(__i386__) || defined(__i386) || defined(__x86)
     if (sysi86(SI86V86, V86SC_IOPL, PS_IOPL) < 0) {
-        xf86Msg(X_WARNING, "xf86EnableIO: Failed to set IOPL for I/O\n");
+        xf86Msg(X_WARNING, "xf86EnableIOPorts: Failed to set IOPL for I/O\n");
         return FALSE;
     }
 #endif                          /* i386 */

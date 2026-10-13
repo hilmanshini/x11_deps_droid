@@ -272,7 +272,7 @@ test_convert_XIRawEvent(void)
 static void
 test_values_XIDeviceEvent(DeviceEvent *in, xXIDeviceEvent * out, BOOL swap)
 {
-    int valuators;
+    int buttons, valuators;
     int i;
     unsigned char *ptr;
     uint32_t flagmask = 0;
@@ -346,9 +346,11 @@ test_values_XIDeviceEvent(DeviceEvent *in, xXIDeviceEvent * out, BOOL swap)
     assert(out->root_x == double_to_fp1616(in->root_x + in->root_x_frac));
     assert(out->root_y == double_to_fp1616(in->root_y + in->root_y_frac));
 
+    buttons = 0;
     for (i = 0; i < bits_to_bytes(sizeof(in->buttons)); i++) {
         if (XIMaskIsSet(in->buttons, i)) {
             assert(out->buttons_len >= bytes_to_int32(bits_to_bytes(i)));
+            buttons++;
         }
     }
 
@@ -772,7 +774,7 @@ test_values_XIDeviceChangedEvent(DeviceChangedEvent *in,
         }
             break;
         default:
-            dbg("Invalid class type.\n\n");
+            printf("Invalid class type.\n\n");
             assert(1);
             break;
         }
@@ -1253,17 +1255,15 @@ test_convert_XIBarrierEvent(void)
     test_XIBarrierEvent(&in);
 }
 
-const testfunc_t*
+int
 protocol_eventconvert_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        test_convert_XIRawEvent,
-        test_convert_XIFocusEvent,
-        test_convert_XIDeviceEvent,
-        test_convert_XIDeviceChangedEvent,
-        test_convert_XITouchOwnershipEvent,
-        test_convert_XIBarrierEvent,
-        NULL,
-    };
-    return testfuncs;
+    test_convert_XIRawEvent();
+    test_convert_XIFocusEvent();
+    test_convert_XIDeviceEvent();
+    test_convert_XIDeviceChangedEvent();
+    test_convert_XITouchOwnershipEvent();
+    test_convert_XIBarrierEvent();
+
+    return 0;
 }

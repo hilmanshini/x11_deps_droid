@@ -125,7 +125,7 @@ exaGetDrawablePixmap(DrawablePtr pDrawable)
 void
 exaGetDrawableDeltas(DrawablePtr pDrawable, PixmapPtr pPixmap, int *xp, int *yp)
 {
-#if defined(COMPOSITE) || defined(ROOTLESS)
+#ifdef COMPOSITE
     if (pDrawable->type == DRAWABLE_WINDOW) {
         *xp = -pPixmap->screen_x;
         *yp = -pPixmap->screen_y;
@@ -402,7 +402,7 @@ exaFinishAccess(DrawablePtr pDrawable, int index)
         return;
 
     if (pExaPixmap == NULL)
-        EXA_FatalErrorDebugWithRet(("EXA bug: exaFinishAccess was called on a non-exa pixmap.\n"),);
+        EXA_FatalErrorDebugWithRet(("EXA bug: exaFinishAccesss was called on a non-exa pixmap.\n"),);
 
     /* Handle repeated / nested calls. */
     for (i = 0; i < EXA_NUM_PREPARE_INDICES; i++) {
@@ -883,7 +883,7 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
         return FALSE;
     }
 
-    pExaScr = calloc(1, sizeof(ExaScreenPrivRec));
+    pExaScr = calloc(sizeof(ExaScreenPrivRec), 1);
     if (!pExaScr) {
         LogMessage(X_WARNING, "EXA(%d): Failed to allocate screen private\n",
                    pScreen->myNum);

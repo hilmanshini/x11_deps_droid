@@ -21,7 +21,6 @@ libxserver_present = static_library('libxserver_present',
     include_directories: inc,
     dependencies: [
         common_dep,
-	epoll_dep,
         dependency('presentproto', version: '>= 1.2')
     ],
 )

@@ -649,7 +649,7 @@ localQueryLargestOffscreenArea(ScreenPtr pScreen,
             pbox = RegionRects(newRegion);
             break;
         }
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case 1:
         if (offman->NumUsedAreas) {
             FBLinkPtr pLink;
@@ -672,7 +672,7 @@ localQueryLargestOffscreenArea(ScreenPtr pScreen,
             pbox = RegionRects(newRegion);
             break;
         }
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     default:
         nbox = RegionNumRects(offman->FreeBoxes);
         pbox = RegionRects(offman->FreeBoxes);

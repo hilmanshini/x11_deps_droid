@@ -46,12 +46,6 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 int XkbDfltRepeatDelay = 660;
 int XkbDfltRepeatInterval = 40;
 
-#define _OFF_TIMER              0
-#define _KRG_WARN_TIMER         1
-#define _KRG_TIMER              2
-#define _SK_TIMEOUT_TIMER       3
-#define _ALL_TIMEOUT_TIMER      4
-
 #define	DFLT_TIMEOUT_CTRLS (XkbAX_KRGMask|XkbStickyKeysMask|XkbMouseKeysMask)
 #define	DFLT_TIMEOUT_OPTS  (XkbAX_IndicatorFBMask)
 
@@ -288,7 +282,7 @@ AccessXStickyKeysTurnOff(DeviceIntPtr dev, xkbControlsNotify * pCN)
 static CARD32
 AccessXKRGExpire(OsTimerPtr timer, CARD32 now, void *arg)
 {
-    xkbControlsNotify cn = { 0 };
+    xkbControlsNotify cn;
     DeviceIntPtr dev = arg;
     XkbSrvInfoPtr xkbi = dev->key->xkbInfo;
 
@@ -351,7 +345,7 @@ AccessXSlowKeyExpire(OsTimerPtr timer, CARD32 now, void *arg)
     xkb = xkbi->desc;
     ctrls = xkb->ctrls;
     if (xkbi->slowKey != 0) {
-        xkbAccessXNotify ev = { 0 };
+        xkbAccessXNotify ev;
         KeySym *sym = XkbKeySymsPtr(xkb, xkbi->slowKey);
 
         ev.detail = XkbAXN_SKAccept;
@@ -401,7 +395,7 @@ AccessXTimeoutExpire(OsTimerPtr timer, CARD32 now, void *arg)
     XkbSrvInfoPtr xkbi = dev->key->xkbInfo;
     XkbControlsPtr ctrls = xkbi->desc->ctrls;
     XkbControlsRec old;
-    xkbControlsNotify cn = { 0 };
+    xkbControlsNotify cn;
     XkbEventCauseRec cause;
     XkbSrvLedInfoPtr sli;
 
@@ -505,7 +499,7 @@ AccessXFilterPressEvent(DeviceEvent *event, DeviceIntPtr keybd)
      * has held the key long enough.
      */
     if (ctrls->enabled_ctrls & XkbSlowKeysMask) {
-        xkbAccessXNotify ev = { 0 };
+        xkbAccessXNotify ev;
 
         /* If key was already pressed, ignore subsequent press events
          * from the server's autorepeat
@@ -571,7 +565,7 @@ AccessXFilterPressEvent(DeviceEvent *event, DeviceIntPtr keybd)
     if ((ctrls->enabled_ctrls & XkbStickyKeysMask) &&
         (xkbi->state.base_mods != 0) &&
         (XkbAX_NeedOption(ctrls, XkbAX_TwoKeysMask))) {
-        xkbControlsNotify cn = { 0 };
+        xkbControlsNotify cn;
 
         cn.keycode = key;
         cn.eventType = KeyPress;
@@ -621,10 +615,10 @@ AccessXFilterReleaseEvent(DeviceEvent *event, DeviceIntPtr keybd)
 
     /* Don't transmit the KeyRelease if SlowKeys is turned on and
      * the user didn't hold the key long enough.  We know we passed
-     * the key if the down bit was set by CoreProcessKeyboardEvent.
+     * the key if the down bit was set by CoreProcessKeyboadEvent.
      */
     if (ctrls->enabled_ctrls & XkbSlowKeysMask) {
-        xkbAccessXNotify ev = { 0 };
+        xkbAccessXNotify ev;
         unsigned beep_type;
         unsigned mask;
 
@@ -681,7 +675,7 @@ AccessXFilterReleaseEvent(DeviceEvent *event, DeviceIntPtr keybd)
             xkbi->shiftKeyCount = 0;
         }
         else if (xkbi->shiftKeyCount >= 5) {
-            xkbControlsNotify cn = { 0 };
+            xkbControlsNotify cn;
 
             cn.keycode = key;
             cn.eventType = KeyPress;

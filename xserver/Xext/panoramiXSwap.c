@@ -48,9 +48,21 @@ Equipment Corporation.
 #include "panoramiXh.h"
 
 static int _X_COLD
+SProcPanoramiXQueryVersion(ClientPtr client)
+{
+    REQUEST(xPanoramiXQueryVersionReq);
+
+    swaps(&stuff->length);
+    REQUEST_SIZE_MATCH(xPanoramiXQueryVersionReq);
+    return ProcPanoramiXQueryVersion(client);
+}
+
+static int _X_COLD
 SProcPanoramiXGetState(ClientPtr client)
 {
     REQUEST(xPanoramiXGetStateReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xPanoramiXGetStateReq);
     swapl(&stuff->window);
     return ProcPanoramiXGetState(client);
@@ -60,6 +72,8 @@ static int _X_COLD
 SProcPanoramiXGetScreenCount(ClientPtr client)
 {
     REQUEST(xPanoramiXGetScreenCountReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xPanoramiXGetScreenCountReq);
     swapl(&stuff->window);
     return ProcPanoramiXGetScreenCount(client);
@@ -69,10 +83,32 @@ static int _X_COLD
 SProcPanoramiXGetScreenSize(ClientPtr client)
 {
     REQUEST(xPanoramiXGetScreenSizeReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xPanoramiXGetScreenSizeReq);
     swapl(&stuff->window);
     swapl(&stuff->screen);
     return ProcPanoramiXGetScreenSize(client);
+}
+
+static int _X_COLD
+SProcXineramaIsActive(ClientPtr client)
+{
+    REQUEST(xXineramaIsActiveReq);
+
+    swaps(&stuff->length);
+    REQUEST_SIZE_MATCH(xXineramaIsActiveReq);
+    return ProcXineramaIsActive(client);
+}
+
+static int _X_COLD
+SProcXineramaQueryScreens(ClientPtr client)
+{
+    REQUEST(xXineramaQueryScreensReq);
+
+    swaps(&stuff->length);
+    REQUEST_SIZE_MATCH(xXineramaQueryScreensReq);
+    return ProcXineramaQueryScreens(client);
 }
 
 int _X_COLD
@@ -81,7 +117,7 @@ SProcPanoramiXDispatch(ClientPtr client)
     REQUEST(xReq);
     switch (stuff->data) {
     case X_PanoramiXQueryVersion:
-        return ProcPanoramiXQueryVersion(client);
+        return SProcPanoramiXQueryVersion(client);
     case X_PanoramiXGetState:
         return SProcPanoramiXGetState(client);
     case X_PanoramiXGetScreenCount:
@@ -89,9 +125,9 @@ SProcPanoramiXDispatch(ClientPtr client)
     case X_PanoramiXGetScreenSize:
         return SProcPanoramiXGetScreenSize(client);
     case X_XineramaIsActive:
-        return ProcXineramaIsActive(client);
+        return SProcXineramaIsActive(client);
     case X_XineramaQueryScreens:
-        return ProcXineramaQueryScreens(client);
+        return SProcXineramaQueryScreens(client);
     }
     return BadRequest;
 }

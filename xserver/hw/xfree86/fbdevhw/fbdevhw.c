@@ -4,7 +4,6 @@
 #endif
 
 #include <string.h>
-#include <sys/mman.h>
 
 #include "xf86.h"
 #include "xf86Modes.h"
@@ -23,20 +22,22 @@
 #define PAGE_MASK               (~(getpagesize() - 1))
 
 static XF86ModuleVersionInfo fbdevHWVersRec = {
-    .modname      = "fbdevhw",
-    .vendor       = MODULEVENDORSTRING,
-    ._modinfo1_   = MODINFOSTRING1,
-    ._modinfo2_   = MODINFOSTRING2,
-    .xf86version  = XORG_VERSION_CURRENT,
-    .majorversion = 0,
-    .minorversion = 0,
-    .patchlevel   = 2,
-    .abiclass     = ABI_CLASS_VIDEODRV,
-    .abiversion   = ABI_VIDEODRV_VERSION,
+    "fbdevhw",
+    MODULEVENDORSTRING,
+    MODINFOSTRING1,
+    MODINFOSTRING2,
+    XORG_VERSION_CURRENT,
+    0, 0, 2,
+    ABI_CLASS_VIDEODRV,
+    ABI_VIDEODRV_VERSION,
+    MOD_CLASS_NONE,
+    {0, 0, 0, 0}
 };
 
 _X_EXPORT XF86ModuleData fbdevhwModuleData = {
-    .vers = &fbdevHWVersRec
+    &fbdevHWVersRec,
+    NULL,
+    NULL
 };
 
 #include <fcntl.h>
@@ -92,7 +93,7 @@ fbdevHWGetRec(ScrnInfoPtr pScrn)
     if (FBDEVHWPTR(pScrn) != NULL)
         return TRUE;
 
-    FBDEVHWPTRLVAL(pScrn) = XNFcallocarray(1, sizeof(fbdevHWRec));
+    FBDEVHWPTRLVAL(pScrn) = xnfcalloc(sizeof(fbdevHWRec), 1);
     return TRUE;
 }
 
@@ -285,7 +286,7 @@ fbdev_open_pci(struct pci_device *pPci, char **namep)
             if (fd != -1) {
                 if (ioctl(fd, FBIOGET_FSCREENINFO, (void *) &fix) != -1) {
                     if (namep) {
-                        *namep = XNFalloc(16);
+                        *namep = xnfalloc(16);
                         strncpy(*namep, fix.id, 16);
                     }
 
@@ -301,31 +302,6 @@ fbdev_open_pci(struct pci_device *pPci, char **namep)
 
     xf86DrvMsg(-1, X_ERROR, "Unable to find a valid framebuffer device\n");
     return -1;
-}
-
-/* *
- * Try to resolve a filename as symbolic link.  If the file is not a link, the
- * original filename is returned.  NULL is returned if readlink raised an
- * error.
- */
-static const char *
-resolve_link(const char *filename, char *resolve_buf, size_t resolve_buf_size)
-{
-    ssize_t len = readlink(filename, resolve_buf, resolve_buf_size - 1);
-    /* if it is a link resolve it */
-    if (len >= 0) {
-        resolve_buf[len] = '\0';
-        return resolve_buf;
-    }
-    else {
-        if (errno == EINVAL) {
-            return filename;
-        }
-        else {
-            // Have caller handle error condition.
-            return NULL;
-        }
-    }
 }
 
 static int
@@ -355,26 +331,9 @@ fbdev_open(int scrnIndex, const char *dev, char **namep)
 
     /* only touch non-PCI devices on this path */
     {
-        char device_path_buf[PATH_MAX];
         char buf[PATH_MAX] = {0};
         char *sysfs_path = NULL;
-        char const *real_dev = resolve_link(dev, device_path_buf,
-                                            sizeof(device_path_buf));
-        if (real_dev == NULL) {
-            xf86DrvMsg(scrnIndex, X_ERROR,
-                       "Failed resolving symbolic link for device '%s': %s",
-                       dev, strerror(errno));
-            return -1;
-        }
-
-        const char *node = strrchr(real_dev, '/');
-
-        if (node == NULL) {
-            node = real_dev;
-        }
-        else {
-            node++;
-        }
+        char *node = strrchr(dev, '/') + 1;
 
         if (asprintf(&sysfs_path, "/sys/class/graphics/%s/device/subsystem", node) < 0 ||
             readlink(sysfs_path, buf, sizeof(buf) - 1) < 0 ||
@@ -394,7 +353,7 @@ fbdev_open(int scrnIndex, const char *dev, char **namep)
             return -1;
         }
         else {
-            *namep = XNFalloc(16);
+            *namep = xnfalloc(16);
             strncpy(*namep, fix.id, 16);
         }
     }

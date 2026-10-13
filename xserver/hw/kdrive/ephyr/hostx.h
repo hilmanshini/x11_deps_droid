@@ -84,8 +84,7 @@ xcb_cursor_t
 void
  hostx_get_output_geometry(const char *output,
                            int *x, int *y,
-                           int *width, int *height,
-                           int *width_mm, int *height_mm);
+                           int *width, int *height);
 
 void
  hostx_use_fullscreen(void);
@@ -147,8 +146,7 @@ void *hostx_screen_init(KdScreenInfo *screen,
 
 void
 hostx_paint_rect(KdScreenInfo *screen,
-                 int sx, int sy, int dx, int dy, int width, int height,
-                 Bool sync);
+                 int sx, int sy, int dx, int dy, int width, int height);
 
 Bool
 hostx_load_keymap(KeySymsPtr keySyms, CARD8 *modmap, XkbControlsPtr controls);

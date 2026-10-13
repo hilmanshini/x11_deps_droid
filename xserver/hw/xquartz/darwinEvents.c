@@ -129,9 +129,6 @@ create_thread(void *(*func)(void *), void *arg)
     pthread_attr_init(&attr);
     pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    if (&pthread_attr_set_qos_class_np) {
-        pthread_attr_set_qos_class_np(&attr, QOS_CLASS_USER_INITIATED, 0);
-    }
     pthread_create(&tid, &attr, func, arg);
     pthread_attr_destroy(&attr);
 
@@ -202,7 +199,7 @@ DarwinUpdateModifiers(int pressed,                    // KeyPress or KeyRelease
         }
 }
 
-/* Generic handler for Xquartz-specific events.  When possible, these should
+/* Generic handler for Xquartz-specifc events.  When possible, these should
    be moved into their own individual functions and set as handlers using
    mieqSetHandler. */
 

@@ -114,8 +114,17 @@ struct i386_special_regs {
  * CS, DS, ES, SS.
  */
 
+#if defined(__sun) && defined(CS) /* avoid conflicts with Solaris sys/regset.h */
+# undef CS
+# undef DS
+# undef SS
+# undef ES
+# undef FS
+# undef GS
+#endif
+
 struct i386_segment_regs {
-    u16 reg_cs, reg_ds, reg_ss, reg_es, reg_fs, reg_gs;
+    u16 CS, DS, SS, ES, FS, GS;
 };
 
 /* 8 bit registers */
@@ -157,12 +166,12 @@ struct i386_segment_regs {
 #define R_EFLG spc.FLAGS
 
 /* segment registers */
-#define R_CS  seg.reg_cs
-#define R_DS  seg.reg_ds
-#define R_SS  seg.reg_ss
-#define R_ES  seg.reg_es
-#define R_FS  seg.reg_fs
-#define R_GS  seg.reg_gs
+#define R_CS  seg.CS
+#define R_DS  seg.DS
+#define R_SS  seg.SS
+#define R_ES  seg.ES
+#define R_FS  seg.FS
+#define R_GS  seg.GS
 
 /* flag conditions   */
 #define FB_CF 0x0001            /* CARRY flag  */

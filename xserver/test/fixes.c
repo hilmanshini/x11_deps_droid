@@ -347,15 +347,13 @@ fixes_pointer_barrier_clamp_test(void)
     assert(cy == barrier.y1);
 }
 
-const testfunc_t*
+int
 fixes_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        fixes_pointer_barriers_test,
-        fixes_pointer_barrier_direction_test,
-        fixes_pointer_barrier_clamp_test,
-        NULL,
-    };
 
-    return testfuncs;
+    fixes_pointer_barriers_test();
+    fixes_pointer_barrier_direction_test();
+    fixes_pointer_barrier_clamp_test();
+
+    return 0;
 }

@@ -135,8 +135,10 @@ RootlessResolveColormap(ScreenPtr pScreen, int first_color,
 }
 
 unsigned long RootlessWID(WindowPtr pWindow) {
+    ScreenPtr pScreen = pWindow->drawable.pScreen;
     WindowPtr top = TopLevelParent(pWindow);
     RootlessWindowRec *winRec;
+    PixmapPtr curPixmap;
 
     if (top == NULL) {
         return 0;

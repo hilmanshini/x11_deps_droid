@@ -57,6 +57,12 @@
 #endif
 #define WIN_WID_PROP		"cyg_wid_prop_rl"
 #define WIN_NEEDMANAGE_PROP	"cyg_override_redirect_prop_rl"
+#ifndef CYGMULTIWINDOW_DEBUG
+#define CYGMULTIWINDOW_DEBUG    NO
+#endif
+#ifndef CYGWINDOWING_DEBUG
+#define CYGWINDOWING_DEBUG	NO
+#endif
 
 #define XMING_SIGNATURE		0x12345678L
 

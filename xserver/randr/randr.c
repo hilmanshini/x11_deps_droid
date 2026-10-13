@@ -30,7 +30,7 @@
 #include <dix-config.h>
 #endif
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include "extinit.h"
 
 /* From render.h */

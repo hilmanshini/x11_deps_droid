@@ -637,7 +637,8 @@ winClipboardFlushXEvents(HWND hwnd,
             if (xtpText_value) {
                 free(xtpText_value);
             }
-            free(pszConvertData);
+            if (pszConvertData)
+                free(pszConvertData);
             if (hGlobal && pszGlobalData)
                 GlobalUnlock(hGlobal);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates.
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  * Copyright 2010 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,7 +48,6 @@
 
 #include "xfixesint.h"
 #include "opaque.h"
-#include "xace.h"
 
 static DevPrivateKeyRec ClientDisconnectPrivateKeyRec;
 
@@ -61,48 +60,27 @@ typedef struct _ClientDisconnect {
 #define GetClientDisconnect(s) \
     ((ClientDisconnectPtr) dixLookupPrivate(&(s)->devPrivates, \
                                             ClientDisconnectPrivateKey))
-Bool allowForceTerminate;
 
 int
 ProcXFixesSetClientDisconnectMode(ClientPtr client)
 {
-    int rc = Success;
     ClientDisconnectPtr pDisconnect = GetClientDisconnect(client);
+
     REQUEST(xXFixesSetClientDisconnectModeReq);
     REQUEST_SIZE_MATCH(xXFixesSetClientDisconnectModeReq);
 
-    if (stuff->disconnect_mode &
-        ~(CARD32)(XFixesClientDisconnectFlagTerminate |
-                  XFixesClientDisconnectFlagForceTerminate))
-        return BadValue;
-    /*
-     * To force the server to terminate, the client must be local
-     * and have permission to manage the server.
-     */
-    if (stuff->disconnect_mode & XFixesClientDisconnectFlagForceTerminate) {
-        if (!ClientIsLocal(client)) {
-            LogMessage(X_WARNING, "Forced server termination request refused because client is not local");
-            return BadAccess;
-        }
-        if ((rc = XaceHookServerAccess(client, DixManageAccess))) {
-            LogMessage(X_WARNING, "Forced server termination request blocked by X Access Control Extension");
-            return rc;
-        }
-        if (!allowForceTerminate) {
-            LogMessage(X_WARNING, "Forced server termination request blocked by server configuration (remove NoAllowForceTerminate to enable)");
-            return BadAccess;
-        }
-    }
-
     pDisconnect->disconnect_mode = stuff->disconnect_mode;
 
-    return rc;
+    return Success;
 }
 
 int _X_COLD
 SProcXFixesSetClientDisconnectMode(ClientPtr client)
 {
     REQUEST(xXFixesSetClientDisconnectModeReq);
+
+    swaps(&stuff->length);
+
     REQUEST_SIZE_MATCH(xXFixesSetClientDisconnectModeReq);
 
     swapl(&stuff->disconnect_mode);
@@ -137,6 +115,9 @@ int _X_COLD
 SProcXFixesGetClientDisconnectMode(ClientPtr client)
 {
     REQUEST(xXFixesGetClientDisconnectModeReq);
+
+    swaps(&stuff->length);
+
     REQUEST_SIZE_MATCH(xXFixesGetClientDisconnectModeReq);
 
     return (*ProcXFixesVector[stuff->xfixesReqType]) (client);
@@ -154,17 +135,6 @@ XFixesShouldDisconnectClient(ClientPtr client)
         return (pDisconnect->disconnect_mode & XFixesClientDisconnectFlagTerminate);
 
     return FALSE;
-}
-
-Bool
-XFixesMustTerminateServerOnDisconnect(ClientPtr client)
-{
-    ClientDisconnectPtr pDisconnect = GetClientDisconnect(client);
-
-    if (!pDisconnect)
-        return FALSE;
-
-    return (pDisconnect->disconnect_mode & XFixesClientDisconnectFlagForceTerminate);
 }
 
 Bool

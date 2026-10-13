@@ -33,8 +33,7 @@
 #include <string.h>
 #include <sys/select.h>
 
-#include "config/dbus-core.h"
-
+#include "dbus-core.h"
 #include "input.h"
 #include "inputstr.h"
 #include "hotplug.h"
@@ -102,7 +101,7 @@ get_prop_string_array(LibHalContext * hal_ctx, const char *udi,
         for (i = 0; props[i]; i++)
             len += strlen(props[i]);
 
-        ret = calloc(len + i, sizeof(char));    /* i - 1 commas, 1 NULL */
+        ret = calloc(sizeof(char), len + i);    /* i - 1 commas, 1 NULL */
         if (!ret) {
             libhal_free_string_array(props);
             return NULL;

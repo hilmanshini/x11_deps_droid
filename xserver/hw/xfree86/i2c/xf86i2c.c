@@ -69,7 +69,7 @@ I2CUDelay(I2CBusPtr b, int usec)
  * ================================================================
  *
  * It is assumed that there is just one master on the I2C bus, therefore
- * there is no explicit test for conflicts.
+ * there is no explicit test for conflits.
  */
 
 #define RISEFALLTIME 2          /* usec, actually 300 to 1000 ns according to the i2c specs */
@@ -872,7 +872,7 @@ xf86I2CGetScreenBuses(int scrnIndex, I2CBusPtr ** pppI2CBus)
         if (!pppI2CBus)
             continue;
 
-        *pppI2CBus = XNFreallocarray(*pppI2CBus, n, sizeof(I2CBusPtr));
+        *pppI2CBus = xnfreallocarray(*pppI2CBus, n, sizeof(I2CBusPtr));
         (*pppI2CBus)[n - 1] = pI2CBus;
     }
 

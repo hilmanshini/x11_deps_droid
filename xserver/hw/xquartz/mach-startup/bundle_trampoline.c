@@ -26,18 +26,16 @@
  * prior written authorization.
  */
 
+#include <assert.h>
 #include <mach-o/dyld.h>
 #include <libgen.h>
-#include <os/log.h>
 #include <spawn.h>
 #include <sys/syslimits.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
-/* We want XQuartz.app to inherit a login shell environment.  This is handled by the X11.sh
+/* We wnt XQuartz.app to inherit a login shell environment.  This is handled by the X11.sh
  * script which re-execs the main binary from a login shell environment.  However, recent
  * versions of macOS require that the main executable of an app be Mach-O for full system
  * fidelity.
@@ -45,7 +43,7 @@
  * Failure to do so results in two problems:
  *    1) bash is seen as the responsible executable for Security & Privacy, and the user doesn't
  *       get prompted to allow filesystem access (https://github.com/XQuartz/XQuartz/issues/6).
- *    2) The process is launched under Rosetta for compatibility, which results in
+ *    2) The process is launched under Rosetta for compatability, which results in
  *       the subsequent spawn of the real executable under Rosetta rather than natively.
  *
  * This trampoline provides the mach-o needed by LaunchServices and TCC to satisfy those
@@ -59,10 +57,7 @@ static char *executable_path() {
     if (_NSGetExecutablePath(buf, &bufsize) == -1) {
         free(buf);
         buf = calloc(1, bufsize);
-        if (_NSGetExecutablePath(buf, &bufsize) != 0) {
-            os_log_error(OS_LOG_DEFAULT, "Failed to determine executable path");
-            abort();
-        }
+        assert(_NSGetExecutablePath(buf, &bufsize) == 0);
     }
 
     return buf;
@@ -77,31 +72,16 @@ int main(int argc, char **argv, char **envp) {
         free(executable);
         asprintf(&executable, "%s/X11", executable_directory);
     }
-    if (access(executable, X_OK) != 0) {
-        os_log_error(OS_LOG_DEFAULT, "Cannot execute %{public}s: %{public}s", executable, strerror(errno));
-        abort();
-    }
+    assert(access(executable, X_OK) == 0);
 
     argv[0] = executable;
 
     posix_spawnattr_t attr;
-    int error = posix_spawnattr_init(&attr);
-    if (error != 0) {
-        os_log_error(OS_LOG_DEFAULT, "posix_spawnattr_init failed: %{public}s", strerror(error));
-        abort();
-    }
-    error = posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETEXEC);
-    if (error != 0) {
-        os_log_error(OS_LOG_DEFAULT, "posix_spawnattr_setflags failed: %{public}s", strerror(error));
-        abort();
-    }
+    assert(posix_spawnattr_init(&attr) == 0);
+    assert(posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETEXEC) == 0);
 
     pid_t child_pid;
-    error = posix_spawn(&child_pid, executable, NULL, &attr, argv, envp);
-    if (error != 0) {
-        os_log_error(OS_LOG_DEFAULT, "posix_spawn failed for %{public}s: %{public}s", executable, strerror(error));
-        abort();
-    }
+    assert(posix_spawn(&child_pid, executable, NULL, &attr, argv, envp) == 0);
 
     return EXIT_FAILURE;
 }

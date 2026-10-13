@@ -94,6 +94,8 @@ SOFTWARE.
 #include "opaque.h"
 #include "input.h"
 
+#define GLOBAL
+
 #include <X11/extensions/Xv.h>
 #include <X11/extensions/Xvproto.h>
 #include "xvdix.h"
@@ -103,19 +105,6 @@ SOFTWARE.
 #include "panoramiXsrv.h"
 #endif
 #include "xvdisp.h"
-
-#define SCREEN_PROLOGUE(pScreen, field) ((pScreen)->field = ((XvScreenPtr) \
-    dixLookupPrivate(&(pScreen)->devPrivates, XvScreenKey))->field)
-
-#define SCREEN_EPILOGUE(pScreen, field, wrapper)\
-    ((pScreen)->field = wrapper)
-
-typedef struct _XvVideoNotifyRec {
-    struct _XvVideoNotifyRec *next;
-    ClientPtr client;
-    unsigned long id;
-    unsigned long mask;
-} XvVideoNotifyRec, *XvVideoNotifyPtr;
 
 static DevPrivateKeyRec XvScreenKeyRec;
 

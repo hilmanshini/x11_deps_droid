@@ -29,9 +29,8 @@
 
 #include <errno.h>
 #include <string.h>
-#include <sys/mman.h>
-#include <X11/X.h>
 
+#include <X11/X.h>
 #include "input.h"
 #include "scrnintstr.h"
 

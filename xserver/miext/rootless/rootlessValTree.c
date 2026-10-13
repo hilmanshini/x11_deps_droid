@@ -244,7 +244,7 @@ RootlessComputeClips(WindowPtr pParent, ScreenPtr pScreen,
             }
             return;
         }
-        _X_FALLTHROUGH; /* fall through */
+        /* fall through */
     default:
         /*
          * To calculate exposures correctly, we have to translate the old
@@ -519,7 +519,6 @@ RootlessMiValidateTree(WindowPtr pRoot, /* Parent to validate */
     }
 
     RegionUninit(&childClip);
-    RegionUninit(&exposed);
 
     /* The root is never clipped by its children, so nothing on the root
        is ever exposed by moving or mapping its children. */

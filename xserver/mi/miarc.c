@@ -1155,7 +1155,7 @@ GetFPolyYBounds(SppPointPtr pts, int n, double yFtrans, int *by, int *ty)
  *	edge list and a right edge list.  The algorithm used
  *	to traverse each edge is digital differencing analyzer
  *	line algorithm with y as the major axis. There's some funny linear
- *	interpolation involved because of the subpixel positioning.
+ *	interpolation involved because of the subpixel postioning.
  */
 static void
 miFillSppPoly(DrawablePtr dst, GCPtr pgc, int count,    /* number of points */
@@ -1436,7 +1436,7 @@ miArcJoin(DrawablePtr pDraw, GCPtr pGC, miArcFacePtr pLeft,
             polyLen = 5;
             break;
         }
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case JoinBevel:
         poly[0] = corner;
         poly[1] = center;
@@ -3152,10 +3152,10 @@ realFindSpan(int y)
         else
             newMaxy = finalMaxy + change;
         if (finalSpans) {
-            memcpy(((char *) newSpans) +
+            memmove(((char *) newSpans) +
                     (finalMiny - newMiny) * sizeof(struct finalSpan *),
-                   finalSpans,
-                   finalSize * sizeof(struct finalSpan *));
+                    (char *) finalSpans,
+                    finalSize * sizeof(struct finalSpan *));
             free(finalSpans);
         }
         if ((i = finalMiny - newMiny) > 0)

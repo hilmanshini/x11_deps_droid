@@ -30,6 +30,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef GETBMAP_H
 #define GETBMAP_H 1
 
+int SProcXGetDeviceButtonMapping(ClientPtr      /* client */
+    );
+
 int ProcXGetDeviceButtonMapping(ClientPtr       /* client */
     );
 

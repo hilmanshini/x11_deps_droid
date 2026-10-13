@@ -188,8 +188,6 @@ UngrabAllDevices(Bool kill_client)
     ErrorF("End list of ungrabbed devices\n");
 }
 
-static Bool CopyGrab(GrabPtr dst, const GrabPtr src);
-
 GrabPtr
 AllocGrab(const GrabPtr src)
 {
@@ -214,7 +212,7 @@ AllocGrab(const GrabPtr src)
 GrabPtr
 CreateGrab(int client, DeviceIntPtr device, DeviceIntPtr modDevice,
            WindowPtr window, enum InputLevel grabtype, GrabMask *mask,
-           GrabParameters *param, int eventType,
+           GrabParameters *param, int type,
            KeyCode keybut,        /* key or button */
            WindowPtr confineTo, CursorPtr cursor)
 {
@@ -237,7 +235,7 @@ CreateGrab(int client, DeviceIntPtr device, DeviceIntPtr modDevice,
     grab->modifiersDetail.exact = param->modifiers;
     grab->modifiersDetail.pMask = NULL;
     grab->modifierDevice = modDevice;
-    grab->type = eventType;
+    grab->type = type;
     grab->grabtype = grabtype;
     grab->detail.exact = keybut;
     grab->detail.pMask = NULL;
@@ -248,13 +246,13 @@ CreateGrab(int client, DeviceIntPtr device, DeviceIntPtr modDevice,
     if (grabtype == XI2)
         xi2mask_merge(grab->xi2mask, mask->xi2mask);
     return grab;
+
 }
 
 void
 FreeGrab(GrabPtr pGrab)
 {
-    if (!pGrab)
-        return;
+    BUG_RETURN(!pGrab);
 
     free(pGrab->modifiersDetail.pMask);
     free(pGrab->detail.pMask);
@@ -266,7 +264,7 @@ FreeGrab(GrabPtr pGrab)
     free(pGrab);
 }
 
-static Bool
+Bool
 CopyGrab(GrabPtr dst, const GrabPtr src)
 {
     Mask *mdetails_mask = NULL;
@@ -546,7 +544,7 @@ AddPassiveGrabToList(ClientPtr client, GrabPtr pGrab)
     if (pGrab->keyboardMode == GrabModeSync ||
         pGrab->pointerMode == GrabModeSync)
         access_mode |= DixFreezeAccess;
-    rc = XaceHookDeviceAccess(client, pGrab->device, access_mode);
+    rc = XaceHook(XACE_DEVICE_ACCESS, client, pGrab->device, access_mode);
     if (rc != Success)
         return rc;
 
@@ -565,7 +563,7 @@ AddPassiveGrabToList(ClientPtr client, GrabPtr pGrab)
 
     pGrab->next = pGrab->window->optional->passiveGrabs;
     pGrab->window->optional->passiveGrabs = pGrab;
-    if (AddResource(pGrab->resource, X11_RESTYPE_PASSIVEGRAB, (void *) pGrab))
+    if (AddResource(pGrab->resource, RT_PASSIVEGRAB, (void *) pGrab))
         return Success;
     return BadAlloc;
 }
@@ -662,7 +660,7 @@ DeletePassiveGrabFromList(GrabPtr pMinuendGrab)
                 FreeGrab(pNewGrab);
                 ok = FALSE;
             }
-            else if (!AddResource(pNewGrab->resource, X11_RESTYPE_PASSIVEGRAB,
+            else if (!AddResource(pNewGrab->resource, RT_PASSIVEGRAB,
                                   (void *) pNewGrab))
                 ok = FALSE;
             else
@@ -679,13 +677,13 @@ DeletePassiveGrabFromList(GrabPtr pMinuendGrab)
 
     if (!ok) {
         for (i = 0; i < nadds; i++)
-            FreeResource(adds[i]->resource, X11_RESTYPE_NONE);
+            FreeResource(adds[i]->resource, RT_NONE);
         for (i = 0; i < nups; i++)
             free(details[i]);
     }
     else {
         for (i = 0; i < ndels; i++)
-            FreeResource(deletes[i]->resource, X11_RESTYPE_NONE);
+            FreeResource(deletes[i]->resource, RT_NONE);
         for (i = 0; i < nadds; i++) {
             grab = adds[i];
             grab->next = grab->window->optional->passiveGrabs;

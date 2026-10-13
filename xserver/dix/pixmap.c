@@ -44,13 +44,8 @@ from The Open Group.
 #include "picturestr.h"
 #include "randrstr.h"
 /*
- * Scratch pixmap APIs are provided for source and binary compatibility.  In
- * older versions, DIX would store a freed scratch pixmap for future use.  This
- * optimization is not really that impactful on modern systems with decent
- * system heap management and modern CPUs, and it interferes with memory
- * analysis tools such as ASan, malloc history, etc.
- *
- * Now, these entry points just allocte/free pixmaps.
+ *  Scratch pixmap management and device independent pixmap allocation
+ *  function.
  */
 
 /* callable by ddx */
@@ -58,7 +53,14 @@ PixmapPtr
 GetScratchPixmapHeader(ScreenPtr pScreen, int width, int height, int depth,
                        int bitsPerPixel, int devKind, void *pPixData)
 {
-    PixmapPtr pPixmap = (*pScreen->CreatePixmap) (pScreen, 0, 0, depth, 0);
+    PixmapPtr pPixmap = pScreen->pScratchPixmap;
+
+    if (pPixmap)
+        pScreen->pScratchPixmap = NULL;
+    else
+        /* width and height of 0 means don't allocate any pixmap data */
+        pPixmap = (*pScreen->CreatePixmap) (pScreen, 0, 0, depth, 0);
+
     if (pPixmap) {
         if ((*pScreen->ModifyPixmapHeader) (pPixmap, width, height, depth,
                                             bitsPerPixel, devKind, pPixData))
@@ -74,13 +76,17 @@ FreeScratchPixmapHeader(PixmapPtr pPixmap)
 {
     if (pPixmap) {
         ScreenPtr pScreen = pPixmap->drawable.pScreen;
-        pPixmap->devPrivate.ptr = NULL; /* help catch/avoid heap-use-after-free */
-        (*pScreen->DestroyPixmap)(pPixmap);
+
+        pPixmap->devPrivate.ptr = NULL; /* lest ddx chases bad ptr */
+        if (pScreen->pScratchPixmap)
+            (*pScreen->DestroyPixmap) (pPixmap);
+        else
+            pScreen->pScratchPixmap = pPixmap;
     }
 }
 
 Bool
-PixmapScreenInit(ScreenPtr pScreen)
+CreateScratchPixmapsForScreen(ScreenPtr pScreen)
 {
     unsigned int pixmap_size;
 
@@ -88,7 +94,15 @@ PixmapScreenInit(ScreenPtr pScreen)
     pScreen->totalPixmapSize =
         BitmapBytePad(pixmap_size * 8);
 
+    /* let it be created on first use */
+    pScreen->pScratchPixmap = NULL;
     return TRUE;
+}
+
+void
+FreeScratchPixmapsForScreen(ScreenPtr pScreen)
+{
+    FreeScratchPixmapHeader(pScreen->pScratchPixmap);
 }
 
 /* callable by ddx */
@@ -248,11 +262,12 @@ PixmapStopDirtyTracking(DrawablePtr src, PixmapPtr secondary_dst)
     return TRUE;
 }
 
-void
-PixmapDirtyCopyArea(PixmapPtr dst, DrawablePtr src,
-                    int x, int y, int dst_x, int dst_y,
+static void
+PixmapDirtyCopyArea(PixmapPtr dst,
+                    PixmapDirtyUpdatePtr dirty,
                     RegionPtr dirty_region)
 {
+    DrawablePtr src = dirty->src;
     ScreenPtr pScreen = src->pScreen;
     int n;
     BoxPtr b;
@@ -278,15 +293,10 @@ PixmapDirtyCopyArea(PixmapPtr dst, DrawablePtr src,
         w = dst_box.x2 - dst_box.x1;
         h = dst_box.y2 - dst_box.y1;
 
-        (void) pGC->ops->CopyArea(src,
-                                  &dst->drawable,
-                                  pGC,
-                                  x + dst_box.x1,
-                                  y + dst_box.y1,
-                                  w,
-                                  h,
-                                  dst_x + dst_box.x1,
-                                  dst_y + dst_box.y1);
+        pGC->ops->CopyArea(src, &dst->drawable, pGC,
+                           dirty->x + dst_box.x1, dirty->y + dst_box.y1, w, h,
+                           dirty->dst_x + dst_box.x1,
+                           dirty->dst_y + dst_box.y1);
         b++;
     }
     FreeScratchGC(pGC);
@@ -398,8 +408,7 @@ Bool PixmapSyncDirtyHelper(PixmapDirtyUpdatePtr dirty)
     RegionTranslate(&pixregion, -dirty->x, -dirty->y);
 
     if (!pScreen->root || dirty->rotation == RR_Rotate_0)
-        PixmapDirtyCopyArea(dst, dirty->src, dirty->x, dirty->y,
-                            dirty->dst_x, dirty->dst_y, &pixregion);
+        PixmapDirtyCopyArea(dst, dirty, &pixregion);
     else
         PixmapDirtyCompositeRotate(dst, dirty, &pixregion);
     pScreen->SourceValidate = SourceValidate;

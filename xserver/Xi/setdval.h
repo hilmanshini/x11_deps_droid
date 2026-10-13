@@ -30,6 +30,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef SETDVAL_H
 #define SETDVAL_H 1
 
+int SProcXSetDeviceValuators(ClientPtr  /* client */
+    );
+
 int ProcXSetDeviceValuators(ClientPtr   /* client */
     );
 

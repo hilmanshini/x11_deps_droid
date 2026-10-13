@@ -27,31 +27,20 @@
 #include <xorg-config.h>
 #endif
 
-#include <errno.h>
-#include <sys/mman.h>
 #include <X11/X.h>
-
 #include "xf86.h"
 #include "xf86Priv.h"
+
+#include <errno.h>
+#include <sys/mman.h>
+
 #include "xf86_OSlib.h"
 #include "xf86OSpriv.h"
-
-#if defined(USE_I386_IOPL) || defined(USE_AMD64_IOPL)
-#include <machine/sysarch.h>
-#endif
 
 #if defined(__NetBSD__) && !defined(MAP_FILE)
 #define MAP_FLAGS MAP_SHARED
 #else
 #define MAP_FLAGS (MAP_FILE | MAP_SHARED)
-#endif
-
-#ifndef CONSOLE_X_TV_ON
-#define CONSOLE_X_TV_ON _IOW('t',155,int)
-#endif
-
-#ifndef CONSOLE_X_TV_OFF
-#define CONSOLE_X_TV_OFF _IO('t',156)
 #endif
 
 #ifdef __OpenBSD__
@@ -178,7 +167,7 @@ xf86OSInitVidMem(VidMemInfoPtr pVidMem)
 static Bool ExtendedEnabled = FALSE;
 
 Bool
-xf86EnableIO(void)
+xf86EnableIO()
 {
     if (ExtendedEnabled)
         return TRUE;
@@ -199,7 +188,7 @@ xf86EnableIO(void)
 }
 
 void
-xf86DisableIO(void)
+xf86DisableIO()
 {
     if (!ExtendedEnabled)
         return;
@@ -213,9 +202,6 @@ xf86DisableIO(void)
 #endif                          /* USE_I386_IOPL */
 
 #ifdef USE_AMD64_IOPL
-#ifdef __NetBSD__
-#define amd64_iopl(x) x86_64_iopl(x)
-#endif
 /***************************************************************************/
 /* I/O Permissions section                                                 */
 /***************************************************************************/
@@ -223,7 +209,7 @@ xf86DisableIO(void)
 static Bool ExtendedEnabled = FALSE;
 
 Bool
-xf86EnableIO(void)
+xf86EnableIO()
 {
     if (ExtendedEnabled)
         return TRUE;
@@ -244,7 +230,7 @@ xf86EnableIO(void)
 }
 
 void
-xf86DisableIO(void)
+xf86DisableIO()
 {
     if (!ExtendedEnabled)
         return;
@@ -264,7 +250,7 @@ xf86DisableIO(void)
 static int IoFd = -1;
 
 Bool
-xf86EnableIO(void)
+xf86EnableIO()
 {
     if (IoFd >= 0)
         return TRUE;
@@ -278,7 +264,7 @@ xf86EnableIO(void)
 }
 
 void
-xf86DisableIO(void)
+xf86DisableIO()
 {
     if (IoFd < 0)
         return;
@@ -318,7 +304,7 @@ xf86SetTVOut(int mode)
 }
 
 void
-xf86SetRGBOut(void)
+xf86SetRGBOut()
 {
     switch (xf86Info.consType) {
 #ifdef PCCONS_SUPPORT

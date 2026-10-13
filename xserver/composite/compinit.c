@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates.
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -45,8 +45,6 @@
 #include <dix-config.h>
 #endif
 
-#include "os/osdep.h"
-
 #include "compint.h"
 #include "compositeext.h"
 
@@ -61,7 +59,6 @@ compCloseScreen(ScreenPtr pScreen)
     Bool ret;
 
     free(cs->alternateVisuals);
-    free(cs->implicitRedirectExceptions);
 
     pScreen->CloseScreen = cs->CloseScreen;
     pScreen->InstallColormap = cs->InstallColormap;

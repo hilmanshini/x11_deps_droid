@@ -169,15 +169,15 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
         }
 
         /* Security creation/labeling check. */
-        rc = XaceHookResourceAccess(serverClient, bufId, dbeDrawableResType,
-                                    pDbeWindowPriv->pBackBuffer, X11_RESTYPE_WINDOW,
-                                    pWin, DixCreateAccess);
+        rc = XaceHook(XACE_RESOURCE_ACCESS, serverClient, bufId,
+                      dbeDrawableResType, pDbeWindowPriv->pBackBuffer,
+                      RT_WINDOW, pWin, DixCreateAccess);
 
         /* Make the back pixmap a DBE drawable resource. */
         if (rc != Success || !AddResource(bufId, dbeDrawableResType,
                                           pDbeWindowPriv->pBackBuffer)) {
             /* free the buffer and the drawable resource */
-            FreeResource(bufId, X11_RESTYPE_NONE);
+            FreeResource(bufId, RT_NONE);
             return (rc == Success) ? BadAlloc : rc;
         }
 
@@ -275,10 +275,10 @@ miDbeSwapBuffers(ClientPtr client, int *pNumWindows, DbeSwapInfoPtr swapInfo)
 
     case XdbeUntouched:
         ValidateGC((DrawablePtr) pDbeWindowPriv->pFrontBuffer, pGC);
-        (void) (*pGC->ops->CopyArea) ((DrawablePtr) pWin,
-                                      (DrawablePtr) pDbeWindowPriv->pFrontBuffer,
-                                      pGC, 0, 0, pWin->drawable.width,
-                                      pWin->drawable.height, 0, 0);
+        (*pGC->ops->CopyArea) ((DrawablePtr) pWin,
+                               (DrawablePtr) pDbeWindowPriv->pFrontBuffer,
+                               pGC, 0, 0, pWin->drawable.width,
+                               pWin->drawable.height, 0, 0);
         break;
 
     case XdbeCopied:
@@ -293,10 +293,9 @@ miDbeSwapBuffers(ClientPtr client, int *pNumWindows, DbeSwapInfoPtr swapInfo)
      */
 
     ValidateGC((DrawablePtr) pWin, pGC);
-    (void) (*pGC->ops->CopyArea) ((DrawablePtr) pDbeWindowPriv->pBackBuffer,
-                                  (DrawablePtr) pWin, pGC, 0, 0,
-                                  pWin->drawable.width,
-                                  pWin->drawable.height, 0, 0);
+    (*pGC->ops->CopyArea) ((DrawablePtr) pDbeWindowPriv->pBackBuffer,
+                           (DrawablePtr) pWin, pGC, 0, 0,
+                           pWin->drawable.width, pWin->drawable.height, 0, 0);
 
     /*
      **********************************************************************
@@ -600,7 +599,7 @@ miDbePositionWindow(WindowPtr pWin, int x, int y)
             /* DbeWindowPrivDelete() will free the window private if there no
              * more buffer IDs associated with this window.
              */
-            FreeResource(pDbeWindowPriv->IDs[0], X11_RESTYPE_NONE);
+            FreeResource(pDbeWindowPriv->IDs[0], RT_NONE);
             pDbeWindowPriv = DBE_WINDOW_PRIV(pWin);
         }
 
@@ -621,10 +620,10 @@ miDbePositionWindow(WindowPtr pWin, int x, int y)
         }
         /* Copy the contents of the old front pixmap to the new one. */
         if (pWin->bitGravity != ForgetGravity) {
-            (void) (*pGC->ops->CopyArea) ((DrawablePtr) pDbeWindowPriv->pFrontBuffer,
-                                          (DrawablePtr) pFrontBuffer, pGC,
-                                          sourcex, sourcey, savewidth, saveheight,
-                                          destx, desty);
+            (*pGC->ops->CopyArea) ((DrawablePtr) pDbeWindowPriv->pFrontBuffer,
+				   (DrawablePtr) pFrontBuffer, pGC,
+				   sourcex, sourcey, savewidth, saveheight,
+                                   destx, desty);
         }
 
         ValidateGC(&pBackBuffer->drawable, pGC);
@@ -634,10 +633,10 @@ miDbePositionWindow(WindowPtr pWin, int x, int y)
         }
         /* Copy the contents of the old back pixmap to the new one. */
         if (pWin->bitGravity != ForgetGravity) {
-            (void) (*pGC->ops->CopyArea) ((DrawablePtr) pDbeWindowPriv->pBackBuffer,
-                                          (DrawablePtr) pBackBuffer, pGC,
-                                          sourcex, sourcey, savewidth, saveheight,
-                                          destx, desty);
+            (*pGC->ops->CopyArea) ((DrawablePtr) pDbeWindowPriv->pBackBuffer,
+				   (DrawablePtr) pBackBuffer, pGC,
+                                   sourcex, sourcey, savewidth, saveheight,
+                                   destx, desty);
         }
 
         /* Destroy the old pixmaps, and point the DBE window priv to the new

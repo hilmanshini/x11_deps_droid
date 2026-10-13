@@ -58,7 +58,6 @@
 
 #include <X11/X.h>
 #include <X11/Xproto.h>
-#include <X11/extensions/xf86bigfproto.h>
 #include <X11/fonts/fontstruct.h>
 #include <X11/fonts/libxfont2.h>
 
@@ -71,9 +70,11 @@
 #include "extinit.h"
 #include "protocol-versions.h"
 
+#include <X11/extensions/xf86bigfproto.h>
 #include "xf86bigfontsrv.h"
 
-static void XF86BigfontResetProc(ExtensionEntry *extEntry );
+static void XF86BigfontResetProc(ExtensionEntry *       /* extEntry */
+    );
 
 #ifdef HAS_SHM
 
@@ -341,7 +342,9 @@ ProcXF86BigfontQueryFont(ClientPtr client)
     CARD16 *pUniqIndex2Index;
     CARD32 nUniqCharInfos;
 
-    /* protocol version is decided based on request packet size */
+#if 0
+    REQUEST_SIZE_MATCH(xXF86BigfontQueryFontReq);
+#else
     switch (client->req_len) {
     case 2:                    /* client with version 1.0 libX11 */
         stuff_flags = (client->local &&
@@ -353,10 +356,10 @@ ProcXF86BigfontQueryFont(ClientPtr client)
     default:
         return BadLength;
     }
-
+#endif
     if (dixLookupFontable(&pFont, stuff->id, client, DixGetAttrAccess) !=
         Success)
-        return BadFont;         /* protocol spec says only error is BadFont */
+        return BadFont;         /* procotol spec says only error is BadFont */
 
     pmax = FONTINKMAX(pFont);
     pmin = FONTINKMIN(pFont);
@@ -653,7 +656,9 @@ ProcXF86BigfontDispatch(ClientPtr client)
 static int _X_COLD
 SProcXF86BigfontQueryVersion(ClientPtr client)
 {
-    /* REQUEST(xXF86BigfontQueryVersionReq); */
+    REQUEST(xXF86BigfontQueryVersionReq);
+
+    swaps(&stuff->length);
     return ProcXF86BigfontQueryVersion(client);
 }
 
@@ -661,6 +666,8 @@ static int _X_COLD
 SProcXF86BigfontQueryFont(ClientPtr client)
 {
     REQUEST(xXF86BigfontQueryFontReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xXF86BigfontQueryFontReq);
     swapl(&stuff->id);
     return ProcXF86BigfontQueryFont(client);

@@ -68,18 +68,8 @@ request_XISetClientPointer(xXISetClientPointerReq * req, int error)
         assert(client_request.errorValue == req->deviceid);
 
     client_request.swapped = TRUE;
-
-    /* MUST NOT swap req->length here !
-
-       The handler proc's don't use that field anymore, thus also SProc's
-       wont swap it. But this test program uses that field to initialize
-       client->req_len (see above). We previously had to swap it here, so
-       that SProcXIPassiveGrabDevice() will swap it back. Since that's gone
-       now, still swapping itself would break if this function is called
-       again and writing back a erroneously swapped value
-    */
-
     swapl(&req->win);
+    swaps(&req->length);
     swaps(&req->deviceid);
     rc = SProcXISetClientPointer(&client_request);
     assert(rc == error);
@@ -95,21 +85,18 @@ test_XISetClientPointer(void)
     int i;
     xXISetClientPointerReq request;
 
-    init_simple();
-    client_window = init_client(0, NULL);
-
     request_init(&request, XISetClientPointer);
 
     request.win = CLIENT_WINDOW_ID;
 
-    dbg("Testing BadDevice error for XIAllDevices and XIMasterDevices.\n");
+    printf("Testing BadDevice error for XIAllDevices and XIMasterDevices.\n");
     request.deviceid = XIAllDevices;
     request_XISetClientPointer(&request, BadDevice);
 
     request.deviceid = XIAllMasterDevices;
     request_XISetClientPointer(&request, BadDevice);
 
-    dbg("Testing Success for VCP and VCK.\n");
+    printf("Testing Success for VCP and VCK.\n");
     request.deviceid = devices.vcp->id; /* 2 */
     request_XISetClientPointer(&request, Success);
     assert(client_window.clientPtr->id == 2);
@@ -118,32 +105,32 @@ test_XISetClientPointer(void)
     request_XISetClientPointer(&request, Success);
     assert(client_window.clientPtr->id == 2);
 
-    dbg("Testing BadDevice error for all other devices.\n");
+    printf("Testing BadDevice error for all other devices.\n");
     for (i = 4; i <= 0xFFFF; i++) {
         request.deviceid = i;
         request_XISetClientPointer(&request, BadDevice);
     }
 
-    dbg("Testing window None\n");
+    printf("Testing window None\n");
     request.win = None;
     request.deviceid = devices.vcp->id; /* 2 */
     request_XISetClientPointer(&request, Success);
     assert(client_request.clientPtr->id == 2);
 
-    dbg("Testing invalid window\n");
+    printf("Testing invalid window\n");
     request.win = INVALID_WINDOW_ID;
     request.deviceid = devices.vcp->id;
     request_XISetClientPointer(&request, BadWindow);
 
 }
 
-const testfunc_t*
+int
 protocol_xisetclientpointer_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        test_XISetClientPointer,
-        NULL,
-    };
+    init_simple();
+    client_window = init_client(0, NULL);
 
-    return testfuncs;
+    test_XISetClientPointer();
+
+    return 0;
 }

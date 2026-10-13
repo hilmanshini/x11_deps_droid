@@ -223,15 +223,13 @@ bswap_test(void)
     assert(result_64 == expect_64);
 }
 
-const testfunc_t*
+int
 misc_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        dix_version_compare,
-        dix_update_desktop_dimensions,
-        dix_request_size_checks,
-        bswap_test,
-        NULL,
-    };
-    return testfuncs;
+    dix_version_compare();
+    dix_update_desktop_dimensions();
+    dix_request_size_checks();
+    bswap_test();
+
+    return 0;
 }

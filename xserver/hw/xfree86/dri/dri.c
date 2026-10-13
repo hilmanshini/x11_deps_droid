@@ -46,7 +46,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <errno.h>
 
 #include <X11/X.h>
-#include <X11/Xfuncproto.h>
 #include <X11/Xproto.h>
 #include "xf86drm.h"
 #include "misc.h"
@@ -256,7 +255,7 @@ DRIOpenDRMMaster(ScrnInfoPtr pScrn,
     tmp.resOwner = NULL;
 
     if (!pDRIEntPriv)
-        pDRIEntPriv = XNFcallocarray(1, sizeof(*pDRIEntPriv));
+        pDRIEntPriv = xnfcalloc(sizeof(*pDRIEntPriv), 1);
 
     if (!pDRIEntPriv) {
         DRIDrvMsg(-1, X_INFO, "[drm] Failed to allocate memory for "
@@ -604,7 +603,7 @@ DRIScreenInit(ScreenPtr pScreen, DRIInfoPtr pDRIInfo, int *pDRMFD)
                                       pDRIPriv->hiddenContextStore,
                                       DRI_NO_CONTEXT, NULL);
         }
-        _X_FALLTHROUGH; /* fall through */
+        /* fall through */
 
     case DRI_SERVER_SWAP:
         /* For swap methods of DRI_SERVER_SWAP and DRI_HIDE_X_CONTEXT
@@ -630,8 +629,6 @@ DRIScreenInit(ScreenPtr pScreen, DRIInfoPtr pDRIInfo, int *pDRMFD)
 
     return TRUE;
 }
-
-static Bool DRIDestroyWindow(WindowPtr pWin);
 
 Bool
 DRIFinishScreenInit(ScreenPtr pScreen)
@@ -1209,7 +1206,7 @@ DRIDriverClipNotify(ScreenPtr pScreen)
     DRIScreenPrivPtr pDRIPriv = DRI_SCREEN_PRIV(pScreen);
 
     if (pDRIPriv->pDriverInfo->ClipNotify) {
-        WindowPtr *pDRIWindows = calloc(pDRIPriv->nrWindows, sizeof(WindowPtr));
+        WindowPtr *pDRIWindows = calloc(sizeof(WindowPtr), pDRIPriv->nrWindows);
         DRIInfoPtr pDRIInfo = pDRIPriv->pDriverInfo;
 
         if (pDRIPriv->nrWindows > 0) {
@@ -1919,7 +1916,7 @@ DRITreeTraversal(WindowPtr pWin, void *data)
     return WT_WALKCHILDREN;
 }
 
-static Bool
+Bool
 DRIDestroyWindow(WindowPtr pWin)
 {
     ScreenPtr pScreen = pWin->drawable.pScreen;

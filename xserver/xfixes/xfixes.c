@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates.
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  * Copyright 2010, 2021 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -166,6 +166,7 @@ SProcXFixesQueryVersion(ClientPtr client)
     REQUEST(xXFixesQueryVersionReq);
     REQUEST_SIZE_MATCH(xXFixesQueryVersionReq);
 
+    swaps(&stuff->length);
     swapl(&stuff->majorVersion);
     swapl(&stuff->minorVersion);
     return (*ProcXFixesVector[stuff->xfixesReqType]) (client);

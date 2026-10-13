@@ -70,6 +70,20 @@ SOFTWARE.
 
 /***********************************************************************
  *
+ * This procedure lists the input devices available to the server.
+ *
+ */
+
+int _X_COLD
+SProcXListInputDevices(ClientPtr client)
+{
+    REQUEST(xListInputDevicesReq);
+    swaps(&stuff->length);
+    return (ProcXListInputDevices(client));
+}
+
+/***********************************************************************
+ *
  * This procedure calculates the size of the information to be returned
  * for an input device.
  *
@@ -295,7 +309,7 @@ ShouldSkipDevice(ClientPtr client, DeviceIntPtr d)
 {
     /* don't send master devices other than VCP/VCK */
     if (!IsMaster(d) || d == inputInfo.pointer ||d == inputInfo.keyboard) {
-        int rc = XaceHookDeviceAccess(client, d, DixGetAttrAccess);
+        int rc = XaceHook(XACE_DEVICE_ACCESS, client, d, DixGetAttrAccess);
 
         if (rc == Success)
             return FALSE;
@@ -336,7 +350,7 @@ ProcXListInputDevices(ClientPtr client)
     };
 
     /* allocate space for saving skip value */
-    skip = calloc(inputInfo.numDevices, sizeof(Bool));
+    skip = calloc(sizeof(Bool), inputInfo.numDevices);
     if (!skip)
         return BadAlloc;
 

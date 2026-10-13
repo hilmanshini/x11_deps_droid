@@ -34,7 +34,9 @@
 #include <X11/XF86keysym.h>
 #endif
 #include <stdio.h>
+#ifdef __sun
 #include <sys/file.h>           /* needed for FNONBLOCK & FASYNC */
+#endif
 
 #include "xkbsrv.h"
 
@@ -254,25 +256,25 @@ KdPointerProc(DeviceIntPtr pDevice, int onoff)
         default:
         case 7:
             btn_labels[6] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_HWHEEL_RIGHT);
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 6:
             btn_labels[5] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_HWHEEL_LEFT);
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 5:
             btn_labels[4] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_WHEEL_DOWN);
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 4:
             btn_labels[3] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_WHEEL_UP);
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 3:
             btn_labels[2] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_RIGHT);
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 2:
             btn_labels[1] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_MIDDLE);
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 1:
             btn_labels[0] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_LEFT);
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 0:
             break;
         }
@@ -682,7 +684,7 @@ KdRemoveKeyboardDriver(KdKeyboardDriver * driver)
 KdKeyboardInfo *
 KdNewKeyboard(void)
 {
-    KdKeyboardInfo *ki = calloc(1, sizeof(KdKeyboardInfo));
+    KdKeyboardInfo *ki = calloc(sizeof(KdKeyboardInfo), 1);
 
     if (!ki)
         return NULL;
@@ -713,7 +715,7 @@ KdAddConfigKeyboard(char *keyboard)
     if (!keyboard)
         return Success;
 
-    new = (struct KdConfigDevice *) calloc(1, sizeof(struct KdConfigDevice));
+    new = (struct KdConfigDevice *) calloc(sizeof(struct KdConfigDevice), 1);
     if (!new)
         return BadAlloc;
 
@@ -777,7 +779,7 @@ KdAddConfigPointer(char *pointer)
     if (!pointer)
         return Success;
 
-    new = (struct KdConfigDevice *) calloc(1, sizeof(struct KdConfigDevice));
+    new = (struct KdConfigDevice *) calloc(sizeof(struct KdConfigDevice), 1);
     if (!new)
         return BadAlloc;
 
@@ -945,8 +947,6 @@ KdParseKeyboard(const char *arg)
     if (!ki)
         return NULL;
 
-    if (ki->name)
-        free(ki->name);
     ki->name = strdup("Unknown KDrive Keyboard");
     ki->path = NULL;
     ki->driver = NULL;
@@ -1200,7 +1200,7 @@ KdCloseInput(void)
  *	v1  -> (hold) (settimeout) button_1_pend
  *	^1  -> (deliver) start
  *	v2  -> (deliver) button_2_down
- *	^2  -> (deliver) start
+ *	^2  -> (deliever) start
  *	v3  -> (hold) (settimeout) button_3_pend
  *	^3  -> (deliver) start
  *	vo  -> (deliver) start
@@ -1857,12 +1857,12 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
 
     if (*x < 0)
         *x += pNewScreen->width;
-    else if (*x >= pScreen->width)
-        *x -= pScreen->width;
-
     if (*y < 0)
         *y += pNewScreen->height;
-    else if (*y >= pScreen->height)
+
+    if (*x >= pScreen->width)
+        *x -= pScreen->width;
+    if (*y >= pScreen->height)
         *y -= pScreen->height;
 
     *ppScreen = pNewScreen;

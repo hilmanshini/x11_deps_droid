@@ -45,6 +45,7 @@
 #include "extinit.h"
 #include "gcstruct.h"
 #include "dixstruct.h"
+#define NEED_DBE_PROTOCOL
 #include "dbestruct.h"
 #include "midbe.h"
 #include "xace.h"
@@ -410,7 +411,7 @@ ProcDbeDeallocateBackBufferName(ClientPtr client)
         return dbeErrorBase + DbeBadBuffer;
     }
 
-    FreeResource(stuff->buffer, X11_RESTYPE_NONE);
+    FreeResource(stuff->buffer, RT_NONE);
 
     return Success;
 
@@ -611,7 +612,7 @@ ProcDbeGetVisualInfo(ClientPtr client)
             pDrawables[i]->pScreen;
         pDbeScreenPriv = DBE_SCREEN_PRIV(pScreen);
 
-        rc = XaceHookScreenAccess(client, pScreen, DixGetAttrAccess);
+        rc = XaceHook(XACE_SCREEN_ACCESS, client, pScreen, DixGetAttrAccess);
         if (rc != Success)
             goto freeScrVisInfo;
 
@@ -662,7 +663,7 @@ ProcDbeGetVisualInfo(ClientPtr client)
 
         /* Now send off visual info items. */
         for (j = 0; j < pScrVisInfo[i].count; j++) {
-            xDbeVisInfo visInfo = { 0 };
+            xDbeVisInfo visInfo;
 
             /* Copy the data in the client data structure to a protocol
              * data structure.  We will send data to the client from the
@@ -796,7 +797,33 @@ ProcDbeDispatch(ClientPtr client)
     }
 
 }                               /* ProcDbeDispatch() */
+
+/******************************************************************************
+ *
+ * DBE DIX Procedure: SProcDbeGetVersion
+ *
+ * Description:
+ *
+ *     This function is for processing a DbeGetVersion request on a swapped
+ *     server.  This request returns the major and minor version numbers of
+ *     this extension.
+ *
+ * Return Values:
+ *
+ *     Success
+ *
+ *****************************************************************************/
 
+static int _X_COLD
+SProcDbeGetVersion(ClientPtr client)
+{
+    REQUEST(xDbeGetVersionReq);
+
+    swaps(&stuff->length);
+    return (ProcDbeGetVersion(client));
+
+}                               /* SProcDbeGetVersion() */
+
 /******************************************************************************
  *
  * DBE DIX Procedure: SProcDbeAllocateBackBufferName
@@ -824,6 +851,8 @@ static int _X_COLD
 SProcDbeAllocateBackBufferName(ClientPtr client)
 {
     REQUEST(xDbeAllocateBackBufferNameReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xDbeAllocateBackBufferNameReq);
 
     swapl(&stuff->window);
@@ -855,6 +884,8 @@ static int _X_COLD
 SProcDbeDeallocateBackBufferName(ClientPtr client)
 {
     REQUEST(xDbeDeallocateBackBufferNameReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xDbeDeallocateBackBufferNameReq);
 
     swapl(&stuff->buffer);
@@ -891,6 +922,7 @@ SProcDbeSwapBuffers(ClientPtr client)
     unsigned int i;
     xDbeSwapInfo *pSwapInfo;
 
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xDbeSwapBuffersReq);
 
     swapl(&stuff->n);
@@ -905,7 +937,7 @@ SProcDbeSwapBuffers(ClientPtr client)
          * followed by a 1 byte swap action and then 3 pad bytes.  We only need
          * to swap the window information.
          */
-        for (i = 0; i < stuff->n; i++, pSwapInfo++) {
+        for (i = 0; i < stuff->n; i++) {
             swapl(&pSwapInfo->window);
         }
     }
@@ -935,6 +967,8 @@ static int _X_COLD
 SProcDbeGetVisualInfo(ClientPtr client)
 {
     REQUEST(xDbeGetVisualInfoReq);
+
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xDbeGetVisualInfoReq);
 
     swapl(&stuff->n);
@@ -964,6 +998,8 @@ static int _X_COLD
 SProcDbeGetBackBufferAttributes(ClientPtr client)
 {
     REQUEST(xDbeGetBackBufferAttributesReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xDbeGetBackBufferAttributesReq);
 
     swapl(&stuff->buffer);
@@ -989,7 +1025,7 @@ SProcDbeDispatch(ClientPtr client)
 
     switch (stuff->data) {
     case X_DbeGetVersion:
-        return ProcDbeGetVersion(client);
+        return (SProcDbeGetVersion(client));
 
     case X_DbeAllocateBackBufferName:
         return (SProcDbeAllocateBackBufferName(client));
@@ -1276,7 +1312,7 @@ DbeDestroyWindow(WindowPtr pWin)
              * NULL if there are no more buffer IDs associated with this
              * window.
              */
-            FreeResource(pDbeWindowPriv->IDs[0], X11_RESTYPE_NONE);
+            FreeResource(pDbeWindowPriv->IDs[0], RT_NONE);
             pDbeWindowPriv = DBE_WINDOW_PRIV(pWin);
         }
     }

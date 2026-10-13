@@ -106,6 +106,12 @@ typedef struct _XkbEventCause {
 #define	XkbSetCauseXkbReq(c,e,cl)  XkbSetCauseReq(c,XkbReqCode,e,cl)
 #define	XkbSetCauseUnknown(c)	   XkbSetCauseKey(c,0,0)
 
+#define	_OFF_TIMER		0
+#define	_KRG_WARN_TIMER		1
+#define	_KRG_TIMER		2
+#define	_SK_TIMEOUT_TIMER	3
+#define	_ALL_TIMEOUT_TIMER	4
+
 #define	_BEEP_NONE		0
 #define	_BEEP_FEATURE_ON	1
 #define	_BEEP_FEATURE_OFF	2
@@ -233,6 +239,9 @@ typedef struct _XkbSrvLedInfo {
  */
 #define _XkbClientInitialized           (1<<7)
 #define _XkbClientIsAncient             (1<<6)
+
+#define	_XkbWantsDetectableAutoRepeat(c)\
+	((c)->xkbClientFlags&XkbPCF_DetectableAutoRepeatMask)
 
 /*
  * Settings for flags field
@@ -435,7 +444,7 @@ extern _X_EXPORT unsigned int XkbMaskForVMask(XkbDescPtr /* xkb */ ,
     );
 
 extern _X_EXPORT Bool XkbVirtualModsToReal(XkbDescPtr /* xkb */ ,
-                                           unsigned int /* virtual_mask */ ,
+                                           unsigned int /* virtua_mask */ ,
                                            unsigned int *       /* mask_rtrn */
     );
 
@@ -453,6 +462,13 @@ extern _X_EXPORT XkbAction *XkbResizeKeyActions(XkbDescPtr /* xkb */ ,
                                                 int     /* needed */
     );
 
+extern _X_EXPORT void XkbUpdateKeyTypesFromCore(DeviceIntPtr /* pXDev */ ,
+                                                KeySymsPtr /* syms */ ,
+                                                KeyCode /* first */ ,
+                                                CARD8 /* num */ ,
+                                                XkbChangesPtr   /* pChanges */
+    );
+
 extern _X_EXPORT void XkbUpdateDescActions(XkbDescPtr /* xkb */ ,
                                            KeyCode /* first */ ,
                                            CARD8 /* num */ ,
@@ -467,21 +483,8 @@ extern _X_EXPORT void XkbUpdateActions(DeviceIntPtr /* pXDev */ ,
                                        XkbEventCausePtr /* cause */
     );
 
-/**
- * @brief get the current keysym map
- *
- * This call might be used after a keyboard mapping has been reloaded
- * with InitKeyboardDeviceStruct() to get the information needed to
- * pass to XkbApplyMappingChange()
- *
- * The returned value is dynamically allocated, and must be
- * freed after use.
- *
- * @param keybd  Keyboard to use to get the map
- *
- * @return keysym map, or NULL if an error occurs
- */
-extern _X_EXPORT KeySymsPtr XkbGetCoreMap(DeviceIntPtr keybd);
+extern _X_EXPORT KeySymsPtr XkbGetCoreMap(DeviceIntPtr  /* keybd */
+    );
 
 extern _X_EXPORT void XkbApplyMappingChange(DeviceIntPtr /* pXDev */ ,
                                             KeySymsPtr /* map */ ,
@@ -503,8 +506,6 @@ extern _X_EXPORT void XkbUpdateIndicators(DeviceIntPtr /* keybd */ ,
                                           XkbChangesPtr /* pChanges */ ,
                                           XkbEventCausePtr      /* cause */
     );
-
-extern void XkbForceUpdateDeviceLEDs(DeviceIntPtr /* keybd */);
 
 extern _X_EXPORT void XkbUpdateAllDeviceIndicators(XkbChangesPtr /* changes */,
                                                    XkbEventCausePtr /* cause */
@@ -736,28 +737,10 @@ extern _X_EXPORT void XkbDisableComputedAutoRepeats(DeviceIntPtr /* pXDev */ ,
                                                     unsigned int        /* key */
     );
 
-/**
- * @brief Set global autorepeat / sync core protocol repeat flags
- *
- * This call performs one of two actions, depending on whether
- * key is set to -1 or not.
- *
- * If the key is set to -1, the global autorepeat setting is
- * set to the value specified in the onoff parameter.
- *
- * If the key is a keycode, the XKB repeat setting for the key is
- * synchronised from the core protocol setting, and the onoff
- * parameter is ignored.
- *
- * @param pxDev Keyboard to use
- * @param key   Keycode, or -1
- * @param onoff One of { AutoRepeatModeOff, AutoRepeatModeOn }
- *              Used only if key == -1
- *
- */
-extern _X_EXPORT void XkbSetRepeatKeys(DeviceIntPtr pXDev,
-                                       int key,
-                                       int onoff);
+extern _X_EXPORT void XkbSetRepeatKeys(DeviceIntPtr /* pXDev */ ,
+                                       int /* key */ ,
+                                       int      /* onoff */
+    );
 
 extern _X_EXPORT int XkbLatchModifiers(DeviceIntPtr /* pXDev */ ,
                                        CARD8 /* mask */ ,
@@ -796,6 +779,9 @@ extern _X_EXPORT void XkbDeleteRulesDflts(void
     );
 
 extern _X_EXPORT void XkbDeleteRulesUsed(void
+    );
+
+extern _X_EXPORT int SProcXkbDispatch(ClientPtr /* client */
     );
 
 extern _X_EXPORT XkbGeometryPtr XkbLookupNamedGeometry(DeviceIntPtr /* dev */ ,
@@ -878,6 +864,13 @@ extern _X_EXPORT void XkbCopyControls(XkbDescPtr /* dst */ ,
 
 #include "xkbfile.h"
 #include "xkbrules.h"
+
+#define	_XkbListKeycodes	0
+#define	_XkbListTypes		1
+#define	_XkbListCompat		2
+#define	_XkbListSymbols		3
+#define	_XkbListGeometry	4
+#define	_XkbListNumComponents	5
 
 extern _X_EXPORT unsigned int XkbDDXLoadKeymapByNames(DeviceIntPtr /* keybd */ ,
                                                       XkbComponentNamesPtr

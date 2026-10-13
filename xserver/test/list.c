@@ -94,7 +94,7 @@ test_xorg_list_add(void)
     c = xorg_list_first_entry(&parent.children, struct child, node);
 
     assert(memcmp(c, &child[2], sizeof(struct child)) == 0);
-}
+};
 
 static void
 test_xorg_list_append(void)
@@ -136,7 +136,7 @@ test_xorg_list_append(void)
     xorg_list_for_each_entry(c, &parent.children, node) {
         assert(memcmp(c, &child[i++], sizeof(struct child)) == 0);
     }
-}
+};
 
 static void
 test_xorg_list_del(void)
@@ -266,8 +266,6 @@ test_nt_list_append(void)
         i++;
     }
     assert(i == 11);
-
-    free(foo);
 }
 
 static void
@@ -302,8 +300,6 @@ test_nt_list_insert(void)
         i++;
     }
     assert(i == 11);
-
-    free(foo);
 }
 
 static void
@@ -377,21 +373,19 @@ test_nt_list_delete(void)
     free(list);
 }
 
-const testfunc_t*
+int
 list_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        test_xorg_list_init,
-        test_xorg_list_add,
-        test_xorg_list_append,
-        test_xorg_list_del,
-        test_xorg_list_for_each,
+    test_xorg_list_init();
+    test_xorg_list_add();
+    test_xorg_list_append();
+    test_xorg_list_del();
+    test_xorg_list_for_each();
 
-        test_nt_list_init,
-        test_nt_list_append,
-        test_nt_list_insert,
-        test_nt_list_delete,
-        NULL,
-    };
-    return testfuncs;
+    test_nt_list_init();
+    test_nt_list_append();
+    test_nt_list_insert();
+    test_nt_list_delete();
+
+    return 0;
 }

@@ -38,6 +38,7 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <X11/extensions/XI.h>
 #include <xkbsrv.h>
+#include "xkb.h"
 
 /***====================================================================***/
 
@@ -434,44 +435,6 @@ XkbUpdateIndicators(DeviceIntPtr dev,
 
 /***====================================================================***/
 
-        /*
-         * void
-         * XkbForceUpdateDeviceLEDs(DeviceIntPtr dev)
-         *
-         * Force update LED states to the hardware from the device state
-         * specified by 'dev'.
-         *
-         * If 'dev' is a master device, this function will also force update
-         * its slave devices.
-         *
-         * Used if the actual LED state was externally set and need to push
-         * current state to the hardware e.g. switching between VTs.
-         */
-
-void
-XkbForceUpdateDeviceLEDs(DeviceIntPtr dev)
-{
-    DeviceIntPtr master;
-    XkbSrvLedInfoPtr sli;
-
-    if (!dev->key)
-        return;
-
-    sli = XkbFindSrvLedInfo(dev, XkbDfltXIClass, XkbDfltXIId, 0);
-    XkbDDXUpdateDeviceIndicators(dev, sli, sli->effectiveState);
-
-    if (IsMaster(dev)) {
-        master = dev;
-        nt_list_for_each_entry(dev, inputInfo.devices, next) {
-            if (!dev->key || GetMaster(dev, MASTER_KEYBOARD) != master)
-                continue;
-
-            sli = XkbFindSrvLedInfo(dev, XkbDfltXIClass, XkbDfltXIId, 0);
-            XkbDDXUpdateDeviceIndicators(dev, sli, sli->effectiveState);
-        }
-    }
-}
-
 /***====================================================================***/
 
         /*
@@ -557,7 +520,7 @@ XkbCheckIndicatorMaps(DeviceIntPtr dev, XkbSrvLedInfoPtr sli, unsigned which)
          * 'kf' or 'lf' on the keyboard specified by 'dev.'
          *
          * If 'needed_parts' is non-zero, this function makes sure that any
-         * of the parts specified therein are allocated.
+         * of the parts speicified therein are allocated.
          */
 XkbSrvLedInfoPtr
 XkbAllocSrvLedInfo(DeviceIntPtr dev,

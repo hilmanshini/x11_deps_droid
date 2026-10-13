@@ -36,45 +36,26 @@
 #include "tests-common.h"
 
 static void
-free_device(DeviceIntPtr dev)
-{
-    free(dev->name);
-    free(dev->last.scroll); /* sigh, allocated but not freed by the valuator functions */
-    for (int i = 0; i < dev->last.num_touches; i++)
-         valuator_mask_free(&dev->last.touches[i].valuators);
-
-    free(dev->last.touches); /* sigh, allocated but not freed by the valuator functions */
-    FreeDeviceClass(XIValuatorClass, (void**)&dev->valuator);
-    FreeDeviceClass(XITouchClass, (void**)&dev->touch);
-}
-
-static void
 touch_grow_queue(void)
 {
     DeviceIntRec dev;
-    SpriteInfoRec sprite;
+    ValuatorClassRec val;
+    TouchClassRec touch;
     size_t size, new_size;
     int i;
-    ScreenRec screen;
-    Atom labels[2] = { 0 };
-
-    screenInfo.screens[0] = &screen;
 
     memset(&dev, 0, sizeof(dev));
-    dev.type = MASTER_POINTER;  /* claim it's a master to stop ptracccel */
-    dev.name = XNFstrdup("test device");
+    dev.name = xnfstrdup("test device");
     dev.id = 2;
-
-    InitValuatorClassDeviceStruct(&dev, 2, labels, 10, Absolute);
-    InitTouchClassDeviceStruct(&dev, 5, XIDirectTouch, 2);
-
-    memset(&sprite, 0, sizeof(sprite));
-    dev.spriteInfo = &sprite;
-
+    dev.valuator = &val;
+    val.numAxes = 5;
+    dev.touch = &touch;
     inputInfo.devices = &dev;
 
     size = 5;
 
+    dev.last.num_touches = size;
+    dev.last.touches = calloc(dev.last.num_touches, sizeof(*dev.last.touches));
     assert(dev.last.touches);
     for (i = 0; i < size; i++) {
         dev.last.touches[i].active = TRUE;
@@ -110,33 +91,27 @@ touch_grow_queue(void)
         assert(t->ddx_id == 0);
     }
 
-    free_device(&dev);
+    free(dev.name);
 }
 
 static void
 touch_find_ddxid(void)
 {
     DeviceIntRec dev;
-    SpriteInfoRec sprite;
     DDXTouchPointInfoPtr ti, ti2;
+    ValuatorClassRec val;
+    TouchClassRec touch;
     int size = 5;
     int i;
-    Atom labels[2] = { 0 };
-    ScreenRec screen;
-
-    screenInfo.screens[0] = &screen;
 
     memset(&dev, 0, sizeof(dev));
-    dev.type = MASTER_POINTER;  /* claim it's a master to stop ptracccel */
-    dev.name = XNFstrdup("test device");
+    dev.name = xnfstrdup("test device");
     dev.id = 2;
-
-    InitValuatorClassDeviceStruct(&dev, 2, labels, 10, Absolute);
-    InitTouchClassDeviceStruct(&dev, 5, XIDirectTouch, 2);
-
-    memset(&sprite, 0, sizeof(sprite));
-    dev.spriteInfo = &sprite;
-
+    dev.valuator = &val;
+    val.numAxes = 5;
+    dev.touch = &touch;
+    dev.last.num_touches = size;
+    dev.last.touches = calloc(dev.last.num_touches, sizeof(*dev.last.touches));
     inputInfo.devices = &dev;
     assert(dev.last.touches);
 
@@ -184,35 +159,32 @@ touch_find_ddxid(void)
     ti = TouchFindByDDXID(&dev, 40, TRUE);
     assert(ti == &dev.last.touches[size+1]);
 
-    free_device(&dev);
+    free(dev.name);
 }
 
 static void
 touch_begin_ddxtouch(void)
 {
     DeviceIntRec dev;
-    SpriteInfoRec sprite;
     DDXTouchPointInfoPtr ti;
+    ValuatorClassRec val;
+    TouchClassRec touch;
     int ddx_id = 123;
     unsigned int last_client_id = 0;
-    Atom labels[2] = { 0 };
-    ScreenRec screen;
-
-    screenInfo.screens[0] = &screen;
+    int size = 5;
 
     memset(&dev, 0, sizeof(dev));
-    dev.type = MASTER_POINTER;  /* claim it's a master to stop ptracccel */
-    dev.name = XNFstrdup("test device");
+    dev.name = xnfstrdup("test device");
     dev.id = 2;
+    dev.valuator = &val;
+    val.numAxes = 5;
+    touch.mode = XIDirectTouch;
+    dev.touch = &touch;
+    dev.last.num_touches = size;
+    dev.last.touches = calloc(dev.last.num_touches, sizeof(*dev.last.touches));
     inputInfo.devices = &dev;
-
-    InitValuatorClassDeviceStruct(&dev, 2, labels, 10, Absolute);
-    InitTouchClassDeviceStruct(&dev, 5, XIDirectTouch, 2);
-
-    memset(&sprite, 0, sizeof(sprite));
-    dev.spriteInfo = &sprite;
-
     assert(dev.last.touches);
+
     ti = TouchBeginDDXTouch(&dev, ddx_id);
     assert(ti);
     assert(ti->ddx_id == ddx_id);
@@ -234,36 +206,41 @@ touch_begin_ddxtouch(void)
     assert(!ti->emulate_pointer);
     last_client_id = ti->client_id;
 
-    free_device(&dev);
+    free(dev.name);
 }
 
 static void
 touch_begin_touch(void)
 {
     DeviceIntRec dev;
+    TouchClassRec touch;
+    ValuatorClassRec val;
     TouchPointInfoPtr ti;
     int touchid = 12434;
     int sourceid = 23;
     SpriteInfoRec sprite;
     ScreenRec screen;
-    Atom labels[2] = { 0 };
 
     screenInfo.screens[0] = &screen;
 
     memset(&dev, 0, sizeof(dev));
-    dev.type = MASTER_POINTER;  /* claim it's a master to stop ptracccel */
-    dev.name = XNFstrdup("test device");
+    dev.name = xnfstrdup("test device");
     dev.id = 2;
-
-    ti = TouchBeginTouch(&dev, sourceid, touchid, TRUE);
-    assert(!ti);
-
-    InitValuatorClassDeviceStruct(&dev, 2, labels, 10, Absolute);
-    InitTouchClassDeviceStruct(&dev, 5, XIDirectTouch, 2);
 
     memset(&sprite, 0, sizeof(sprite));
     dev.spriteInfo = &sprite;
 
+    memset(&touch, 0, sizeof(touch));
+    touch.num_touches = 0;
+
+    memset(&val, 0, sizeof(val));
+    dev.valuator = &val;
+    val.numAxes = 2;
+
+    ti = TouchBeginTouch(&dev, sourceid, touchid, TRUE);
+    assert(!ti);
+
+    dev.touch = &touch;
     ti = TouchBeginTouch(&dev, sourceid, touchid, TRUE);
     assert(ti);
     assert(ti->client_id == touchid);
@@ -271,9 +248,9 @@ touch_begin_touch(void)
     assert(ti->sourceid == sourceid);
     assert(ti->emulate_pointer);
 
-    assert(dev.touch->num_touches == 5);
+    assert(touch.num_touches == 1);
 
-    free_device(&dev);
+    free(dev.name);
 }
 
 static void
@@ -288,8 +265,7 @@ touch_init(void)
     screenInfo.screens[0] = &screen;
 
     memset(&dev, 0, sizeof(dev));
-    dev.type = MASTER_POINTER;  /* claim it's a master to stop ptracccel */
-    dev.name = XNFstrdup("test device");
+    dev.name = xnfstrdup("test device");
 
     memset(&sprite, 0, sizeof(sprite));
     dev.spriteInfo = &sprite;
@@ -303,19 +279,19 @@ touch_init(void)
     assert(rc == TRUE);
     assert(dev.touch);
 
-    free_device(&dev);
+    free(dev.name);
 }
 
-const testfunc_t*
+int
 touch_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        touch_grow_queue,
-        touch_find_ddxid,
-        touch_begin_ddxtouch,
-        touch_init,
-        touch_begin_touch,
-        NULL,
-    };
-    return testfuncs;
+    printf("touch_test: start...\n");
+    touch_grow_queue();
+    touch_find_ddxid();
+    touch_begin_ddxtouch();
+    touch_init();
+    touch_begin_touch();
+
+    printf("touch_test: exiting successfully\n");
+    return 0;
 }

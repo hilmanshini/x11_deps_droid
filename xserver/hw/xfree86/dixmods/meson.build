@@ -6,13 +6,13 @@ shared_module(
     c_args: [ xorg_c_args, wfb_args ],
     dependencies: common_dep,
     link_whole: libxserver_wfb,
-    link_with: xorg_server,
+    link_with: e,
 
     install: true,
     install_dir: module_dir,
 )
 
-shadow_lib = shared_module(
+shared_module(
     'shadow',
     'shmodule.c',
 
@@ -20,14 +20,14 @@ shadow_lib = shared_module(
     c_args: xorg_c_args,
     dependencies: common_dep,
     link_whole: libxserver_miext_shadow,
-    link_with: xorg_server,
+    link_with: e,
 
     install: true,
     install_dir: module_dir,
 )
 
 if build_glx
-    glx_lib = shared_module(
+    shared_module(
         'glx',
         [ 'glxmodule.c', srcs_glxdri2 ],
 
@@ -35,9 +35,9 @@ if build_glx
         c_args: [ xorg_c_args, glx_align64 ],
         dependencies: [ common_dep, dl_dep, dri_dep ],
         link_whole: libxserver_glx,
-        link_with: xorg_server,
+        link_with: e,
 
         install: true,
-        install_dir: module_dir / 'extensions'
+        install_dir: join_paths(module_dir, 'extensions')
     )
 endif

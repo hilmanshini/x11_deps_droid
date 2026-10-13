@@ -54,6 +54,7 @@ SOFTWARE.
 #include "window.h"
 #include "dixstruct.h"
 #include "cursorstr.h"
+#include "geext.h"
 #include "privates.h"
 
 extern _X_EXPORT void AssignTypeAndName(DeviceIntPtr dev,
@@ -627,12 +628,8 @@ typedef struct _DeviceIntRec {
 
     /* XTest related master device id */
     int xtest_master_id;
-    DeviceSendEventsProc sendEventsProc;
 
     struct _SyncCounter *idle_counter;
-
-    Bool ignoreXkbActionsBehaviors; /* TRUE if keys don't trigger behaviors and actions */
-    Bool hasDdxKeymap;              /* TRUE if clients cannot modify the keymap */
 } DeviceIntRec;
 
 typedef struct {

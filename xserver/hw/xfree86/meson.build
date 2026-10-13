@@ -73,9 +73,9 @@ if build_dri2
     xorg_link += xorg_dri2
 endif
 
-if host_machine.system() in ['cygwin', 'windows']
+if host_machine.system() == 'cygwin' or host_machine.system() == 'windows'
     linker_export_flags = '-Wl,--export-all-symbols'
-elif host_machine.system() in ['sunos', 'darwin']
+elif host_machine.system() == 'sunos' or host_machine.system() == 'darwin'
     linker_export_flags = []
 else
     linker_export_flags = '-Wl,--export-dynamic'
@@ -101,7 +101,7 @@ else
     xorg_install_dir = get_option('bindir')
 endif
 
-xorg_server = executable(
+e = executable(
     'Xorg',
     srcs_xorg,
     include_directories: [inc, xorg_inc],
@@ -118,7 +118,7 @@ xorg_server = executable(
 subdir('dixmods')
 subdir('exa')
 subdir('fbdevhw')
-if build_glamor
+if gbm_dep.found()
     subdir('glamor_egl')
 endif
 if int10 != 'false'
@@ -131,21 +131,6 @@ subdir('shadowfb')
 if build_vgahw
     subdir('vgahw')
 endif
-
-# For symbol presence testing only
-xorgserver_lib = shared_library(
-    'xorgserver',
-    srcs_xorg,
-    include_directories: [inc, xorg_inc],
-    link_whole: xorg_link,
-    dependencies: xorg_deps,
-    link_args: linker_export_flags,
-    c_args: xorg_c_args,
-    install: false,
-)
-
-xorgserver_dep = declare_dependency(link_with: xorgserver_lib)
-
 if build_modesetting
    subdir('drivers/modesetting')
 endif
@@ -157,9 +142,7 @@ meson.add_install_script(
     'sh', '-c',
     'ln -fs Xorg @0@@1@'.format(
         '${DESTDIR}',
-        get_option('prefix') / get_option('bindir') / 'X'),
-    install_tag: 'runtime',
-)
+        join_paths(get_option('prefix'), get_option('bindir'), 'X')))
 
 if get_option('suid_wrapper')
     executable('Xorg.wrap',
@@ -183,7 +166,7 @@ if get_option('suid_wrapper')
     install_data(
         xorg_sh,
         install_mode: 'rwxr-xr-x',
-        install_dir: get_option('prefix') / get_option('bindir'),
+        install_dir: join_paths(get_option('prefix'), get_option('bindir')),
         rename: ['Xorg']
     )
 endif
@@ -195,6 +178,20 @@ executable('gtf',
     c_args: xorg_c_args,
     install: true,
 )
+
+# For symbol presence testing only
+xorgserver_lib = shared_library(
+    'xorgserver',
+    srcs_xorg,
+    include_directories: [inc, xorg_inc],
+    link_whole: xorg_link,
+    dependencies: xorg_deps,
+    link_args: linker_export_flags,
+    c_args: xorg_c_args,
+    install: false,
+)
+
+xorgserver_dep = declare_dependency(link_with: xorgserver_lib)
 
 install_man(configure_file(
     input: 'man/Xorg.man',

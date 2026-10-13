@@ -358,8 +358,13 @@ ReadRequestFromClient(ClientPtr client)
         if (result <= 0) {
             if ((result < 0) && ETEST(errno)) {
                 mark_client_not_ready(client);
-                YieldControlNoInput(client);
-                return 0;
+#if defined(SVR4) && defined(__i386__) && !defined(__sun)
+                if (0)
+#endif
+                {
+                    YieldControlNoInput(client);
+                    return 0;
+                }
             }
             YieldControlDeath();
             return -1;
@@ -791,7 +796,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
         }
     }
 #endif
-    if ((oco->count == 0 && who->local) || oco->count + count + padBytes > oco->size) {
+    if (oco->count == 0 || oco->count + count + padBytes > oco->size) {
         output_pending_clear(who);
         if (!any_output_pending()) {
             CriticalOutputPending = FALSE;
@@ -891,6 +896,9 @@ FlushClient(ClientPtr who, OsCommPtr oc, const void *__extraBuf, int extraCount)
             todo = notWritten;
         }
         else if (ETEST(errno)
+#ifdef SUNSYSV                  /* check for another brain-damaged OS bug */
+                 || (errno == 0)
+#endif
 #ifdef EMSGSIZE                 /* check for another brain-damaged OS bug */
                  || ((errno == EMSGSIZE) && (todo == 1))
 #endif

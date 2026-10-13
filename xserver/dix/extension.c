@@ -87,7 +87,7 @@ AddExtension(const char *name, int NumEvents, int NumErrors,
         return ((ExtensionEntry *) NULL);
     }
 
-    ext = calloc(1, sizeof(ExtensionEntry));
+    ext = calloc(sizeof(ExtensionEntry), 1);
     if (!ext)
         return NULL;
     if (!dixAllocatePrivates(&ext->devPrivates, PRIVATE_EXTENSION)) {
@@ -213,7 +213,7 @@ CloseDownExtensions(void)
 static Bool
 ExtensionAvailable(ClientPtr client, ExtensionEntry *ext)
 {
-    if (XaceHookExtAccess(client, ext) != Success)
+    if (XaceHook(XACE_EXT_ACCESS, client, ext) != Success)
         return FALSE;
     if (!ext->base)
         return FALSE;
@@ -293,7 +293,7 @@ ProcListExtensions(ClientPtr client)
                 continue;
 
             *bufptr++ = len = strlen(extensions[i]->name);
-            memcpy(bufptr, extensions[i]->name, len);
+            memmove(bufptr, extensions[i]->name, len);
             bufptr += len;
         }
     }

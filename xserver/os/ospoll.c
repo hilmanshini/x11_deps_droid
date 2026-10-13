@@ -24,14 +24,11 @@
 #include <dix-config.h>
 #endif
 
+#include <X11/X.h>
+#include <X11/Xproto.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <X11/X.h>
-#include <X11/Xproto.h>
-
-#include "os/xserver_poll.h"
-
 #include "misc.h"               /* for typedef of pointer */
 #include "ospoll.h"
 #include "list.h"
@@ -207,8 +204,6 @@ ospoll_create(void)
 {
 #if POLLSET
     struct ospoll *ospoll = calloc(1, sizeof (struct ospoll));
-    if (!ospoll)
-        return NULL;
 
     ospoll->ps = pollset_create(-1);
     if (ospoll->ps < 0) {
@@ -219,8 +214,6 @@ ospoll_create(void)
 #endif
 #if PORT
     struct ospoll *ospoll = calloc(1, sizeof (struct ospoll));
-    if (!ospoll)
-        return NULL;
 
     ospoll->epoll_fd = port_create();
     if (ospoll->epoll_fd < 0) {
@@ -232,8 +225,6 @@ ospoll_create(void)
 #endif
 #if EPOLL
     struct ospoll       *ospoll = calloc(1, sizeof (struct ospoll));
-    if (!ospoll)
-        return NULL;
 
     ospoll->epoll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (ospoll->epoll_fd < 0) {

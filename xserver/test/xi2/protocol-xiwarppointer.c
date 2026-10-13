@@ -106,9 +106,6 @@ test_XIWarpPointer(void)
     ClientRec client_request;
     xXIWarpPointerReq request;
 
-    init_simple();
-    screen.SetCursorPosition = ScreenSetCursorPosition;
-
     memset(&request, 0, sizeof(request));
 
     request_init(&request, XIWarpPointer);
@@ -191,12 +188,13 @@ test_XIWarpPointer(void)
     request_XIWarpPointer(&client_request, &request, BadLength);
 }
 
-const testfunc_t*
+int
 protocol_xiwarppointer_test(void)
 {
-    static const testfunc_t testfuncs[] = {
-        test_XIWarpPointer,
-        NULL,
-    };
-    return testfuncs;
+    init_simple();
+    screen.SetCursorPosition = ScreenSetCursorPosition;
+
+    test_XIWarpPointer();
+
+    return 0;
 }

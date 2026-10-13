@@ -25,8 +25,6 @@
 #include <dix-config.h>
 #endif
 
-#include "os/osdep.h"
-
 #include "scrnintstr.h"
 #include "gcstruct.h"
 #include "pixmapstr.h"

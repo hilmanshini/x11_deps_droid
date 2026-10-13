@@ -63,6 +63,21 @@ SOFTWARE.
 
 /***********************************************************************
  *
+ * This procedure gets the control attributes for an extension device,
+ * for clients on machines with a different byte ordering than the server.
+ *
+ */
+
+int _X_COLD
+SProcXGetFeedbackControl(ClientPtr client)
+{
+    REQUEST(xGetFeedbackControlReq);
+    swaps(&stuff->length);
+    return (ProcXGetFeedbackControl(client));
+}
+
+/***********************************************************************
+ *
  * This procedure copies KbdFeedbackClass data, swapping if necessary.
  *
  */
@@ -318,7 +333,7 @@ ProcXGetFeedbackControl(ClientPtr client)
     if (total_length == 0)
         return BadMatch;
 
-    buf = (char *) calloc(1, total_length);
+    buf = (char *) malloc(total_length);
     if (!buf)
         return BadAlloc;
     savbuf = buf;

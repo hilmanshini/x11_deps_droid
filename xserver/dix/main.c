@@ -153,7 +153,7 @@ dix_main(int argc, char *argv[], char *envp[])
             CreateWellKnownSockets();
             for (i = 1; i < LimitClients; i++)
                 clients[i] = NullClient;
-            serverClient = calloc(1, sizeof(ClientRec));
+            serverClient = calloc(sizeof(ClientRec), 1);
             if (!serverClient)
                 FatalError("couldn't create server client");
             InitClient(serverClient, 0, (void *) NULL);
@@ -195,8 +195,8 @@ dix_main(int argc, char *argv[], char *envp[])
 
         for (i = 0; i < screenInfo.numGPUScreens; i++) {
             ScreenPtr pScreen = screenInfo.gpuscreens[i];
-            if (!PixmapScreenInit(pScreen))
-                FatalError("failed to create screen pixmap properties");
+            if (!CreateScratchPixmapsForScreen(pScreen))
+                FatalError("failed to create scratch pixmaps");
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
                 FatalError("failed to create screen resources");
@@ -205,8 +205,8 @@ dix_main(int argc, char *argv[], char *envp[])
         for (i = 0; i < screenInfo.numScreens; i++) {
             ScreenPtr pScreen = screenInfo.screens[i];
 
-            if (!PixmapScreenInit(pScreen))
-                FatalError("failed to create screen pixmap properties");
+            if (!CreateScratchPixmapsForScreen(pScreen))
+                FatalError("failed to create scratch pixmaps");
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
                 FatalError("failed to create screen resources");
@@ -227,7 +227,7 @@ dix_main(int argc, char *argv[], char *envp[])
             FatalError("could not open default font");
         }
 
-        if (!(rootCursor = CreateRootCursor())) {
+        if (!(rootCursor = CreateRootCursor(NULL, 0))) {
             FatalError("could not open default cursor font");
         }
 
@@ -309,6 +309,7 @@ dix_main(int argc, char *argv[], char *envp[])
 
         for (i = screenInfo.numGPUScreens - 1; i >= 0; i--) {
             ScreenPtr pScreen = screenInfo.gpuscreens[i];
+            FreeScratchPixmapsForScreen(pScreen);
             dixFreeScreenSpecificPrivates(pScreen);
             (*pScreen->CloseScreen) (pScreen);
             dixFreePrivates(pScreen->devPrivates, PRIVATE_SCREEN);
@@ -317,6 +318,7 @@ dix_main(int argc, char *argv[], char *envp[])
         }
 
         for (i = screenInfo.numScreens - 1; i >= 0; i--) {
+            FreeScratchPixmapsForScreen(screenInfo.screens[i]);
             FreeGCperDepth(i);
             FreeDefaultStipple(i);
             dixFreeScreenSpecificPrivates(screenInfo.screens[i]);

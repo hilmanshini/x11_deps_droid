@@ -445,7 +445,7 @@ RecordFindClientOnContext(RecordContextPtr pContext,
  *
  * Side Effects:
  *	The big request is recorded with the correct length field re-inserted.
- *
+ *	
  * Note: this function exists mainly to make RecordARequest smaller.
  */
 static void
@@ -843,7 +843,7 @@ RecordFlushAllContexts(CallbackListPtr *pcbl,
  *	If oneclient is zero, recording hooks needed for all clients and
  *	protocol on the RCAP are installed.  If oneclient is non-zero,
  *	only those hooks needed for the specified client are installed.
- *
+ *	
  *	Client requestVectors may be altered.  numEnabledRCAPs will be
  *	incremented if oneclient == 0.  Callbacks may be added to
  *	various callback lists.
@@ -928,7 +928,7 @@ RecordInstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
  *	If oneclient is zero, recording hooks needed for all clients and
  *	protocol on the RCAP may be uninstalled.  If oneclient is non-zero,
  *	only those hooks needed for the specified client may be uninstalled.
- *
+ *	
  *	Client requestVectors may be altered.  numEnabledRCAPs will be
  *	decremented if oneclient == 0.  Callbacks may be deleted from
  *	various callback lists.
@@ -1400,13 +1400,17 @@ typedef struct {
     short first, last;          /* if for extension, major opcode interval */
 } SetInfoRec, *SetInfoPtr;
 
+#if defined(ERR) && defined(__sun)
+#undef ERR /* Avoid conflict with Solaris <sys/regset.h> */
+#endif
+
 /* These constant are used to index into an array of SetInfoRec. */
 enum { REQ,                     /* set info for requests */
-    RI_REP,                     /* set info for replies */
-    RI_ERR,                     /* set info for errors */
-    RI_DEV,                     /* set info for device events */
-    RI_DLEV,                    /* set info for delivered events */
-    RI_PREDEFSETS
+    REP,                        /* set info for replies */
+    ERR,                        /* set info for errors */
+    DEV,                        /* set info for device events */
+    DLEV,                       /* set info for delivered events */
+    PREDEFSETS
 };                              /* number of predefined array entries */
 
 /* RecordAllocIntervals
@@ -1586,7 +1590,7 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
      * protocol types, plus one per range for extension requests, plus one per
      * range for extension replies.
      */
-    maxSets = RI_PREDEFSETS + 2 * stuff->nRanges;
+    maxSets = PREDEFSETS + 2 * stuff->nRanges;
     si = xallocarray(maxSets, sizeof(SetInfoRec));
     if (!si) {
         err = BadAlloc;
@@ -1598,7 +1602,7 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
     for (i = 0; i < maxSets; i++)
         si[i].intervals = NULL;
 
-    pExtReqSets = si + RI_PREDEFSETS;
+    pExtReqSets = si + PREDEFSETS;
     pExtRepSets = pExtReqSets + stuff->nRanges;
 
     pRanges = (xRecordRange *) (((XID *) &stuff[1]) + stuff->nClients);
@@ -1615,31 +1619,31 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
     if (err != Success)
         goto bailout;
 
-    err = RecordConvertRangesToIntervals(&si[RI_REP], pRanges, stuff->nRanges,
+    err = RecordConvertRangesToIntervals(&si[REP], pRanges, stuff->nRanges,
                                          offset_of(rr, coreRepliesFirst), NULL,
                                          NULL);
     if (err != Success)
         goto bailout;
 
-    err = RecordConvertRangesToIntervals(&si[RI_REP], pRanges, stuff->nRanges,
+    err = RecordConvertRangesToIntervals(&si[REP], pRanges, stuff->nRanges,
                                          offset_of(rr, extRepliesMajorFirst),
                                          pExtRepSets, &nExtRepSets);
     if (err != Success)
         goto bailout;
 
-    err = RecordConvertRangesToIntervals(&si[RI_ERR], pRanges, stuff->nRanges,
+    err = RecordConvertRangesToIntervals(&si[ERR], pRanges, stuff->nRanges,
                                          offset_of(rr, errorsFirst), NULL,
                                          NULL);
     if (err != Success)
         goto bailout;
 
-    err = RecordConvertRangesToIntervals(&si[RI_DLEV], pRanges, stuff->nRanges,
+    err = RecordConvertRangesToIntervals(&si[DLEV], pRanges, stuff->nRanges,
                                          offset_of(rr, deliveredEventsFirst),
                                          NULL, NULL);
     if (err != Success)
         goto bailout;
 
-    err = RecordConvertRangesToIntervals(&si[RI_DEV], pRanges, stuff->nRanges,
+    err = RecordConvertRangesToIntervals(&si[DEV], pRanges, stuff->nRanges,
                                          offset_of(rr, deviceEventsFirst), NULL,
                                          NULL);
     if (err != Success)
@@ -1719,38 +1723,38 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
     else
         pRCAP->pRequestMajorOpSet = NULL;
 
-    if (si[RI_REP].intervals) {
+    if (si[REP].intervals) {
         pRCAP->pReplyMajorOpSet =
-            RecordCreateSet(si[RI_REP].intervals, si[RI_REP].nintervals,
-                            (RecordSetPtr) ((char *) pRCAP + si[RI_REP].offset),
-                            si[RI_REP].size);
+            RecordCreateSet(si[REP].intervals, si[REP].nintervals,
+                            (RecordSetPtr) ((char *) pRCAP + si[REP].offset),
+                            si[REP].size);
     }
     else
         pRCAP->pReplyMajorOpSet = NULL;
 
-    if (si[RI_ERR].intervals) {
+    if (si[ERR].intervals) {
         pRCAP->pErrorSet =
-            RecordCreateSet(si[RI_ERR].intervals, si[RI_ERR].nintervals,
-                            (RecordSetPtr) ((char *) pRCAP + si[RI_ERR].offset),
-                            si[RI_ERR].size);
+            RecordCreateSet(si[ERR].intervals, si[ERR].nintervals,
+                            (RecordSetPtr) ((char *) pRCAP + si[ERR].offset),
+                            si[ERR].size);
     }
     else
         pRCAP->pErrorSet = NULL;
 
-    if (si[RI_DEV].intervals) {
+    if (si[DEV].intervals) {
         pRCAP->pDeviceEventSet =
-            RecordCreateSet(si[RI_DEV].intervals, si[RI_DEV].nintervals,
-                            (RecordSetPtr) ((char *) pRCAP + si[RI_DEV].offset),
-                            si[RI_DEV].size);
+            RecordCreateSet(si[DEV].intervals, si[DEV].nintervals,
+                            (RecordSetPtr) ((char *) pRCAP + si[DEV].offset),
+                            si[DEV].size);
     }
     else
         pRCAP->pDeviceEventSet = NULL;
 
-    if (si[RI_DLEV].intervals) {
+    if (si[DLEV].intervals) {
         pRCAP->pDeliveredEventSet =
-            RecordCreateSet(si[RI_DLEV].intervals, si[RI_DLEV].nintervals,
-                            (RecordSetPtr) ((char *) pRCAP + si[RI_DLEV].offset),
-                            si[RI_DLEV].size);
+            RecordCreateSet(si[DLEV].intervals, si[DLEV].nintervals,
+                            (RecordSetPtr) ((char *) pRCAP + si[DLEV].offset),
+                            si[DLEV].size);
     }
     else
         pRCAP->pDeliveredEventSet = NULL;
@@ -2460,7 +2464,7 @@ ProcRecordFreeContext(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xRecordFreeContextReq);
     VERIFY_CONTEXT(pContext, stuff->context, client);
-    FreeResource(stuff->context, X11_RESTYPE_NONE);
+    FreeResource(stuff->context, RT_NONE);
     return Success;
 }                               /* ProcRecordFreeContext */
 
@@ -2495,6 +2499,8 @@ static int _X_COLD
 SProcRecordQueryVersion(ClientPtr client)
 {
     REQUEST(xRecordQueryVersionReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xRecordQueryVersionReq);
     swaps(&stuff->majorVersion);
     swaps(&stuff->minorVersion);
@@ -2531,6 +2537,7 @@ SProcRecordCreateContext(ClientPtr client)
     REQUEST(xRecordCreateContextReq);
     int status;
 
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xRecordCreateContextReq);
     if ((status = SwapCreateRegister(client, (void *) stuff)) != Success)
         return status;
@@ -2543,6 +2550,7 @@ SProcRecordRegisterClients(ClientPtr client)
     REQUEST(xRecordRegisterClientsReq);
     int status;
 
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xRecordRegisterClientsReq);
     if ((status = SwapCreateRegister(client, (void *) stuff)) != Success)
         return status;
@@ -2553,6 +2561,8 @@ static int _X_COLD
 SProcRecordUnregisterClients(ClientPtr client)
 {
     REQUEST(xRecordUnregisterClientsReq);
+
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xRecordUnregisterClientsReq);
     swapl(&stuff->context);
     swapl(&stuff->nClients);
@@ -2564,6 +2574,8 @@ static int _X_COLD
 SProcRecordGetContext(ClientPtr client)
 {
     REQUEST(xRecordGetContextReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xRecordGetContextReq);
     swapl(&stuff->context);
     return ProcRecordGetContext(client);
@@ -2573,6 +2585,8 @@ static int _X_COLD
 SProcRecordEnableContext(ClientPtr client)
 {
     REQUEST(xRecordEnableContextReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xRecordEnableContextReq);
     swapl(&stuff->context);
     return ProcRecordEnableContext(client);
@@ -2582,6 +2596,8 @@ static int _X_COLD
 SProcRecordDisableContext(ClientPtr client)
 {
     REQUEST(xRecordDisableContextReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xRecordDisableContextReq);
     swapl(&stuff->context);
     return ProcRecordDisableContext(client);
@@ -2591,6 +2607,8 @@ static int _X_COLD
 SProcRecordFreeContext(ClientPtr client)
 {
     REQUEST(xRecordFreeContextReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xRecordFreeContextReq);
     swapl(&stuff->context);
     return ProcRecordFreeContext(client);
@@ -2761,7 +2779,7 @@ RecordAClientStateChange(CallbackListPtr *pcbl, void *nulldata,
  *
  * Side Effects:
  *	Performs any cleanup needed by RECORD at server shutdown time.
- *
+ *	
  */
 static void
 RecordCloseDown(ExtensionEntry * extEntry)

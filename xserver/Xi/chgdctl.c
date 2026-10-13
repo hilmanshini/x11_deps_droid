@@ -77,6 +77,7 @@ SProcXChangeDeviceControl(ClientPtr client)
     xDeviceCtl *ctl;
 
     REQUEST(xChangeDeviceControlReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_EXTRA_SIZE(xChangeDeviceControlReq, sizeof(xDeviceCtl));
     swaps(&stuff->control);
     ctl = (xDeviceCtl *) &stuff[1];
@@ -87,21 +88,10 @@ SProcXChangeDeviceControl(ClientPtr client)
     case DEVICE_ABS_AREA:
     case DEVICE_CORE:
     case DEVICE_ENABLE:
-        break;
     case DEVICE_RESOLUTION:
-    {
-        xDeviceResolutionCtl *r;
-        unsigned int extra;
-
-        extra = client->req_len - bytes_to_int32(sizeof(xChangeDeviceControlReq));
-        if (extra < bytes_to_int32(sizeof(xDeviceResolutionCtl)))
-            return BadLength;
-        r = (xDeviceResolutionCtl *) &stuff[1];
-        if (extra != bytes_to_int32(sizeof(xDeviceResolutionCtl)) + r->num_valuators)
-            return BadLength;
-        SwapLongs((CARD32 *) (r + 1), r->num_valuators);
+        /* hmm. beer. *drool* */
         break;
-    }
+
     }
     return (ProcXChangeDeviceControl(client));
 }
@@ -127,7 +117,7 @@ ProcXChangeDeviceControl(ClientPtr client)
     REQUEST(xChangeDeviceControlReq);
     REQUEST_AT_LEAST_EXTRA_SIZE(xChangeDeviceControlReq, sizeof(xDeviceCtl));
 
-    len = client->req_len - bytes_to_int32(sizeof(xChangeDeviceControlReq));
+    len = stuff->length - bytes_to_int32(sizeof(xChangeDeviceControlReq));
     ret = dixLookupDevice(&dev, stuff->deviceid, client, DixManageAccess);
     if (ret != Success)
         goto out;

@@ -48,8 +48,8 @@
 #endif
 
 /* Turn debug messages on or off */
-#ifndef ENABLE_DEBUG
-#define ENABLE_DEBUG				NO
+#ifndef CYGDEBUG
+#define CYGDEBUG				NO
 #endif
 
 #define WIN_DEFAULT_BPP				0
@@ -139,11 +139,9 @@
 #endif                          /* HAVE_MMAP */
 
 #include <X11/X.h>
-#include <X11/Xfuncproto.h>
 #include <X11/Xproto.h>
 #include <X11/Xos.h>
 #include <X11/Xprotostr.h>
-
 #include "scrnintstr.h"
 #include "pixmapstr.h"
 #include "pixmap.h"
@@ -195,7 +193,7 @@
  * Debugging macros
  */
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
 #define DEBUG_MSG(str,...) \
 if (fDebugProcMsg) \
 { \
@@ -210,19 +208,19 @@ if (fDebugProcMsg) \
 #define DEBUG_MSG(str,...)
 #endif
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
 #define DEBUG_FN_NAME(str) PTSTR szFunctionName = str
 #else
 #define DEBUG_FN_NAME(str)
 #endif
 
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
 #define DEBUGVARS BOOL fDebugProcMsg = FALSE
 #else
 #define DEBUGVARS
 #endif
 
-#if ENABLE_DEBUG || YES
+#if CYGDEBUG || YES
 #define DEBUGPROC_MSG fDebugProcMsg = TRUE
 #else
 #define DEBUGPROC_MSG
@@ -1039,9 +1037,6 @@ winCreateMsgWindowThread(void);
  */
 void
 winOS(void);
-
-Bool
-winValidateArgs(void);
 
 /*
  * END DDX and DIX Function Prototypes

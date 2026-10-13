@@ -2,13 +2,10 @@
 #include "tests.h"
 #include "tests-common.h"
 
-int verbose = 0;
-
 int
 main(int argc, char **argv)
 {
     run_test(list_test);
-    run_test(sha1_test);
     run_test(string_test);
 
 #ifdef XORG_TESTS
@@ -38,7 +35,6 @@ main(int argc, char **argv)
     run_test(protocol_xiquerypointer_test);
     run_test(protocol_xiwarppointer_test);
     run_test(protocol_eventconvert_test);
-    run_test(protocol_xkbgetkbdbyname_test);
     run_test(xi2_test);
 #endif
 

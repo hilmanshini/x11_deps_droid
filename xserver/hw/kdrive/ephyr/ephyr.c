@@ -39,7 +39,7 @@
 #ifdef GLAMOR
 #include "glamor.h"
 #endif
-#include "ephyr_glamor.h"
+#include "ephyr_glamor_glx.h"
 #include "glx_extinit.h"
 #include "xkbsrv.h"
 
@@ -242,7 +242,7 @@ ephyrMapFramebuffer(KdScreenInfo * screen)
         /* Rotated/Reflected so we need to use shadow fb */
         scrpriv->shadow = TRUE;
 
-        EPHYR_LOG("allocating shadow");
+        EPHYR_LOG("allocing shadow");
 
         KdShadowFbAlloc(screen,
                         scrpriv->randr & (RR_Rotate_90 | RR_Rotate_270));
@@ -298,7 +298,7 @@ ephyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf)
      * pBuf->pDamage  regions
      */
     shadowUpdateRotatePacked(pScreen, pBuf);
-    hostx_paint_rect(screen, 0, 0, 0, 0, screen->width, screen->height, TRUE);
+    hostx_paint_rect(screen, 0, 0, 0, 0, screen->width, screen->height);
 }
 
 static void
@@ -328,8 +328,7 @@ ephyrInternalDamageRedisplay(ScreenPtr pScreen)
                 hostx_paint_rect(screen,
                                  pbox->x1, pbox->y1,
                                  pbox->x1, pbox->y1,
-                                 pbox->x2 - pbox->x1, pbox->y2 - pbox->y1,
-                                 nbox == 0);
+                                 pbox->x2 - pbox->x1, pbox->y2 - pbox->y1);
                 pbox++;
             }
         }
@@ -410,9 +409,6 @@ ephyrRandRGetInfo(ScreenPtr pScreen, Rotation * rotations)
     Rotation randr;
     int n = 0;
 
-    /* Dummy refresh rate so that new proton (>= 8) works */
-    int rate = screen->rate ? screen->rate : 60;
-
     struct {
         int width, height;
     } sizes[] = {
@@ -441,13 +437,12 @@ ephyrRandRGetInfo(ScreenPtr pScreen, Rotation * rotations)
     if (!hostx_want_preexisting_window(screen)
         && !hostx_want_fullscreen()) {  /* only if no -parent switch */
         while (sizes[n].width != 0 && sizes[n].height != 0) {
-            pSize = RRRegisterSize(pScreen,
-                                   sizes[n].width,
-                                   sizes[n].height,
-                                   (sizes[n].width * screen->width_mm) / screen->width,
-                                   (sizes[n].height * screen->height_mm) /
-                                   screen->height);
-            RRRegisterRate(pScreen, pSize, rate);
+            RRRegisterSize(pScreen,
+                           sizes[n].width,
+                           sizes[n].height,
+                           (sizes[n].width * screen->width_mm) / screen->width,
+                           (sizes[n].height * screen->height_mm) /
+                           screen->height);
             n++;
         }
     }
@@ -456,18 +451,9 @@ ephyrRandRGetInfo(ScreenPtr pScreen, Rotation * rotations)
                            screen->width,
                            screen->height, screen->width_mm, screen->height_mm);
 
-    if (hostx_want_fullscreen()) {
-        RROutputPtr pOutput = RRFirstOutput(pScreen);
-        if (pOutput)
-            RROutputSetPhysicalSize(pOutput,
-                                    scrpriv->win_width_mm,
-                                    scrpriv->win_height_mm);
-    }
-
     randr = KdSubRotation(scrpriv->randr, screen->randr);
 
-    RRRegisterRate(pScreen, pSize, rate);
-    RRSetCurrentConfig(pScreen, randr, rate, pSize);
+    RRSetCurrentConfig(pScreen, randr, 0, pSize);
 
     return TRUE;
 }
@@ -580,7 +566,6 @@ ephyrRandRSetConfig(ScreenPtr pScreen,
     if (wasEnabled)
         KdEnableScreen(pScreen);
 
-    RRGetInfo(pScreen, TRUE);
     RRScreenSizeNotify(pScreen);
 
     return TRUE;
@@ -904,8 +889,7 @@ ephyrProcessExpose(xcb_generic_event_t *xev)
     if (scrpriv) {
         hostx_paint_rect(scrpriv->screen, 0, 0, 0, 0,
                          scrpriv->win_width,
-                         scrpriv->win_height,
-                         TRUE);
+                         scrpriv->win_height);
     } else {
         EPHYR_LOG_ERROR("failed to get host screen\n");
     }
@@ -1187,6 +1171,9 @@ ephyrXcbProcessEvents(Bool queued_only)
         }
 
         if (xev) {
+            if (ephyr_glamor)
+                ephyr_glamor_process_event(xev);
+
             free(xev);
         }
     }
@@ -1277,7 +1264,7 @@ static Status
 MouseInit(KdPointerInfo * pi)
 {
     pi->driverPrivate = (EphyrPointerPrivate *)
-        calloc(1, sizeof(EphyrPointerPrivate));
+        calloc(sizeof(EphyrPointerPrivate), 1);
     ((EphyrPointerPrivate *) pi->driverPrivate)->enabled = FALSE;
     pi->nAxes = 3;
     pi->nButtons = 32;
@@ -1338,7 +1325,7 @@ EphyrKeyboardInit(KdKeyboardInfo * ki)
     XkbControlsRec controls;
 
     ki->driverPrivate = (EphyrKbdPrivate *)
-        calloc(1, sizeof(EphyrKbdPrivate));
+        calloc(sizeof(EphyrKbdPrivate), 1);
 
     if (hostx_load_keymap(&keySyms, modmap, &controls)) {
         XkbApplyMappingChange(ki->dixdev, &keySyms,

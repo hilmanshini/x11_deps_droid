@@ -51,9 +51,6 @@ SOFTWARE.
 #include <X11/X.h>
 #include <X11/Xmd.h>
 #include <X11/Xproto.h>
-
-#include "os/osdep.h"
-
 #include "misc.h"
 #include "resource.h"
 #include "gcstruct.h"
@@ -424,10 +421,10 @@ static const struct {
     RESTYPE type;
     Mask access_mode;
 } xidfields[] = {
-    {GCTile,     X11_RESTYPE_PIXMAP, DixReadAccess},
-    {GCStipple,  X11_RESTYPE_PIXMAP, DixReadAccess},
-    {GCFont,     X11_RESTYPE_FONT,   DixUseAccess},
-    {GCClipMask, X11_RESTYPE_PIXMAP, DixReadAccess},
+    {GCTile, RT_PIXMAP, DixReadAccess},
+    {GCStipple, RT_PIXMAP, DixReadAccess},
+    {GCFont, RT_FONT, DixUseAccess},
+    {GCClipMask, RT_PIXMAP, DixReadAccess},
 };
 
 int
@@ -553,8 +550,8 @@ CreateGC(DrawablePtr pDrawable, BITS32 mask, XID *pval, int *pStatus,
     }
 
     /* security creation/labeling check */
-    *pStatus = XaceHookResourceAccess(client, gcid, X11_RESTYPE_GC, pGC,
-                        X11_RESTYPE_NONE, NULL, DixCreateAccess | DixSetAttrAccess);
+    *pStatus = XaceHook(XACE_RESOURCE_ACCESS, client, gcid, RT_GC, pGC,
+                        RT_NONE, NULL, DixCreateAccess | DixSetAttrAccess);
     if (*pStatus != Success)
         goto out;
 
@@ -776,16 +773,14 @@ FreeGC(void *value, XID gid)
     GCPtr pGC = (GCPtr) value;
 
     CloseFont(pGC->font, (Font) 0);
-    if (pGC->funcs)
-        (*pGC->funcs->DestroyClip) (pGC);
+    (*pGC->funcs->DestroyClip) (pGC);
 
     if (!pGC->tileIsPixel)
         (*pGC->pScreen->DestroyPixmap) (pGC->tile.pixmap);
     if (pGC->stipple)
         (*pGC->pScreen->DestroyPixmap) (pGC->stipple);
 
-    if (pGC->funcs)
-        (*pGC->funcs->DestroyGC) (pGC);
+    (*pGC->funcs->DestroyGC) (pGC);
     if (pGC->dash != DefaultDash)
         free(pGC->dash);
     dixFreeObjectWithPrivates(pGC, PRIVATE_GC);

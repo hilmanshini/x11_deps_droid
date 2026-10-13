@@ -71,12 +71,10 @@ typedef struct _ephyrScrPriv {
     xcb_window_t win;
     xcb_window_t win_pre_existing;    /* Set via -parent option like xnest */
     xcb_window_t peer_win;            /* Used for GL; should be at most one */
-    xcb_visualid_t vid;
     xcb_image_t *ximg;
     Bool win_explicit_position;
     int win_x, win_y;
     int win_width, win_height;
-    int win_width_mm, win_height_mm;
     int server_depth;
     const char *output;         /* Set via -output option */
     unsigned char *fb_data;     /* only used when host bpp != server bpp */
@@ -89,6 +87,10 @@ typedef struct _ephyrScrPriv {
 
     ScreenBlockHandlerProcPtr   BlockHandler;
 
+    /**
+     * Per-screen Xlib-using state for glamor (private to
+     * ephyr_glamor_glx.c)
+     */
     struct ephyr_glamor *glamor;
 } EphyrScrPriv;
 

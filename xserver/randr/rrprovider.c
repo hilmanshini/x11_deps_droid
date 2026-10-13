@@ -23,7 +23,7 @@
  * Authors: Dave Airlie
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include "swaprep.h"
 
 #include <X11/Xatom.h>
@@ -221,11 +221,10 @@ ProcRRGetProviderInfo (ClientPtr client)
     }
     if (provider->output_source) {
         providers[i] = provider->output_source->id;
-        prov_cap[i] = RR_Capability_SourceOutput;
-        if (client->swapped) {
+        if (client->swapped)
             swapl(&providers[i]);
+        prov_cap[i] = RR_Capability_SourceOutput;
             swapl(&prov_cap[i]);
-        }
         i++;
     }
     xorg_list_for_each_entry(provscreen, &pScreen->secondary_list, secondary_head) {
@@ -247,13 +246,11 @@ ProcRRGetProviderInfo (ClientPtr client)
 
     memcpy(name, provider->name, rep.nameLength);
     if (client->swapped) {
-        swaps(&rep.sequenceNumber);
+              swaps(&rep.sequenceNumber);
         swapl(&rep.length);
-        swapl(&rep.timestamp);
         swapl(&rep.capabilities);
         swaps(&rep.nCrtcs);
         swaps(&rep.nOutputs);
-        swaps(&rep.nAssociatedProviders);
         swaps(&rep.nameLength);
     }
     WriteToClient(client, sizeof(xRRGetProviderInfoReply), (char *)&rep);
@@ -462,7 +459,7 @@ RRProviderInit(void)
     return TRUE;
 }
 
-Bool
+extern _X_EXPORT Bool
 RRProviderLookup(XID id, RRProviderPtr *provider_p)
 {
     int rc = dixLookupResourceByType((void **)provider_p, id,

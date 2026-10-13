@@ -326,7 +326,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
         return;
 
     pGlxScreen->pScreen = pScreen;
-    pGlxScreen->GLextensions = XNFstrdup(GLServerExtensions);
+    pGlxScreen->GLextensions = strdup(GLServerExtensions);
     pGlxScreen->GLXextensions = NULL;
 
     pGlxScreen->CloseScreen = pScreen->CloseScreen;
@@ -341,7 +341,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
     pGlxScreen->numFBConfigs = i;
 
     pGlxScreen->visuals =
-        XNFcallocarray(pGlxScreen->numFBConfigs, sizeof(__GLXconfig *));
+        calloc(pGlxScreen->numFBConfigs, sizeof(__GLXconfig *));
 
     /* First, try to choose featureful FBconfigs for the existing X visuals.
      * Note that if multiple X visuals end up with the same FBconfig being
@@ -427,7 +427,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
 
     i = __glXGetExtensionString(pGlxScreen->glx_enable_bits, NULL);
     if (i > 0) {
-        pGlxScreen->GLXextensions = XNFalloc(i);
+        pGlxScreen->GLXextensions = xnfalloc(i);
         (void) __glXGetExtensionString(pGlxScreen->glx_enable_bits,
                                        pGlxScreen->GLXextensions);
     }

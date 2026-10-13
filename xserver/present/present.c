@@ -19,7 +19,6 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
  * OF THIS SOFTWARE.
  */
-#include <dix-config.h>
 
 #include "present_priv.h"
 #include <gcstruct.h>
@@ -85,7 +84,7 @@ present_copy_region(DrawablePtr drawable,
         (*gc->funcs->ChangeClip)(gc, CT_REGION, update, 0);
     }
     ValidateGC(drawable, gc);
-    (void) (*gc->ops->CopyArea)(&pixmap->drawable,
+    (*gc->ops->CopyArea)(&pixmap->drawable,
                          drawable,
                          gc,
                          0, 0,
@@ -158,7 +157,7 @@ present_get_target_msc(uint64_t target_msc_arg,
                        uint64_t remainder,
                        uint32_t options)
 {
-    const Bool  synced_flip = !(options & PresentAllAsyncOptions);
+    const Bool  synced_flip = !(options & PresentOptionAsync);
     uint64_t    target_msc;
 
     /* If the specified target-msc lies in the future, then this
@@ -231,12 +230,6 @@ present_pixmap(WindowPtr window,
                RRCrtcPtr target_crtc,
                SyncFence *wait_fence,
                SyncFence *idle_fence,
-#ifdef DRI3
-               struct dri3_syncobj *acquire_syncobj,
-               struct dri3_syncobj *release_syncobj,
-               uint64_t acquire_point,
-               uint64_t release_point,
-#endif /* DRI3 */
                uint32_t options,
                uint64_t window_msc,
                uint64_t divisor,
@@ -257,12 +250,6 @@ present_pixmap(WindowPtr window,
                                        target_crtc,
                                        wait_fence,
                                        idle_fence,
-#ifdef DRI3
-                                       acquire_syncobj,
-                                       release_syncobj,
-                                       acquire_point,
-                                       release_point,
-#endif /* DRI3 */
                                        options,
                                        window_msc,
                                        divisor,
@@ -285,9 +272,6 @@ present_notify_msc(WindowPtr window,
                           0, 0,
                           NULL,
                           NULL, NULL,
-#ifdef DRI3
-                          NULL, NULL, 0, 0,
-#endif /* DRI3 */
                           divisor == 0 ? PresentOptionAsync : 0,
                           target_msc, divisor, remainder, NULL, 0);
 }

@@ -75,6 +75,7 @@ int _X_COLD
 SProcXChangeFeedbackControl(ClientPtr client)
 {
     REQUEST(xChangeFeedbackControlReq);
+    swaps(&stuff->length);
     REQUEST_AT_LEAST_SIZE(xChangeFeedbackControlReq);
     swapl(&stuff->mask);
     return (ProcXChangeFeedbackControl(client));
@@ -437,7 +438,7 @@ ProcXChangeFeedbackControl(ClientPtr client)
     REQUEST(xChangeFeedbackControlReq);
     REQUEST_AT_LEAST_SIZE(xChangeFeedbackControlReq);
 
-    len = client->req_len - bytes_to_int32(sizeof(xChangeFeedbackControlReq));
+    len = stuff->length - bytes_to_int32(sizeof(xChangeFeedbackControlReq));
     rc = dixLookupDevice(&dev, stuff->deviceid, client, DixManageAccess);
     if (rc != Success)
         return rc;

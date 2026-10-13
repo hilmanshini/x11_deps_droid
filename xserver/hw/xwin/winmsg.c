@@ -25,7 +25,7 @@
  *or other dealings in this Software without prior written authorization
  *from the XFree86 Project.
  *
- * Authors: Alexander Gottwald
+ * Authors: Alexander Gottwald	
  */
 
 #ifdef HAVE_XWIN_CONFIG_H
@@ -33,7 +33,7 @@
 #endif
 #include "win.h"
 #include "winmsg.h"
-#if ENABLE_DEBUG
+#if CYGDEBUG
 #include "winmessages.h"
 #endif
 #include <stdarg.h>
@@ -117,7 +117,7 @@ winW32ErrorEx(int verb, const char *msg, DWORD errorcode)
     }
 }
 
-#if ENABLE_DEBUG
+#if CYGDEBUG
 void
 winDebugWin32Message(const char *function, HWND hwnd, UINT message,
                      WPARAM wParam, LPARAM lParam)

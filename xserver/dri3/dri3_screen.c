@@ -138,10 +138,9 @@ dri3_fd_from_pixmap(PixmapPtr pixmap, CARD16 *stride, CARD32 *size)
     num_fds = info->fds_from_pixmap(screen, pixmap, fds, strides, offsets,
                                     &modifier);
     if (num_fds != 1 || offsets[0] != 0) {
-        for (int i = 0; i < num_fds; i++) {
-            BUG_RETURN_VAL(i >= ARRAY_SIZE(fds), -1);
+        int i;
+        for (i = 0; i < num_fds; i++)
             close(fds[i]);
-        }
         return -1;
     }
 
@@ -184,10 +183,8 @@ cache_formats_and_modifiers(ScreenPtr screen)
     }
 
     ds->formats = calloc(num_formats, sizeof(dri3_dmabuf_format_rec));
-    if (!ds->formats) {
-        free(formats);
+    if (!ds->formats)
         return BadAlloc;
-    }
 
     for (i = 0; i < num_formats; i++) {
         dri3_dmabuf_format_ptr iter = &ds->formats[i];
@@ -208,24 +205,24 @@ cache_formats_and_modifiers(ScreenPtr screen)
     ds->num_formats = i;
     ds->formats_cached = TRUE;
 
-    free(formats);
     return Success;
 }
 
 int
 dri3_get_supported_modifiers(ScreenPtr screen, DrawablePtr drawable,
                              CARD8 depth, CARD8 bpp,
-                             CARD32 *num_drawable_modifiers,
-                             CARD64 **drawable_modifiers,
+                             CARD32 *num_intersect_modifiers,
+                             CARD64 **intersect_modifiers,
                              CARD32 *num_screen_modifiers,
                              CARD64 **screen_modifiers)
 {
     dri3_screen_priv_ptr        ds = dri3_screen_priv(screen);
     const dri3_screen_info_rec *info = ds->info;
-    int                         i;
+    int                         i, j;
     int                         ret;
     uint32_t                    num_drawable_mods;
     uint64_t                   *drawable_mods;
+    CARD64                     *intersect_mods = NULL;
     CARD64                     *screen_mods = NULL;
     CARD32                      format;
     dri3_dmabuf_format_ptr      screen_format = NULL;
@@ -251,14 +248,9 @@ dri3_get_supported_modifiers(ScreenPtr screen, DrawablePtr drawable,
 
     if (screen_format->num_modifiers == 0) {
         *num_screen_modifiers = 0;
-        *num_drawable_modifiers = 0;
+        *num_intersect_modifiers = 0;
         return Success;
     }
-
-    /* copy the screen mods so we can return an owned allocation */
-    screen_mods = XNFalloc(screen_format->num_modifiers * sizeof(CARD64));
-    memcpy(screen_mods, screen_format->modifiers,
-           screen_format->num_modifiers * sizeof(CARD64));
 
     if (!info->get_drawable_modifiers ||
         !info->get_drawable_modifiers(drawable, format,
@@ -268,31 +260,47 @@ dri3_get_supported_modifiers(ScreenPtr screen, DrawablePtr drawable,
         drawable_mods = NULL;
     }
 
-    *num_drawable_modifiers = num_drawable_mods;
-    *drawable_modifiers = drawable_mods;
+    /* We're allocating slightly more memory than necessary but it reduces
+     * the complexity of finding the intersection set.
+     */
+    screen_mods = malloc(screen_format->num_modifiers * sizeof(CARD64));
+    if (!screen_mods)
+        return BadAlloc;
+    if (num_drawable_mods > 0) {
+        intersect_mods = malloc(screen_format->num_modifiers * sizeof(CARD64));
+        if (!intersect_mods) {
+            free(screen_mods);
+            return BadAlloc;
+        }
+    }
 
-    *num_screen_modifiers = screen_format->num_modifiers;
+    *num_screen_modifiers = 0;
+    *num_intersect_modifiers = 0;
+    for (i = 0; i < screen_format->num_modifiers; i++) {
+        CARD64 modifier = screen_format->modifiers[i];
+        Bool intersect = FALSE;
+
+        for (j = 0; j < num_drawable_mods; j++) {
+            if (drawable_mods[j] == modifier) {
+                intersect = TRUE;
+                break;
+            }
+        }
+
+        if (intersect) {
+            intersect_mods[*num_intersect_modifiers] = modifier;
+            *num_intersect_modifiers += 1;
+        } else {
+            screen_mods[*num_screen_modifiers] = modifier;
+            *num_screen_modifiers += 1;
+        }
+    }
+
+    assert(*num_intersect_modifiers + *num_screen_modifiers == screen_format->num_modifiers);
+
+    *intersect_modifiers = intersect_mods;
     *screen_modifiers = screen_mods;
-
-    return Success;
-}
-
-int dri3_import_syncobj(ClientPtr client, ScreenPtr screen, XID id, int fd)
-{
-    const dri3_screen_info_rec *info = dri3_screen_priv(screen)->info;
-    struct dri3_syncobj *syncobj = NULL;
-
-    if (info->version < 4 || !info->import_syncobj)
-        return BadImplementation;
-
-    syncobj = info->import_syncobj(client, screen, id, fd);
-    close(fd);
-
-    if (!syncobj)
-        return BadAlloc;
-
-    if (!AddResource(id, dri3_syncobj_type, syncobj))
-        return BadAlloc;
+    free(drawable_mods);
 
     return Success;
 }

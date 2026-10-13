@@ -59,7 +59,6 @@
 #include "xf86Priv.h"
 #include "xf86Config.h"
 #include "xf86Xinput.h"
-#include "XIstubs.h"
 #include "xf86Optrec.h"
 #include "mipointer.h"
 #include "extinit.h"
@@ -348,7 +347,7 @@ ApplyAutoRepeat(DeviceIntPtr dev)
 
     xf86Msg(X_CONFIG, "AutoRepeat: %ld %ld\n", delay, rate);
     xkbi->desc->ctrls->repeat_delay = delay;
-    xkbi->desc->ctrls->repeat_interval = 1000 / rate;
+    xkbi->desc->ctrls->repeat_interval = rate;
 }
 
 /***********************************************************************
@@ -717,7 +716,7 @@ MergeInputClasses(const InputInfoPtr idev, const InputAttributes * attrs)
         classopts = xf86optionListDup(cl->option_lst);
         if (cl->driver) {
             free((void *) idev->driver);
-            idev->driver = Xstrdup(cl->driver);
+            idev->driver = xstrdup(cl->driver);
             if (!idev->driver) {
                 xf86Msg(X_ERROR, "Failed to allocate memory while merging "
                         "InputClass configuration");
@@ -766,7 +765,7 @@ xf86AllocateInput(void)
 {
     InputInfoPtr pInfo;
 
-    pInfo = calloc(1, sizeof(*pInfo));
+    pInfo = calloc(sizeof(*pInfo), 1);
     if (!pInfo)
         return NULL;
 
@@ -947,7 +946,7 @@ xf86NewInputDevice(InputInfoPtr pInfo, DeviceIntPtr *pdev, BOOL enable)
         if (fd != -1) {
             if (paused) {
                 /* Put on new_input_devices list for delayed probe */
-                PausedInputDevicePtr new_device = XNFalloc(sizeof *new_device);
+                PausedInputDevicePtr new_device = xnfalloc(sizeof *new_device);
                 new_device->pInfo = pInfo;
 
                 xorg_list_append(&new_device->node, &new_input_devices_list);
@@ -1044,7 +1043,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
                 rval = BadRequest;
                 goto unwind;
             }
-            pInfo->driver = Xstrdup(value);
+            pInfo->driver = xstrdup(value);
             if (!pInfo->driver) {
                 rval = BadAlloc;
                 goto unwind;
@@ -1056,7 +1055,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
                 rval = BadRequest;
                 goto unwind;
             }
-            pInfo->name = Xstrdup(value);
+            pInfo->name = xstrdup(value);
             if (!pInfo->name) {
                 rval = BadAlloc;
                 goto unwind;

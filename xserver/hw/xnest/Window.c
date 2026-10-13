@@ -17,9 +17,7 @@ is" without express or implied warranty.
 #endif
 
 #include <X11/X.h>
-#include <X11/Xdefs.h>
 #include <X11/Xproto.h>
-
 #include "gcstruct.h"
 #include "window.h"
 #include "windowstr.h"
@@ -99,7 +97,7 @@ xnestCreateWindow(WindowPtr pWin)
                 mask |= CWColormap;
                 if (pWin->optional->colormap) {
                     dixLookupResourceByType((void **) &pCmap, wColormap(pWin),
-                                            X11_RESTYPE_COLORMAP, serverClient,
+                                            RT_COLORMAP, serverClient,
                                             DixUseAccess);
                     attributes.colormap = xnestColormap(pCmap);
                 }
@@ -112,7 +110,7 @@ xnestCreateWindow(WindowPtr pWin)
         else {                  /* root windows have their own colormaps at creation time */
             visual = xnestVisualFromID(pWin->drawable.pScreen, wVisual(pWin));
             dixLookupResourceByType((void **) &pCmap, wColormap(pWin),
-                                    X11_RESTYPE_COLORMAP, serverClient, DixUseAccess);
+                                    RT_COLORMAP, serverClient, DixUseAccess);
             mask |= CWColormap;
             attributes.colormap = xnestColormap(pCmap);
         }
@@ -145,7 +143,7 @@ xnestCreateWindow(WindowPtr pWin)
     if (!pWin->parent)          /* only the root window will have the right colormap */
         xnestSetInstalledColormapWindows(pWin->drawable.pScreen);
 
-    return TRUE;
+    return True;
 }
 
 Bool
@@ -162,7 +160,7 @@ xnestDestroyWindow(WindowPtr pWin)
     if (pWin->optional && pWin->optional->colormap && pWin->parent)
         xnestSetInstalledColormapWindows(pWin->drawable.pScreen);
 
-    return TRUE;
+    return True;
 }
 
 Bool
@@ -172,7 +170,7 @@ xnestPositionWindow(WindowPtr pWin, int x, int y)
                          CWParent |
                          CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
 
-    return TRUE;
+    return True;
 }
 
 void
@@ -334,7 +332,7 @@ xnestChangeWindowAttributes(WindowPtr pWin, unsigned long mask)
         ColormapPtr pCmap;
 
         dixLookupResourceByType((void **) &pCmap, wColormap(pWin),
-                                X11_RESTYPE_COLORMAP, serverClient, DixUseAccess);
+                                RT_COLORMAP, serverClient, DixUseAccess);
 
         attributes.colormap = xnestColormap(pCmap);
 
@@ -348,7 +346,7 @@ xnestChangeWindowAttributes(WindowPtr pWin, unsigned long mask)
         XChangeWindowAttributes(xnestDisplay, xnestWindow(pWin),
                                 mask, &attributes);
 
-    return TRUE;
+    return True;
 }
 
 Bool
@@ -358,7 +356,7 @@ xnestRealizeWindow(WindowPtr pWin)
     xnestShapeWindow(pWin);
     XMapWindow(xnestDisplay, xnestWindow(pWin));
 
-    return TRUE;
+    return True;
 }
 
 Bool
@@ -366,7 +364,7 @@ xnestUnrealizeWindow(WindowPtr pWin)
 {
     XUnmapWindow(xnestDisplay, xnestWindow(pWin));
 
-    return TRUE;
+    return True;
 }
 
 void
@@ -394,7 +392,7 @@ xnestWindowExposures(WindowPtr pWin, RegionPtr pRgn)
     Window window;
     BoxRec Box;
 
-    XSync(xnestDisplay, FALSE);
+    XSync(xnestDisplay, False);
 
     window = xnestWindow(pWin);
 
@@ -429,10 +427,10 @@ xnestRegionEqual(RegionPtr pReg1, RegionPtr pReg2)
     unsigned int n1, n2;
 
     if (pReg1 == pReg2)
-        return TRUE;
+        return True;
 
     if (pReg1 == NullRegion || pReg2 == NullRegion)
-        return FALSE;
+        return False;
 
     pBox1 = RegionRects(pReg1);
     n1 = RegionNumRects(pReg1);
@@ -441,15 +439,15 @@ xnestRegionEqual(RegionPtr pReg1, RegionPtr pReg2)
     n2 = RegionNumRects(pReg2);
 
     if (n1 != n2)
-        return FALSE;
+        return False;
 
     if (pBox1 == pBox2)
-        return TRUE;
+        return True;
 
     if (memcmp(pBox1, pBox2, n1 * sizeof(BoxRec)))
-        return FALSE;
+        return False;
 
-    return TRUE;
+    return True;
 }
 
 void

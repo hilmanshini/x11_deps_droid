@@ -27,7 +27,6 @@
 #include <xorg-config.h>
 #endif
 
-#include <errno.h>
 #include <X11/X.h>
 #include <X11/Xmd.h>
 
@@ -387,7 +386,7 @@ xf86ProcessArgument(int argc, char *argv[], int i)
 
     if (!strcmp(argv[i], "-masterfd")) {
         CHECK_FOR_REQUIRED_ARGUMENT();
-        if (PrivsElevated())
+        if (xf86PrivsElevated())
             FatalError("\nCannot specify -masterfd when server is setuid/setgid\n");
         if (sscanf(argv[++i], "%d", &xf86DRMMasterFd) != 1) {
             UseMsg();

@@ -20,6 +20,9 @@
 #error Include xorg-config.h when building the X server
 #endif
 
+/* Support BigRequests extension */
+#mesondefine BIGREQS
+
 /* Default font path */
 #mesondefine COMPILEDDEFAULTFONTPATH
 

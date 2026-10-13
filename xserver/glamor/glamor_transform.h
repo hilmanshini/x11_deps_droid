@@ -39,13 +39,12 @@ glamor_set_color_depth(ScreenPtr      pScreen,
                        GLint          uniform);
 
 static inline void
-glamor_set_color(DrawablePtr    drawable,
+glamor_set_color(PixmapPtr      pixmap,
                  CARD32         pixel,
                  GLint          uniform)
 {
-    glamor_set_color_depth(drawable->pScreen,
-                           glamor_drawable_effective_depth(drawable),
-                           pixel, uniform);
+    glamor_set_color_depth(pixmap->drawable.pScreen,
+                           pixmap->drawable.depth, pixel, uniform);
 }
 
 Bool
@@ -61,19 +60,19 @@ glamor_set_texture(PixmapPtr    texture,
                    GLint        size_uniform);
 
 Bool
-glamor_set_solid(DrawablePtr    drawable,
+glamor_set_solid(PixmapPtr      pixmap,
                  GCPtr          gc,
                  Bool           use_alu,
                  GLint          uniform);
 
 Bool
-glamor_set_tiled(DrawablePtr    drawable,
+glamor_set_tiled(PixmapPtr      pixmap,
                  GCPtr          gc,
                  GLint          offset_uniform,
                  GLint          size_uniform);
 
 Bool
-glamor_set_stippled(DrawablePtr    drawable,
+glamor_set_stippled(PixmapPtr      pixmap,
                     GCPtr          gc,
                     GLint          fg_uniform,
                     GLint          offset_uniform,

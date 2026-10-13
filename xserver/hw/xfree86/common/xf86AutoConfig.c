@@ -103,11 +103,11 @@ AppendToList(const char *s, const char ***list, int *lines)
 {
     char *str, *newstr, *p;
 
-    str = XNFstrdup(s);
+    str = xnfstrdup(s);
     for (p = strtok(str, "\n"); p; p = strtok(NULL, "\n")) {
         (*lines)++;
-        *list = XNFreallocarray(*list, *lines + 1, sizeof(**list));
-        newstr = XNFalloc(strlen(p) + 2);
+        *list = xnfreallocarray(*list, *lines + 1, sizeof(**list));
+        newstr = xnfalloc(strlen(p) + 2);
         strcpy(newstr, p);
         strcat(newstr, "\n");
         (*list)[*lines - 1] = newstr;
@@ -155,7 +155,7 @@ xf86AddMatchedDriver(XF86MatchedDrivers *md, const char *driver)
     }
 
     if (nmatches < MATCH_DRIVERS_LIMIT) {
-        md->matches[nmatches] = XNFstrdup(driver);
+        md->matches[nmatches] = xnfstrdup(driver);
         md->nmatches++;
     }
     else {
@@ -271,7 +271,7 @@ listPossibleVideoDrivers(XF86MatchedDrivers *md)
                     /* find end of all uppercase vendor section */
                 }
                 if ((cp != visid.name) && (*cp != '\0')) {
-                    char *vendorName = XNFstrdup(visid.name);
+                    char *vendorName = xnfstrdup(visid.name);
 
                     vendorName[cp - visid.name] = '\0';
 
@@ -294,27 +294,24 @@ listPossibleVideoDrivers(XF86MatchedDrivers *md)
     xf86PciMatchDriver(md);
 #endif
 
-#if defined(HAVE_MODESETTING_DRIVER)
+#if defined(__linux__)
     xf86AddMatchedDriver(md, "modesetting");
 #endif
 
+#if !defined(__sun)
     /* Fallback to platform default frame buffer driver */
-#if defined(__linux__)
+#if !defined(__linux__) && defined(__sparc__)
+    xf86AddMatchedDriver(md, "wsfb");
+#else
     xf86AddMatchedDriver(md, "fbdev");
 #endif
-#if defined(__FreeBSD__)
-    xf86AddMatchedDriver(md, "scfb");
-#endif
+#endif                          /* !__sun */
 
     /* Fallback to platform default hardware */
 #if defined(__i386__) || defined(__amd64__) || defined(__hurd__)
     xf86AddMatchedDriver(md, "vesa");
 #elif defined(__sparc__) && !defined(__sun)
     xf86AddMatchedDriver(md, "sunffb");
-#endif
-
-#if defined(__NetBSD__) || defined(__OpenBSD__)
-    xf86AddMatchedDriver(md, "wsfb");
 #endif
 }
 
@@ -402,7 +399,7 @@ autoConfigDevice(GDevPtr preconf_device)
              * minus one for the already existing first one
              * plus one for the terminating NULL */
             for (; slp[num_screens].screen; num_screens++);
-            xf86ConfigLayout.screens = XNFcallocarray(num_screens + md.nmatches,
+            xf86ConfigLayout.screens = xnfcalloc(num_screens + md.nmatches,
                                                  sizeof(screenLayoutRec));
             xf86ConfigLayout.screens[0] = slp[0];
 

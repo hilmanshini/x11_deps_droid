@@ -126,7 +126,7 @@ GetGlyphs(FontPtr font, unsigned long count, unsigned char *chars,
 }
 
 /*
- * adding RT_FONT / X11_RESTYPE_FONT prevents conflict with default cursor font
+ * adding RT_FONT prevents conflict with default cursor font
  */
 Bool
 SetDefaultFont(const char *defaultfontname)
@@ -140,7 +140,7 @@ SetDefaultFont(const char *defaultfontname)
                    (unsigned) strlen(defaultfontname), defaultfontname);
     if (err != Success)
         return FALSE;
-    err = dixLookupResourceByType((void **) &pf, fid, X11_RESTYPE_FONT, serverClient,
+    err = dixLookupResourceByType((void **) &pf, fid, RT_FONT, serverClient,
                                   DixReadAccess);
     if (err != Success)
         return FALSE;
@@ -293,7 +293,7 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
                 err = AllocError;
                 break;
             }
-            memcpy(newname, alias, newlen);
+            memmove(newname, alias, newlen);
             c->fontname = newname;
             c->fnamelen = newlen;
             c->current_fpe = 0;
@@ -348,7 +348,7 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
             }
         }
     }
-    if (!AddResource(c->fontid, X11_RESTYPE_FONT, (void *) pfont)) {
+    if (!AddResource(c->fontid, RT_FONT, (void *) pfont)) {
         err = AllocError;
         goto bail;
     }
@@ -401,7 +401,7 @@ OpenFont(ClientPtr client, XID fid, Mask flags, unsigned lenfname,
 
         cached = xfont2_find_cached_font_pattern(patternCache, pfontname, lenfname);
         if (cached && cached->info.cachable) {
-            if (!AddResource(fid, X11_RESTYPE_FONT, (void *) cached))
+            if (!AddResource(fid, RT_FONT, (void *) cached))
                 return BadAlloc;
             cached->refcnt++;
             return Success;
@@ -427,7 +427,7 @@ OpenFont(ClientPtr client, XID fid, Mask flags, unsigned lenfname,
         free(c);
         return BadAlloc;
     }
-    memcpy(c->fontname, pfontname, lenfname);
+    memmove(c->fontname, pfontname, lenfname);
     for (i = 0; i < num_fpes; i++) {
         c->fpe_list[i] = font_path_elements[i];
         UseFPE(c->fpe_list[i]);
@@ -674,7 +674,7 @@ doListFontsAndAliases(ClientPtr client, LFclosurePtr c)
                     err = BadFontName;
                     goto ContBadFontName;
                 }
-                memcpy(tmp_pattern, resolved, resolvedlen);
+                memmove(tmp_pattern, resolved, resolvedlen);
                 if (c->haveSaved) {
                     char *tmpname;
                     int tmpnamelen;
@@ -694,11 +694,11 @@ doListFontsAndAliases(ClientPtr client, LFclosurePtr c)
                     free(c->savedName);
                     c->savedName = malloc(namelen + 1);
                     if (c->savedName)
-                        memcpy(c->savedName, name, namelen + 1);
+                        memmove(c->savedName, name, namelen + 1);
                     c->savedNameLen = namelen;
                     aliascount = 20;
                 }
-                memcpy(c->current.pattern, tmp_pattern, resolvedlen);
+                memmove(c->current.pattern, tmp_pattern, resolvedlen);
                 c->current.patlen = resolvedlen;
                 c->current.max_names = c->names->nnames + 1;
                 c->current.current_fpe = -1;
@@ -769,7 +769,7 @@ doListFontsAndAliases(ClientPtr client, LFclosurePtr c)
             reply.nFonts--;
         else {
             *bufptr++ = names->length[i];
-            memcpy(bufptr, names->names[i], names->length[i]);
+            memmove(bufptr, names->names[i], names->length[i]);
             bufptr += names->length[i];
         }
     }
@@ -808,7 +808,7 @@ ListFonts(ClientPtr client, unsigned char *pattern, unsigned length,
     if (length > XLFDMAXFONTNAMELEN)
         return BadAlloc;
 
-    i = XaceHookServerAccess(client, DixGetAttrAccess);
+    i = XaceHook(XACE_SERVER_ACCESS, client, DixGetAttrAccess);
     if (i != Success)
         return i;
 
@@ -1061,7 +1061,7 @@ StartListFontsWithInfo(ClientPtr client, int length, unsigned char *pattern,
     if (length > XLFDMAXFONTNAMELEN)
         return BadAlloc;
 
-    i = XaceHookServerAccess(client, DixGetAttrAccess);
+    i = XaceHook(XACE_SERVER_ACCESS, client, DixGetAttrAccess);
     if (i != Success)
         return i;
 
@@ -1160,7 +1160,7 @@ doPolyText(ClientPtr client, PTclosurePtr c)
             fid = ((Font) *(c->pElt + 4))       /* big-endian */
                 |((Font) *(c->pElt + 3)) << 8
                 | ((Font) *(c->pElt + 2)) << 16 | ((Font) *(c->pElt + 1)) << 24;
-            err = dixLookupResourceByType((void **) &pFont, fid, X11_RESTYPE_FONT,
+            err = dixLookupResourceByType((void **) &pFont, fid, RT_FONT,
                                           client, DixUseAccess);
             if (err != Success) {
                 /* restore pFont for step 4 (described below) */
@@ -1252,7 +1252,7 @@ doPolyText(ClientPtr client, PTclosurePtr c)
                         err = BadAlloc;
                         goto bail;
                     }
-                    memcpy(new_closure->data, new_closure->pElt, len);
+                    memmove(new_closure->data, new_closure->pElt, len);
                     new_closure->pElt = new_closure->data;
                     new_closure->endReq = new_closure->pElt + len;
 
@@ -1440,7 +1440,7 @@ doImageText(ClientPtr client, ITclosurePtr c)
                 err = BadAlloc;
                 goto bail;
             }
-            memcpy(data, c->data, c->nChars * itemSize);
+            memmove(data, c->data, c->nChars * itemSize);
             c->data = data;
 
             pGC = GetScratchGC(c->pGC->depth, c->pGC->pScreen);
@@ -1684,7 +1684,7 @@ SetFontPathElements(int npaths, unsigned char *paths, int *bad, Bool persist)
 int
 SetFontPath(ClientPtr client, int npaths, unsigned char *paths)
 {
-    int err = XaceHookServerAccess(client, DixManageAccess);
+    int err = XaceHook(XACE_SERVER_ACCESS, client, DixManageAccess);
 
     if (err != Success)
         return err;
@@ -1773,7 +1773,7 @@ GetFontPath(ClientPtr client, int *count, int *length, unsigned char **result)
     int len;
     FontPathElementPtr fpe;
 
-    i = XaceHookServerAccess(client, DixGetAttrAccess);
+    i = XaceHook(XACE_SERVER_ACCESS, client, DixGetAttrAccess);
     if (i != Success)
         return i;
 
@@ -1795,7 +1795,7 @@ GetFontPath(ClientPtr client, int *count, int *length, unsigned char **result)
         fpe = font_path_elements[i];
         *c = fpe->name_length;
         *length += *c++;
-        memcpy(c, fpe->name, fpe->name_length);
+        memmove(c, fpe->name, fpe->name_length);
         c += fpe->name_length;
     }
     *count = num_fpes;
@@ -1898,7 +1898,7 @@ find_old_font(XID id)
 {
     void *pFont;
 
-    dixLookupResourceByType(&pFont, id, X11_RESTYPE_NONE, serverClient, DixReadAccess);
+    dixLookupResourceByType(&pFont, id, RT_NONE, serverClient, DixReadAccess);
     return (FontPtr) pFont;
 }
 
@@ -1911,13 +1911,13 @@ get_new_font_client_id(void)
 static int
 store_font_Client_font(FontPtr pfont, Font id)
 {
-    return AddResource(id, X11_RESTYPE_NONE, (void *) pfont);
+    return AddResource(id, RT_NONE, (void *) pfont);
 }
 
 static void
 delete_font_client_id(Font id)
 {
-    FreeResource(id, X11_RESTYPE_NONE);
+    FreeResource(id, RT_NONE);
 }
 
 static int
@@ -1996,13 +1996,6 @@ adjust_fs_wait_for_delay(void *wt, unsigned long newdelay)
 static int
 _init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler)
 {
-    if (!enableFontServerConnections) {
-        LogMessage(X_WARNING,
-                   "Ignoring font server \"%s\", font server connections "
-                   "are disabled.\n", fpe->name);
-        return AllocError;
-    }
-
     /* if server has reset, make sure the b&w handlers are reinstalled */
     if (last_server_gen < serverGeneration) {
         last_server_gen = serverGeneration;

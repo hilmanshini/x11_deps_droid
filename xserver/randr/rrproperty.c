@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include "propertyst.h"
 #include "swaprep.h"
 #include <X11/Xatom.h>
@@ -516,7 +516,7 @@ ProcRRConfigureOutputProperty(ClientPtr client)
         return BadAccess;
 
     num_valid =
-        client->req_len - bytes_to_int32(sizeof(xRRConfigureOutputPropertyReq));
+        stuff->length - bytes_to_int32(sizeof(xRRConfigureOutputPropertyReq));
     return RRConfigureOutputProperty(output, stuff->property, stuff->pending,
                                      stuff->range, FALSE, num_valid,
                                      (INT32 *) (stuff + 1));

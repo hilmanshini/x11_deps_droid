@@ -352,7 +352,7 @@ KdUseMsg(void)
     ErrorF
         ("-rgba rgb/bgr/vrgb/vbgr/none   Specify subpixel ordering for LCD panels\n");
     ErrorF
-        ("-mouse driver [,n,options]    Specify the pointer driver and its options (n is the number of buttons)\n");
+        ("-mouse driver [,n,,options]    Specify the pointer driver and its options (n is the number of buttons)\n");
     ErrorF
         ("-keybd driver [,,options]      Specify the keyboard driver and its options\n");
     ErrorF("-xkb-rules       Set default XkbRules value (can be overridden by -keybd options)\n");
@@ -369,7 +369,7 @@ KdUseMsg(void)
     ErrorF("-softCursor      Force software cursor\n");
     ErrorF("-videoTest       Start the server, pause momentarily and exit\n");
     ErrorF
-        ("-origin X,Y      Locates the next screen in the virtual screen (Xinerama)\n");
+        ("-origin X,Y      Locates the next screen in the the virtual screen (Xinerama)\n");
     ErrorF("-switchCmd       Command to execute on vt switch\n");
     ErrorF
         ("vtxx             Use virtual terminal xx instead of the next available\n");

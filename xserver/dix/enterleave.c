@@ -365,7 +365,7 @@ CoreEnterLeaveNonLinear(DeviceIntPtr dev, WindowPtr A, WindowPtr B, int mode)
        Case 3C: Otherwise:
        The pointer window moves from W to a window above W.
        The detail may need to be changed from Ancestor to Nonlinear or
-       vice versa depending on the new P(W)
+       vice versa depending on the the new P(W)
      */
 
     if (!HasPointer(dev, A)) {
@@ -447,7 +447,7 @@ CoreEnterLeaveToAncestor(DeviceIntPtr dev, WindowPtr A, WindowPtr B, int mode)
        Case 3C: Otherwise:
        The pointer window moves from W to a window above W.
        The detail may need to be changed from Ancestor to Nonlinear or
-       vice versa depending on the new P(W)
+       vice versa depending on the the new P(W)
      */
     if (!HasPointer(dev, A)) {
         WindowPtr child = FirstPointerChild(A);
@@ -620,19 +620,19 @@ FixDeviceValuator(DeviceIntPtr dev, deviceValuator * ev, ValuatorClassPtr v,
     switch (ev->num_valuators) {
     case 6:
         ev->valuator5 = v->axisVal[first + 5];
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case 5:
         ev->valuator4 = v->axisVal[first + 4];
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case 4:
         ev->valuator3 = v->axisVal[first + 3];
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case 3:
         ev->valuator2 = v->axisVal[first + 2];
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case 2:
         ev->valuator1 = v->axisVal[first + 1];
-        _X_FALLTHROUGH; /* fallthrough */
+        /* fallthrough */
     case 1:
         ev->valuator0 = v->axisVal[first];
         break;
@@ -671,10 +671,10 @@ FixDeviceStateNotify(DeviceIntPtr dev, deviceStateNotify * ev, KeyClassPtr k,
         switch (ev->num_valuators) {
         case 3:
             ev->valuator2 = v->axisVal[first + 2];
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 2:
             ev->valuator1 = v->axisVal[first + 1];
-            _X_FALLTHROUGH; /* fallthrough */
+            /* fallthrough */
         case 1:
             ev->valuator0 = v->axisVal[first];
             break;
@@ -1045,7 +1045,7 @@ CoreFocusNonLinear(DeviceIntPtr dev, WindowPtr A, WindowPtr B, int mode)
        Case 3C: Otherwise:
        The focus window moves from W to a window above W.
        The detail may need to be changed from Ancestor to Nonlinear or
-       vice versa depending on the new F(W)
+       vice versa depending on the the new F(W)
      */
 
     if (!HasFocus(A)) {
@@ -1133,7 +1133,7 @@ CoreFocusToAncestor(DeviceIntPtr dev, WindowPtr A, WindowPtr B, int mode)
        Case 3C: Otherwise:
        The focus window moves from W to a window above W.
        The detail may need to be changed from Ancestor to Nonlinear or
-       vice versa depending on the new F(W)
+       vice versa depending on the the new F(W)
      */
     if (!HasFocus(A)) {
         WindowPtr child = FirstFocusChild(A);

@@ -552,7 +552,7 @@ miOverlayComputeClips(WindowPtr pParent,
             }
             return;
         }
-        _X_FALLTHROUGH; /* fall through */
+        /* fall through */
     default:
         if (dx || dy) {
             RegionTranslate(&tParent->borderClip, dx, dy);
@@ -802,7 +802,7 @@ miOverlayValidateTree(WindowPtr pParent, WindowPtr pChild,      /* first child e
         if (!((*pPriv->InOverlay) (newParent)))
             RegionSubtract(&tParent->valdata->exposed, &totalClip,
                            &tParent->clipList);
-        _X_FALLTHROUGH; /* fall through */
+        /* fall through */
     case VTMap:
         RegionCopy(&tParent->clipList, &totalClip);
         if (!((*pPriv->InOverlay) (newParent)))
@@ -1860,7 +1860,7 @@ MarkUnderlayWindow(WindowPtr pWin)
     if (pTree->valdata)
         return;
     pTree->valdata =
-        (miOverlayValDataPtr) XNFalloc(sizeof(miOverlayValDataRec));
+        (miOverlayValDataPtr) xnfalloc(sizeof(miOverlayValDataRec));
     pTree->valdata->oldAbsCorner.x = pWin->drawable.x;
     pTree->valdata->oldAbsCorner.y = pWin->drawable.y;
     pTree->valdata->borderVisible = NullRegion;

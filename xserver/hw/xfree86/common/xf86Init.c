@@ -36,7 +36,6 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#include <sys/stat.h>
 
 #undef HAS_UTSNAME
 #if !defined(WIN32)
@@ -48,14 +47,12 @@
 #include <X11/Xmd.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
-
-#include "config/dbus-core.h"
-
 #include "input.h"
 #include "servermd.h"
 #include "windowstr.h"
 #include "scrnintstr.h"
 #include "mi.h"
+#include "dbus-core.h"
 #include "systemd-logind.h"
 
 #include "loaderProcs.h"
@@ -188,6 +185,12 @@ xf86PrintBanner(void)
     xf86ErrorFVerb(0, "\tBefore reporting problems, check "
                    "" __VENDORDWEBSUPPORT__ "\n"
                    "\tto make sure that you have the latest version.\n");
+}
+
+Bool
+xf86PrivsElevated(void)
+{
+    return PrivsElevated();
 }
 
 Bool
@@ -444,7 +447,7 @@ InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv)
         xf86PostProbe();
 
         /*
-         * Sort the drivers to match the requested ordering.  Using a slow
+         * Sort the drivers to match the requested ording.  Using a slow
          * bubble sort.
          */
         for (j = 0; j < xf86NumScreens - 1; j++) {
@@ -680,19 +683,14 @@ InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv)
 #endif
         scr_index = AddGPUScreen(xf86ScreenInit, argc, argv);
         xf86VGAarbiterUnlock(pScrn);
-        if (scr_index >= 0) {
+        if (scr_index == i) {
             dixSetPrivate(&screenInfo.gpuscreens[scr_index]->devPrivates,
                           xf86ScreenKey, xf86GPUScreens[i]);
             pScrn->pScreen = screenInfo.gpuscreens[scr_index];
             /* The driver should set this, but make sure it is set anyway */
             pScrn->vtSema = TRUE;
         } else {
-            xf86Msg(X_ERROR, "AddScreen/ScreenInit failed for gpu driver %d %s; ignoring it and continuing\n",
-                    i, pScrn->driverName);
-            xf86DeleteScreen(pScrn);
-            /* Since the screen was not valid and we're skipping it, we need to also decrement i.
-               xf86DeleteScreen() compacted the array, so the next screen is now at this index */
-            --i;
+            FatalError("AddScreen/ScreenInit failed for gpu driver %d %d\n", i, scr_index);
         }
     }
 
@@ -800,7 +798,7 @@ OsVendorInit(void)
 /*
  * ddxGiveUp --
  *      Device dependent cleanup. Called by by dix before normal server death.
- *      On some OSes we must switch the terminal back to normal mode. No error-
+ *      For SYSV386 we must switch the terminal back to normal mode. No error-
  *      checking here, since there should be restored as much as possible.
  */
 
@@ -928,7 +926,7 @@ ddxProcessArgument(int argc, char **argv, int i)
     /* First the options that are not allowed with elevated privileges */
     if (!strcmp(argv[i], "-modulepath")) {
         CHECK_FOR_REQUIRED_ARGUMENTS(1);
-        if (PrivsElevated())
+        if (xf86PrivsElevated())
               FatalError("\nInvalid argument -modulepath "
                 "with elevated privileges\n");
         xf86ModulePath = argv[i + 1];
@@ -937,7 +935,7 @@ ddxProcessArgument(int argc, char **argv, int i)
     }
     if (!strcmp(argv[i], "-logfile")) {
         CHECK_FOR_REQUIRED_ARGUMENTS(1);
-        if (PrivsElevated())
+        if (xf86PrivsElevated())
               FatalError("\nInvalid argument -logfile "
                 "with elevated privileges\n");
         xf86LogFile = argv[i + 1];
@@ -955,10 +953,6 @@ ddxProcessArgument(int argc, char **argv, int i)
         xf86CheckPrivs(argv[i], argv[i + 1]);
         xf86ConfigDir = argv[i + 1];
         return 2;
-    }
-    if (!strcmp(argv[i], "-flipPixels")) {
-        xf86FlipPixels = TRUE;
-        return 1;
     }
 #ifdef XF86VIDMODE
     if (!strcmp(argv[i], "-disableVidMode")) {
@@ -1179,10 +1173,6 @@ ddxProcessArgument(int argc, char **argv, int i)
         xf86Info.ShareVTs = TRUE;
         return 1;
     }
-    if (!strcmp(argv[i], "-fontserverconnections") || !strcmp(argv[i], "+fontserverconnections")) {
-        xf86Info.fontserverFrom = X_CMDLINE;
-        return 0;
-    }
     if (!strcmp(argv[i], "-iglx") || !strcmp(argv[i], "+iglx")) {
         xf86Info.iglxFrom = X_CMDLINE;
         return 0;
@@ -1243,7 +1233,6 @@ ddxUseMsg(void)
     ErrorF
         ("-pointer name          specify the core pointer InputDevice name\n");
     ErrorF("-nosilk                disable Silken Mouse\n");
-    ErrorF("-flipPixels            swap default black/white Pixel values\n");
 #ifdef XF86VIDMODE
     ErrorF("-disableVidMode        disable mode adjustments with xvidtune\n");
     ErrorF

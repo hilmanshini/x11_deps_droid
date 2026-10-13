@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011 Collabora, Ltd.
+ * Copyright © 2011 Collabra Ltd.
  * Copyright © 2011 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -710,8 +710,8 @@ TouchAddGrabListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
         type = TOUCH_LISTENER_POINTER_GRAB;
     }
 
-    /* grab listeners are always X11_RESTYPE_NONE since we keep the grab pointer */
-    TouchAddListener(ti, grab->resource, X11_RESTYPE_NONE, grab->grabtype,
+    /* grab listeners are always RT_NONE since we keep the grab pointer */
+    TouchAddListener(ti, grab->resource, RT_NONE, grab->grabtype,
                      type, TOUCH_LISTENER_AWAITING_BEGIN, grab->window, grab);
 }
 
@@ -802,7 +802,7 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
         /* window owner */
         if (IsMaster(dev) && (win->eventMask & core_filter)) {
             TouchEventHistoryAllocate(ti);
-            TouchAddListener(ti, win->drawable.id, X11_RESTYPE_WINDOW, CORE,
+            TouchAddListener(ti, win->drawable.id, RT_WINDOW, CORE,
                              TOUCH_LISTENER_POINTER_REGULAR,
                              TOUCH_LISTENER_AWAITING_BEGIN,
                              win, NULL);
@@ -815,7 +815,7 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
                 continue;
 
             TouchEventHistoryAllocate(ti);
-            TouchAddListener(ti, oclients->resource, X11_RESTYPE_OTHERCLIENT, CORE,
+            TouchAddListener(ti, oclients->resource, RT_OTHERCLIENT, CORE,
                              type, TOUCH_LISTENER_AWAITING_BEGIN, win, NULL);
             return TRUE;
         }

@@ -44,8 +44,6 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_image.h>
 
-#include <winsock2.h>
-
 #include "winresource.h"
 #include "winprefs.h"
 #include "winmsg.h"

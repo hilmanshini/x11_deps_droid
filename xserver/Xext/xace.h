@@ -25,7 +25,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XACE_MAJOR_VERSION		2
 #define XACE_MINOR_VERSION		0
 
-#include "extnsionst.h"
 #include "pixmap.h"
 #include "region.h"
 #include "window.h"
@@ -81,24 +80,6 @@ extern _X_EXPORT int XaceHookPropertyAccess(ClientPtr ptr, WindowPtr pWin,
 extern _X_EXPORT int XaceHookSelectionAccess(ClientPtr ptr, Selection ** ppSel,
                                              Mask access_mode);
 
-/* needs to be exported for in-tree modsetting, but not part of public API */
-_X_EXPORT int XaceHookResourceAccess(ClientPtr client, XID id, RESTYPE rtype, void *res,
-                           RESTYPE ptype, void *parent, Mask access_mode);
-
-int XaceHookDeviceAccess(ClientPtr client, DeviceIntPtr dev, Mask access_mode);
-
-int XaceHookSendAccess(ClientPtr client, DeviceIntPtr dev, WindowPtr win,
-                       xEventPtr ev, int count);
-int XaceHookReceiveAccess(ClientPtr client, WindowPtr win, xEventPtr ev, int count);
-int XaceHookClientAccess(ClientPtr client, ClientPtr target, Mask access_mode);
-int XaceHookExtAccess(ClientPtr client, ExtensionEntry *ext);
-int XaceHookServerAccess(ClientPtr client, Mask access_mode);
-int XaceHookScreenAccess(ClientPtr client, ScreenPtr screen, Mask access_mode);
-int XaceHookScreensaverAccess(ClientPtr client, ScreenPtr screen, Mask access_mode);
-int XaceHookAuthAvail(ClientPtr client, XID authId);
-int XaceHookKeyAvail(xEventPtr ev, DeviceIntPtr dev, int count);
-
-
 /* Register a callback for a given hook.
  */
 #define XaceRegisterCallback(hook,callback,data) \
@@ -132,38 +113,18 @@ extern _X_EXPORT void XaceCensorImage(ClientPtr client,
 /* Define calls away when XACE is not being built. */
 
 #ifdef __GNUC__
+#define XaceHook(args...) Success
 #define XaceHookIsSet(args...) 0
 #define XaceHookDispatch(args...) Success
 #define XaceHookPropertyAccess(args...) Success
 #define XaceHookSelectionAccess(args...) Success
-#define XaceHookResourceAccess(args...) Success
-#define XaceHookDeviceAccess(args...) Success
-#define XaceHookSendAccess(args...) Success
-#define XaceHookReceiveAccess(args...) Success
-#define XaceHookClientAccess(args...) Success
-#define XaceHookExtAccess(args...) Success
-#define XaceHookServerAccess(args...) Success
-#define XaceHookScreenAccess(args...) Success
-#define XaceHookScreensaverAccess(args...) Success
-#define XaceHookAuthAvail(args...) Success
-#define XaceHookKeyAvail(args...) Success
 #define XaceCensorImage(args...) { ; }
 #else
+#define XaceHook(...) Success
 #define XaceHookIsSet(...) 0
 #define XaceHookDispatch(...) Success
 #define XaceHookPropertyAccess(...) Success
 #define XaceHookSelectionAccess(...) Success
-#define XaceHookResourceAccess(...) Success
-#define XaceHookDeviceAccess(...) Success
-#define XaceHookSendAccess(...) Success
-#define XaceHookReceiveAccess(...) Success
-#define XaceHookClientAccess(...) Success
-#define XaceHookExtAccess(...) Success
-#define XaceHookServerAccess(...) Success
-#define XaceHookScreenAccess(...) Success
-#define XaceHookScreensaverAccess(...) Success
-#define XaceHookAuthAvail(...) Success
-#define XaceHookKeyAvail(...) Success
 #define XaceCensorImage(...) { ; }
 #endif
 

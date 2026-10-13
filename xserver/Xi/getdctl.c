@@ -72,6 +72,7 @@ int _X_COLD
 SProcXGetDeviceControl(ClientPtr client)
 {
     REQUEST(xGetDeviceControlReq);
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xGetDeviceControlReq);
     swaps(&stuff->control);
     return (ProcXGetDeviceControl(client));
@@ -208,7 +209,7 @@ ProcXGetDeviceControl(ClientPtr client)
         return BadValue;
     }
 
-    buf = (char *) calloc(1, total_length);
+    buf = (char *) malloc(total_length);
     if (!buf)
         return BadAlloc;
     savbuf = buf;

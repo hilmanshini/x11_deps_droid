@@ -33,12 +33,6 @@
 #include <X11/X.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
-#include <X11/extensions/xtestproto.h>
-#include <X11/extensions/XI.h>
-#include <X11/extensions/XIproto.h>
-
-#include "os/osdep.h"
-
 #include "misc.h"
 #include "os.h"
 #include "dixstruct.h"
@@ -51,6 +45,9 @@
 #include "mi.h"
 #include "xkbsrv.h"
 #include "xkbstr.h"
+#include <X11/extensions/xtestproto.h>
+#include <X11/extensions/XI.h>
+#include <X11/extensions/XIproto.h>
 #include "exglobals.h"
 #include "mipointer.h"
 #include "xserver-properties.h"
@@ -132,7 +129,7 @@ ProcXTestCompareCursor(ClientPtr client)
         pCursor = GetSpriteCursor(ptr);
     else {
         rc = dixLookupResourceByType((void **) &pCursor, stuff->cursor,
-                                     X11_RESTYPE_CURSOR, client, DixReadAccess);
+                                     RT_CURSOR, client, DixReadAccess);
         if (rc != Success) {
             client->errorValue = stuff->cursor;
             return rc;
@@ -151,35 +148,6 @@ ProcXTestCompareCursor(ClientPtr client)
     return Success;
 }
 
-void
-XTestDeviceSendEvents(DeviceIntPtr dev,
-                      int type,
-                      int detail,
-                      int flags,
-                      const ValuatorMask *mask)
-{
-    int nevents = 0;
-    int i;
-
-    switch (type) {
-    case MotionNotify:
-        nevents = GetPointerEvents(xtest_evlist, dev, type, 0, flags, mask);
-        break;
-    case ButtonPress:
-    case ButtonRelease:
-        nevents = GetPointerEvents(xtest_evlist, dev, type, detail, flags, mask);
-        break;
-    case KeyPress:
-    case KeyRelease:
-        nevents =
-            GetKeyboardEvents(xtest_evlist, dev, type, detail);
-        break;
-    }
-
-    for (i = 0; i < nevents; i++)
-        mieqProcessDeviceEvent(dev, &xtest_evlist[i], miPointerGetScreen(inputInfo.pointer));
-}
-
 static int
 ProcXTestFakeInput(ClientPtr client)
 {
@@ -193,11 +161,13 @@ ProcXTestFakeInput(ClientPtr client)
     int valuators[MAX_VALUATORS] = { 0 };
     int numValuators = 0;
     int firstValuator = 0;
+    int nevents = 0;
+    int i;
     int base = 0;
     int flags = 0;
     int need_ptr_update = 1;
 
-    nev = (client->req_len << 2) - sizeof(xReq);
+    nev = (stuff->length << 2) - sizeof(xReq);
     if ((nev % sizeof(xEvent)) || !nev)
         return BadLength;
     nev /= sizeof(xEvent);
@@ -290,19 +260,19 @@ ProcXTestFakeInput(ClientPtr client)
             switch (dv->num_valuators) {
             case 6:
                 valuators[base + 5] = dv->valuator5;
-                _X_FALLTHROUGH; /* fallthrough */
+                /* fallthrough */
             case 5:
                 valuators[base + 4] = dv->valuator4;
-                _X_FALLTHROUGH; /* fallthrough */
+                /* fallthrough */
             case 4:
                 valuators[base + 3] = dv->valuator3;
-                _X_FALLTHROUGH; /* fallthrough */
+                /* fallthrough */
             case 3:
                 valuators[base + 2] = dv->valuator2;
-                _X_FALLTHROUGH; /* fallthrough */
+                /* fallthrough */
             case 2:
                 valuators[base + 1] = dv->valuator1;
-                _X_FALLTHROUGH; /* fallthrough */
+                /* fallthrough */
             case 1:
                 valuators[base] = dv->valuator0;
                 break;
@@ -382,6 +352,7 @@ ProcXTestFakeInput(ClientPtr client)
         /* swap the request back so we can simply re-execute it */
         if (client->swapped) {
             (void) XTestSwapFakeInput(client, (xReq *) stuff);
+            swaps(&stuff->length);
         }
         ResetCurrentRequest(client);
         client->sequence--;
@@ -420,7 +391,7 @@ ProcXTestFakeInput(ClientPtr client)
             if ((flags & POINTER_ABSOLUTE) && firstValuator <= 1 && numValuators > 0) {
                 if (firstValuator == 0)
                     valuators[0] += root->drawable.pScreen->x;
-                if (firstValuator + numValuators > 1)
+                if (firstValuator < 2 && firstValuator + numValuators > 1)
                     valuators[1 - firstValuator] += root->drawable.pScreen->y;
             }
         }
@@ -446,10 +417,26 @@ ProcXTestFakeInput(ClientPtr client)
     if (screenIsSaved == SCREEN_SAVER_ON)
         dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
 
-    valuator_mask_set_range(&mask, firstValuator, numValuators, valuators);
+    switch (type) {
+    case MotionNotify:
+        valuator_mask_set_range(&mask, firstValuator, numValuators, valuators);
+        nevents = GetPointerEvents(xtest_evlist, dev, type, 0, flags, &mask);
+        break;
+    case ButtonPress:
+    case ButtonRelease:
+        valuator_mask_set_range(&mask, firstValuator, numValuators, valuators);
+        nevents = GetPointerEvents(xtest_evlist, dev, type, ev->u.u.detail,
+                                   flags, &mask);
+        break;
+    case KeyPress:
+    case KeyRelease:
+        nevents =
+            GetKeyboardEvents(xtest_evlist, dev, type, ev->u.u.detail);
+        break;
+    }
 
-    if (dev->sendEventsProc)
-        (*dev->sendEventsProc) (dev, type, ev->u.u.detail, flags, &mask);
+    for (i = 0; i < nevents; i++)
+        mieqProcessDeviceEvent(dev, &xtest_evlist[i], miPointerGetScreen(inputInfo.pointer));
 
     if (need_ptr_update)
         miPointerUpdateSprite(dev);
@@ -495,6 +482,8 @@ static int _X_COLD
 SProcXTestGetVersion(ClientPtr client)
 {
     REQUEST(xXTestGetVersionReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xXTestGetVersionReq);
     swaps(&stuff->minorVersion);
     return ProcXTestGetVersion(client);
@@ -504,6 +493,8 @@ static int _X_COLD
 SProcXTestCompareCursor(ClientPtr client)
 {
     REQUEST(xXTestCompareCursorReq);
+
+    swaps(&stuff->length);
     REQUEST_SIZE_MATCH(xXTestCompareCursorReq);
     swapl(&stuff->window);
     swapl(&stuff->cursor);
@@ -518,7 +509,7 @@ XTestSwapFakeInput(ClientPtr client, xReq * req)
     xEvent sev;
     EventSwapPtr proc;
 
-    nev = ((client->req_len << 2) - sizeof(xReq)) / sizeof(xEvent);
+    nev = ((req->length << 2) - sizeof(xReq)) / sizeof(xEvent);
     for (ev = (xEvent *) &req[1]; --nev >= 0; ev++) {
         int evtype = ev->u.u.type & 0177;
         /* Swap event */
@@ -541,10 +532,21 @@ SProcXTestFakeInput(ClientPtr client)
 
     REQUEST(xReq);
 
+    swaps(&stuff->length);
     n = XTestSwapFakeInput(client, stuff);
     if (n != Success)
         return n;
     return ProcXTestFakeInput(client);
+}
+
+static int _X_COLD
+SProcXTestGrabControl(ClientPtr client)
+{
+    REQUEST(xXTestGrabControlReq);
+
+    swaps(&stuff->length);
+    REQUEST_SIZE_MATCH(xXTestGrabControlReq);
+    return ProcXTestGrabControl(client);
 }
 
 static int _X_COLD
@@ -559,7 +561,7 @@ SProcXTestDispatch(ClientPtr client)
     case X_XTestFakeInput:
         return SProcXTestFakeInput(client);
     case X_XTestGrabControl:
-        return ProcXTestGrabControl(client);
+        return SProcXTestGrabControl(client);
     default:
         return BadRequest;
     }

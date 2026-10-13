@@ -58,6 +58,7 @@ SProcXIChangeCursor(ClientPtr client)
 {
     REQUEST(xXIChangeCursorReq);
     REQUEST_SIZE_MATCH(xXIChangeCursorReq);
+    swaps(&stuff->length);
     swapl(&stuff->win);
     swapl(&stuff->cursor);
     swaps(&stuff->deviceid);
@@ -99,7 +100,7 @@ ProcXIChangeCursor(ClientPtr client)
     }
     else {
         rc = dixLookupResourceByType((void **) &pCursor, stuff->cursor,
-                                     X11_RESTYPE_CURSOR, client, DixUseAccess);
+                                     RT_CURSOR, client, DixUseAccess);
         if (rc != Success)
             return rc;
     }

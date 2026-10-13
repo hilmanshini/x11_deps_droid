@@ -20,7 +20,7 @@
  * OF THIS SOFTWARE.
  */
 
-#include "randrstr_priv.h"
+#include "randrstr.h"
 #include "propertyst.h"
 #include "swaprep.h"
 
@@ -179,11 +179,8 @@ RRChangeProviderProperty(RRProviderPtr provider, Atom property, Atom type,
 
     if (mode == PropModeReplace || len > 0) {
         void *new_data = NULL, *old_data = NULL;
-        if (total_len > MAXINT / size_in_bytes) {
-            if (add)
-                RRDestroyProviderProperty(prop);
+        if (total_len > MAXINT / size_in_bytes)
             return BadValue;
-        }
         total_size = total_len * size_in_bytes;
         new_value.data = (void *) malloc(total_size);
         if (!new_value.data && total_size) {
@@ -391,7 +388,7 @@ int
 ProcRRListProviderProperties(ClientPtr client)
 {
     REQUEST(xRRListProviderPropertiesReq);
-    Atom *pAtoms = NULL;
+    Atom *pAtoms = NULL, *temppAtoms;
     xRRListProviderPropertiesReply rep;
     int numProps = 0;
     RRProviderPtr provider;
@@ -418,13 +415,12 @@ ProcRRListProviderProperties(ClientPtr client)
         swapl(&rep.length);
         swaps(&rep.nAtoms);
     }
+    temppAtoms = pAtoms;
+    for (prop = provider->properties; prop; prop = prop->next)
+        *temppAtoms++ = prop->propertyName;
+
     WriteToClient(client, sizeof(xRRListProviderPropertiesReply), (char *) &rep);
     if (numProps) {
-        Atom *temppAtoms = pAtoms;
-
-        for (prop = provider->properties; prop; prop = prop->next)
-            *temppAtoms++ = prop->propertyName;
-
         client->pSwapReplyFunc = (ReplySwapPtr) Swap32Write;
         WriteSwappedDataToClient(client, numProps * sizeof(Atom), pAtoms);
         free(pAtoms);
@@ -489,7 +485,7 @@ ProcRRConfigureProviderProperty(ClientPtr client)
     VERIFY_RR_PROVIDER(stuff->provider, provider, DixReadAccess);
 
     num_valid =
-        client->req_len - bytes_to_int32(sizeof(xRRConfigureProviderPropertyReq));
+        stuff->length - bytes_to_int32(sizeof(xRRConfigureProviderPropertyReq));
     return RRConfigureProviderProperty(provider, stuff->property, stuff->pending,
                                      stuff->range, FALSE, num_valid,
                                      (INT32 *) (stuff + 1));

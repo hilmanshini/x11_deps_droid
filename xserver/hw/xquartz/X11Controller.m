@@ -59,7 +59,7 @@ extern char *bundle_id_prefix;
 
 @interface X11Controller ()
 #ifdef XQUARTZ_SPARKLE
-@property (nonatomic, readwrite, strong) NSMenuItem *check_for_updates_item; // Programmatically enabled
+@property (nonatomic, readwrite, strong) NSMenuItem *check_for_updates_item; // Programatically enabled
 #endif
 
 @property (nonatomic, readwrite, strong) NSArray <NSArray <NSString *> *> *apps;

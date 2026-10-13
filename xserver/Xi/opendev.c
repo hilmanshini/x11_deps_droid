@@ -68,6 +68,21 @@ extern CARD8 event_base[];
 
 /***********************************************************************
  *
+ * This procedure swaps the request if the server and client have different
+ * byte orderings.
+ *
+ */
+
+int _X_COLD
+SProcXOpenDevice(ClientPtr client)
+{
+    REQUEST(xOpenDeviceReq);
+    swaps(&stuff->length);
+    return (ProcXOpenDevice(client));
+}
+
+/***********************************************************************
+ *
  * This procedure causes the server to open an input device.
  *
  */

@@ -77,7 +77,6 @@ get_image(struct test_setup *setup, xcb_drawable_t drawable)
 
     uint32_t *result = malloc(sizeof(uint32_t) *
                               setup->width * setup->height);
-    assert(result != NULL);
     memcpy(result, data, len);
     free(reply);
 
@@ -103,7 +102,6 @@ compute_expected_damage(struct test_setup *setup)
 
     /* Make sure that the testcases actually render something! */
     assert(any_modified_pixels);
-    free(results);
 }
 
 /**

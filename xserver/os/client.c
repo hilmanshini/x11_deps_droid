@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies). All
  * rights reserved.
- * Copyright (c) 1993, 2010, Oracle and/or its affiliates.
+ * Copyright (c) 1993, 2010, Oracle and/or its affiliates. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -73,11 +73,6 @@
 #include <limits.h>
 #endif
 
-#if defined(__DragonFly__) || defined(__FreeBSD__)
-#include <sys/sysctl.h>
-#include <errno.h>
-#endif
-
 #ifdef __APPLE__
 #include <dispatch/dispatch.h>
 #include <errno.h>
@@ -141,7 +136,7 @@ DetermineClientPid(struct _Client * client)
 void
 DetermineClientCmd(pid_t pid, const char **cmdname, const char **cmdargs)
 {
-#if !defined(__APPLE__) && !defined(__DragonFly__) && !defined(__FreeBSD__)
+#if !defined(__APPLE__)
     char path[PATH_MAX + 1];
     int totsize = 0;
     int fd = 0;
@@ -255,56 +250,6 @@ DetermineClientCmd(pid_t pid, const char **cmdname, const char **cmdargs)
 
         free(procargs);
     }
-#elif defined(__DragonFly__) || defined(__FreeBSD__)
-    /* on DragonFly and FreeBSD use KERN_PROC_ARGS */
-    {
-        int mib[] = {
-            CTL_KERN,
-            KERN_PROC,
-            KERN_PROC_ARGS,
-            pid,
-        };
-
-        /* Determine exact size instead of relying on kern.argmax */
-        size_t len;
-        if (sysctl(mib, ARRAY_SIZE(mib), NULL, &len, NULL, 0) != 0) {
-            ErrorF("Failed to query KERN_PROC_ARGS length for PID %d: %s\n", pid, strerror(errno));
-            return;
-        }
-
-        /* Read KERN_PROC_ARGS contents. Similar to /proc/pid/cmdline
-         * the process name and each argument are separated by NUL byte. */
-        char *const procargs = malloc(len);
-        if (sysctl(mib, ARRAY_SIZE(mib), procargs, &len, NULL, 0) != 0) {
-            ErrorF("Failed to get KERN_PROC_ARGS for PID %d: %s\n", pid, strerror(errno));
-            free(procargs);
-            return;
-        }
-
-        /* Construct the process name without arguments. */
-        if (cmdname) {
-            *cmdname = strdup(procargs);
-        }
-
-        /* Construct the arguments for client process. */
-        if (cmdargs) {
-            size_t cmdsize = strlen(procargs) + 1;
-            size_t argsize = len - cmdsize;
-            char *args = NULL;
-
-            if (argsize > 0)
-                args = procargs + cmdsize;
-            if (args) {
-                /* Replace NUL with space except terminating NUL */
-                for (size_t i = 0; i < (argsize - 1); i++) {
-                    if (args[i] == '\0')
-                        args[i] = ' ';
-                }
-                *cmdargs = strdup(args);
-            }
-        }
-        free(procargs);
-    }
 #elif defined(__OpenBSD__)
     /* on OpenBSD use kvm_getargv() */
     {
@@ -321,13 +266,11 @@ DetermineClientCmd(pid_t pid, const char **cmdname, const char **cmdargs)
         kp = kvm_getprocs(kd, KERN_PROC_PID, pid, sizeof(struct kinfo_proc),
                           &n);
         if (n != 1)
-            goto done_kvm;
+            return;
         argv = kvm_getargv(kd, kp, 0);
-        if (argv == NULL)
-            goto done_kvm;
         if (cmdname) {
-            if (argv[0] == NULL)
-                goto done_kvm;
+            if (argv == NULL || argv[0] == NULL)
+                return;
             else
                 *cmdname = strdup(argv[0]);
         }
@@ -338,16 +281,13 @@ DetermineClientCmd(pid_t pid, const char **cmdname, const char **cmdargs)
                 i++;
             }
             *cmdargs = calloc(1, len);
-            if (*cmdargs) {
-                i = 1;
-                while (argv[i] != NULL) {
-                    strlcat(*(char **)cmdargs, argv[i], len);
-                    strlcat(*(char **)cmdargs, " ", len);
-                    i++;
-                }
+            i = 1;
+            while (argv[i] != NULL) {
+                strlcat(*(char **)cmdargs, argv[i], len);
+                strlcat(*(char **)cmdargs, " ", len);
+                i++;
             }
         }
- done_kvm:
         kvm_close(kd);
     }
 #else                           /* Linux using /proc/pid/cmdline */

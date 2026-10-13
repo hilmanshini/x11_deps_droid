@@ -2,17 +2,11 @@ simple_xinit = executable(
     'simple-xinit',
     'simple-xinit.c',
     include_directories: inc,
-    dependencies: [ xproto_dep ],
 )
 
 piglit_env = environment()
-piglit_env.set('XSERVER_DIR', meson.project_source_root())
-piglit_env.set('XSERVER_BUILDDIR', meson.project_build_root())
-
-gles20_env = environment()
-gles20_env.set('XSERVER_DIR', meson.project_source_root())
-gles20_env.set('XSERVER_BUILDDIR', meson.project_build_root())
-gles20_env.set('MESA_GLES_VERSION_OVERRIDE', '2.0')
+piglit_env.set('XSERVER_DIR', meson.source_root())
+piglit_env.set('XSERVER_BUILDDIR', meson.build_root())
 
 some_ops = ' -o clear,src,dst,over,xor,disjointover'
 gles2_working_formats = ' -f '+ ','.join(['a8',
@@ -37,6 +31,7 @@ rendercheck_tests_noblend = [
     ['composite/Some/x8r8g8b8', '-t composite -f a8r8g8b8,x8r8g8b8' + some_ops],
     ['composite/Some/a2r10g10b10', '-t composite -f a8r8g8b8,a2r10g10b10' + some_ops],
     ['ca composite/Some/a8r8g8b8', '-t cacomposite -f a8r8g8b8' + some_ops],
+    ['ca composite/Some/a8', '-t cacomposite -f a8r8g8b8,a8' + some_ops],
     ['ca composite/Some/x8r8g8b8', '-t cacomposite -f a8r8g8b8,x8r8g8b8' + some_ops],
     ['ca composite/Some/a2r10g10b10', '-t cacomposite -f a8r8g8b8,a2r10g10b10' + some_ops],
     ['fill', '-t fill'],
@@ -55,19 +50,14 @@ rendercheck_blend = [
     ['blend/Src', '-t blend -o src'],
     ['blend/Over', '-t blend -o over'],
 ]
-#A8 test failing on GLES 2.0 llvmpipe before mesa 23.
-rendercheck_a8 = [
-    ['ca composite/Some/a8', '-t cacomposite -f a8r8g8b8,a8' + some_ops],
-]
 #Exclude 15bpp for now due to GLES limitation (see glamor.c:470)
 rendercheck_blend_gles2 = [
     ['blend/Clear', '-t blend -o clear' + gles2_working_formats],
     ['blend/Src', '-t blend -o src' + gles2_working_formats],
     ['blend/Over', '-t blend -o over' + gles2_working_formats],
 ]
-rendercheck_tests = rendercheck_blend + rendercheck_tests_noblend + rendercheck_a8
-rendercheck_tests_gles2_success = rendercheck_blend_gles2 + rendercheck_tests_noblend
-rendercheck_tests_gles3 = rendercheck_blend_gles2 + rendercheck_tests_noblend + rendercheck_a8
+rendercheck_tests = rendercheck_blend + rendercheck_tests_noblend
+rendercheck_tests_gles2 = rendercheck_blend_gles2 + rendercheck_tests_noblend
 rendercheck = find_program('rendercheck', required:false)
 
 if get_option('xvfb')
@@ -92,7 +82,7 @@ if get_option('xvfb')
                  # Use full_path so people can copy and paste the
                  # command line from testlog.txt easily.
                  args: [
-                     rendercheck.full_path(),
+                     rendercheck.path(),
                      rctest[1].split(' '),
                      '--',
                      xvfb_args,
@@ -103,70 +93,64 @@ if get_option('xvfb')
     endif
 
     if get_option('xephyr') and build_glamor
-        foreach testsuite : ['','-gles2','-gles3']
-            test_env = piglit_env
-            if(testsuite == '-gles2')
-                test_env = gles20_env
-            endif
-            test('XTS',
-                find_program('scripts/xephyr-glamor' + testsuite + '-piglit.sh'),
-                env: piglit_env,
-                timeout: 1200,
-                suite: 'xephyr-glamor' + testsuite,
-            )
-        endforeach
-        test_parameters = [
-                [rendercheck_tests, '', piglit_env, '', false],
-                [rendercheck_tests_gles2_success, '_gles2', gles20_env, '-gles2', false],
-                [rendercheck_a8, '_gles2', gles20_env, '-gles2', true],
-                [rendercheck_tests_gles3, '_gles2', piglit_env, '-gles3', false]
-            ]
+        test('XTS',
+            find_program('scripts/xephyr-glamor-piglit.sh'),
+            env: piglit_env,
+            timeout: 1200,
+            suite: 'xephr-glamor',
+        )
+        test('XTS',
+            find_program('scripts/xephyr-glamor-gles2-piglit.sh'),
+            env: piglit_env,
+            timeout: 1200,
+            suite: 'xephyr-glamor-gles2',
+        )
 
         if rendercheck.found()
-            foreach testsuite : test_parameters
-                foreach rctest : testsuite[0]
-                    test(rctest[0],
-                        simple_xinit,
-                        args: [simple_xinit.full_path(),
-                                rendercheck.full_path(),
-                                rctest[1].split(' '),
-                                '----',
-                                xephyr_server.full_path(),
-                                '-glamor' + testsuite[1],
-                                '-glamor-skip-present',
-                                '-schedMax', '2000',
-                                '--',
-                                xvfb_args,
-                            ],
-                        env: testsuite[2],
-                        suite: 'xephyr-glamor' + testsuite[3],
-                        should_fail: testsuite[4],
-                        timeout: 300,
-                        )
-                endforeach
+            foreach rctest: rendercheck_tests
+                test(rctest[0],
+                     simple_xinit,
+                     args: [simple_xinit.full_path(),
+                            rendercheck.path(),
+                            rctest[1].split(' '),
+                            '----',
+                            xephyr_server.full_path(),
+                            '-glamor',
+                            '-glamor-skip-present',
+                            '-schedMax', '2000',
+                            '--',
+                            xvfb_args,
+                           ],
+                     suite: 'xephr-glamor',
+                     timeout: 300,
+                    )
+            endforeach
+            foreach rctest: rendercheck_tests_gles2
+                test(rctest[0],
+                     simple_xinit,
+                     args: [simple_xinit.full_path(),
+                            rendercheck.path(),
+                            rctest[1].split(' '),
+                            '----',
+                            xephyr_server.full_path(),
+                            '-glamor_gles2',
+                            '-glamor-skip-present',
+                            '-schedMax', '2000',
+                            '--',
+                            xvfb_args,
+                           ],
+                     suite: 'xephyr-glamor-gles2',
+                     timeout: 300,
+                    )
             endforeach
         endif
     endif
-endif
-
-if build_xwayland
-    xwayland_args = [
-        xwayland_server.full_path(),
-    ]
-
-    test('XTS',
-        find_program('scripts/xwayland-piglit.sh'),
-        env: piglit_env,
-        timeout: 1200,
-        suite: 'xwayland'
-    )
 endif
 
 subdir('bigreq')
 subdir('damage')
 subdir('sync')
 subdir('bugs')
-subdir('pyxtest')
 
 if build_xorg
 # Tests that require at least some DDX functions in order to fully link
@@ -180,7 +164,6 @@ if build_xorg
      'input.c',
      'list.c',
      'misc.c',
-     'sha1.c',
      'signal-logging.c',
      'string.c',
      'test_xkb.c',
@@ -190,14 +173,15 @@ if build_xorg
      'xfree86.c',
      'xtest.c',
     ]
-    unit_c_args = ['-DXORG_TESTS']
+    unit_defines = ['-DXORG_TESTS']
     unit_includes = [inc, xorg_inc]
 
     if build_res
         unit_sources += ['hashtabletest.c']
-        unit_c_args += ['-DRES_TESTS']
+        unit_defines += ['-DRES_TESTS']
     endif
 
+    unit_c_args = unit_defines
     if meson.get_compiler('c').has_link_argument('-Wl,-wrap')
        # LTO breaks with -Wl,-wrap on certain configurations
        unit_c_args += ['-fno-lto']
@@ -215,9 +199,8 @@ if build_xorg
         'xi2/protocol-xiwarppointer.c',
         'xi2/protocol-eventconvert.c',
         'xi2/xi2.c',
-        'xkb/protocol-xkbgetkbdbyname.c',
        ]
-       unit_c_args += ['-DLDWRAP_TESTS']
+       unit_defines += ['-DLDWRAP_TESTS']
        unit_includes += [include_directories('xi1', 'xi2')]
        ldwraps = [
         '-Wl,-wrap,dixLookupWindow',
@@ -227,7 +210,6 @@ if build_xorg
         '-Wl,-wrap,XISetEventMask',
         '-Wl,-wrap,AddResource',
         '-Wl,-wrap,GrabButton',
-        '-Wl,-wrap,SrvXkbAllocClientMap',
        ]
     else
        ldwraps = []
@@ -237,7 +219,7 @@ if build_xorg
     unit = executable('tests',
          unit_sources,
          c_args: unit_c_args,
-         dependencies: [x11_dep, pixman_dep, randrproto_dep, inputproto_dep, libxcvt_dep],
+         dependencies: [pixman_dep, randrproto_dep, inputproto_dep, libxcvt_dep],
          include_directories: unit_includes,
          link_args: ldwraps,
          link_with: xorg_link,

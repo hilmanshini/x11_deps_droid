@@ -48,6 +48,4 @@ extern _X_EXPORT DevPrivateKeyRec xf86CursorScreenKeyRec;
 
 #define xf86CursorScreenKey (&xf86CursorScreenKeyRec)
 
-extern DevScreenPrivateKeyRec xf86ScreenCursorBitsKeyRec;
-
 #endif                          /* _XF86CURSORPRIV_H */

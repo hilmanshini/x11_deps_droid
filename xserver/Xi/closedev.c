@@ -66,6 +66,21 @@ SOFTWARE.
 
 /***********************************************************************
  *
+ * This procedure closes an input device.
+ *
+ */
+
+int _X_COLD
+SProcXCloseDevice(ClientPtr client)
+{
+    REQUEST(xCloseDeviceReq);
+    swaps(&stuff->length);
+    REQUEST_SIZE_MATCH(xCloseDeviceReq);
+    return (ProcXCloseDevice(client));
+}
+
+/***********************************************************************
+ *
  * Clear out event selections and passive grabs from a window for the
  * specified device.
  *
@@ -87,7 +102,7 @@ DeleteDeviceEvents(DeviceIntPtr dev, WindowPtr pWin, ClientPtr client)
         next = grab->next;
         if ((grab->device == dev) &&
             (client->clientAsMask == CLIENT_BITS(grab->resource)))
-            FreeResource(grab->resource, X11_RESTYPE_NONE);
+            FreeResource(grab->resource, RT_NONE);
     }
 }
 

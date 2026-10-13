@@ -75,7 +75,7 @@ static const xf86ConfigSymTabRec DeviceTab[] = {
     {VIDEORAM, "videoram"},
     {BIOSBASE, "biosbase"},
     {MEMBASE, "membase"},
-    {XF86_TOKEN_IOBASE, "iobase"},
+    {IOBASE, "iobase"},
     {CLOCKCHIP, "clockchip"},
     {CHIPID, "chipid"},
     {CHIPREV, "chiprev"},
@@ -181,7 +181,7 @@ xf86parseDeviceSection(void)
                 Error(NUMBER_MSG, "MemBase");
             ptr->dev_mem_base = xf86_lex_val.num;
             break;
-        case XF86_TOKEN_IOBASE:
+        case IOBASE:
             if (xf86getSubToken(&(ptr->dev_comment)) != NUMBER)
                 Error(NUMBER_MSG, "IOBase");
             ptr->dev_io_base = xf86_lex_val.num;
@@ -209,8 +209,6 @@ xf86parseDeviceSection(void)
                 ptr->dev_clock[i] = (int) (xf86_lex_val.realnum * 1000.0 + 0.5);
                 token = xf86getSubToken(&(ptr->dev_comment));
             }
-            if (token == NUMBER && i >= CONF_MAXCLOCKS)
-                Error(CLOCKS_TOO_MANY, CONF_MAXCLOCKS);
             ptr->dev_clocks = i;
             xf86unGetToken(token);
             break;

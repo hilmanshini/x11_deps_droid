@@ -44,9 +44,6 @@ typedef struct {
     CARD32 id;
 } SELinuxListItemRec;
 
-Bool noSELinuxExtension = FALSE;
-int selinuxEnforcingState = SELINUX_MODE_DEFAULT;
-
 /*
  * Extension Dispatch
  */
@@ -625,6 +622,8 @@ static int _X_COLD
 SProcSELinuxDispatch(ClientPtr client)
 {
     REQUEST(xReq);
+
+    swaps(&stuff->length);
 
     switch (stuff->data) {
     case X_SELinuxQueryVersion:

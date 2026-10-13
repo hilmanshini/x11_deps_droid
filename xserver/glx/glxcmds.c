@@ -123,8 +123,7 @@ validGlxFBConfigForWindow(ClientPtr client, __GLXconfig * config,
     }
 
     /* FIXME: What exactly should we check here... */
-    if (pVisual == NULL ||
-        pVisual->class != glxConvertToXVisualType(config->visualType) ||
+    if (pVisual->class != glxConvertToXVisualType(config->visualType) ||
         !(config->drawableType & GLX_WINDOW_BIT)) {
         client->errorValue = pDraw->id;
         *err = BadMatch;
@@ -703,13 +702,14 @@ __glXDisp_IsDirect(__GLXclientState * cl, GLbyte * pc)
 {
     ClientPtr client = cl->client;
     xGLXIsDirectReq *req = (xGLXIsDirectReq *) pc;
+    xGLXIsDirectReply reply;
     __GLXcontext *glxc;
     int err;
 
     if (!validGlxContext(cl->client, req->context, DixReadAccess, &glxc, &err))
         return err;
 
-    xGLXIsDirectReply reply = {
+    reply = (xGLXIsDirectReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = 0,
@@ -731,11 +731,13 @@ __glXDisp_QueryVersion(__GLXclientState * cl, GLbyte * pc)
 {
     ClientPtr client = cl->client;
     xGLXQueryVersionReq *req = (xGLXQueryVersionReq *) pc;
+    xGLXQueryVersionReply reply;
+    GLuint major, minor;
 
     REQUEST_SIZE_MATCH(xGLXQueryVersionReq);
 
-    GLuint major = req->majorVersion;
-    GLuint minor = req->minorVersion;
+    major = req->majorVersion;
+    minor = req->minorVersion;
     (void) major;
     (void) minor;
 
@@ -744,7 +746,7 @@ __glXDisp_QueryVersion(__GLXclientState * cl, GLbyte * pc)
      ** client if it wants to work with older clients; however, in this
      ** implementation the server just returns its version number.
      */
-    xGLXQueryVersionReply reply = {
+    reply = (xGLXQueryVersionReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = 0,
@@ -904,6 +906,7 @@ __glXDisp_GetVisualConfigs(__GLXclientState * cl, GLbyte * pc)
 {
     xGLXGetVisualConfigsReq *req = (xGLXGetVisualConfigsReq *) pc;
     ClientPtr client = cl->client;
+    xGLXGetVisualConfigsReply reply;
     __GLXscreen *pGlxScreen;
     __GLXconfig *modes;
     CARD32 buf[GLX_VIS_CONFIG_TOTAL];
@@ -915,7 +918,7 @@ __glXDisp_GetVisualConfigs(__GLXclientState * cl, GLbyte * pc)
     if (!validGlxScreen(cl->client, req->screen, &pGlxScreen, &err))
         return err;
 
-    xGLXGetVisualConfigsReply reply = {
+    reply = (xGLXGetVisualConfigsReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = (pGlxScreen->numVisuals *
@@ -1018,6 +1021,7 @@ static int
 DoGetFBConfigs(__GLXclientState * cl, unsigned screen)
 {
     ClientPtr client = cl->client;
+    xGLXGetFBConfigsReply reply;
     __GLXscreen *pGlxScreen;
     CARD32 buf[__GLX_FBCONFIG_ATTRIBS_LENGTH];
     int p, err;
@@ -1029,7 +1033,7 @@ DoGetFBConfigs(__GLXclientState * cl, unsigned screen)
     if (!validGlxScreen(cl->client, screen, &pGlxScreen, &err))
         return err;
 
-    xGLXGetFBConfigsReply reply = {
+    reply = (xGLXGetFBConfigsReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = __GLX_FBCONFIG_ATTRIBS_LENGTH * pGlxScreen->numFBConfigs,
@@ -1386,8 +1390,8 @@ DoCreatePbuffer(ClientPtr client, int screenNum, XID fbconfigId,
     if (!pPixmap)
         return BadAlloc;
 
-    err = XaceHookResourceAccess(client, glxDrawableId, X11_RESTYPE_PIXMAP,
-                   pPixmap, X11_RESTYPE_NONE, NULL, DixCreateAccess);
+    err = XaceHook(XACE_RESOURCE_ACCESS, client, glxDrawableId, RT_PIXMAP,
+                   pPixmap, RT_NONE, NULL, DixCreateAccess);
     if (err != Success) {
         (*pGlxScreen->pScreen->DestroyPixmap) (pPixmap);
         return err;
@@ -1397,7 +1401,7 @@ DoCreatePbuffer(ClientPtr client, int screenNum, XID fbconfigId,
      * resource so it and the DRI2 drawable will be reclaimed when the
      * pbuffer is destroyed. */
     pPixmap->drawable.id = glxDrawableId;
-    if (!AddResource(pPixmap->drawable.id, X11_RESTYPE_PIXMAP, pPixmap))
+    if (!AddResource(pPixmap->drawable.id, RT_PIXMAP, pPixmap))
         return BadAlloc;
 
     return DoCreateGLXDrawable(client, pGlxScreen, config, &pPixmap->drawable,
@@ -1643,25 +1647,25 @@ __glXDisp_SwapBuffers(__GLXclientState * cl, GLbyte * pc)
     return Success;
 }
 
-#define GLX_QUERY_NPROPS 5
-
 static int
 DoQueryContext(__GLXclientState * cl, GLXContextID gcId)
 {
     ClientPtr client = cl->client;
     __GLXcontext *ctx;
-    CARD32 sendBuf[GLX_QUERY_NPROPS * 2];
+    xGLXQueryContextInfoEXTReply reply;
+    int nProps = 5;
+    int sendBuf[nProps * 2];
     int nReplyBytes;
     int err;
 
     if (!validGlxContext(cl->client, gcId, DixReadAccess, &ctx, &err))
         return err;
 
-    xGLXQueryContextInfoEXTReply reply = {
+    reply = (xGLXQueryContextInfoEXTReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
-        .length = GLX_QUERY_NPROPS  << 1,
-        .n = GLX_QUERY_NPROPS,
+        .length = nProps << 1,
+        .n = nProps
     };
 
     nReplyBytes = reply.length << 2;
@@ -1685,7 +1689,7 @@ DoQueryContext(__GLXclientState * cl, GLXContextID gcId)
         __GLX_SWAP_INT(&reply.length);
         __GLX_SWAP_INT(&reply.n);
         WriteToClient(client, sz_xGLXQueryContextInfoEXTReply, &reply);
-        __GLX_SWAP_INT_ARRAY(sendBuf, length);
+        __GLX_SWAP_INT_ARRAY((int *) sendBuf, length);
         WriteToClient(client, length << 2, sendBuf);
     }
     else {
@@ -1695,8 +1699,6 @@ DoQueryContext(__GLXclientState * cl, GLXContextID gcId)
 
     return Success;
 }
-
-#undef GLX_QUERY_NPROPS
 
 int
 __glXDisp_QueryContextInfoEXT(__GLXclientState * cl, GLbyte * pc)
@@ -1865,6 +1867,7 @@ static int
 DoGetDrawableAttributes(__GLXclientState * cl, XID drawId)
 {
     ClientPtr client = cl->client;
+    xGLXGetDrawableAttributesReply reply;
     __GLXdrawable *pGlxDraw = NULL;
     DrawablePtr pDraw;
     CARD32 attributes[20];
@@ -1914,7 +1917,7 @@ DoGetDrawableAttributes(__GLXclientState * cl, XID drawId)
         ATTRIB(GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT);
 #undef ATTRIB
 
-    xGLXGetDrawableAttributesReply reply = {
+    reply = (xGLXGetDrawableAttributesReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = num << 1,
@@ -2362,6 +2365,7 @@ __glXDisp_QueryExtensionsString(__GLXclientState * cl, GLbyte * pc)
 {
     ClientPtr client = cl->client;
     xGLXQueryExtensionsStringReq *req = (xGLXQueryExtensionsStringReq *) pc;
+    xGLXQueryExtensionsStringReply reply;
     __GLXscreen *pGlxScreen;
     size_t n, length;
     char *buf;
@@ -2372,8 +2376,7 @@ __glXDisp_QueryExtensionsString(__GLXclientState * cl, GLbyte * pc)
 
     n = strlen(pGlxScreen->GLXextensions) + 1;
     length = __GLX_PAD(n) >> 2;
-
-    xGLXQueryExtensionsStringReply reply = {
+    reply = (xGLXQueryExtensionsStringReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = length,
@@ -2414,6 +2417,7 @@ __glXDisp_QueryServerString(__GLXclientState * cl, GLbyte * pc)
 {
     ClientPtr client = cl->client;
     xGLXQueryServerStringReq *req = (xGLXQueryServerStringReq *) pc;
+    xGLXQueryServerStringReply reply;
     size_t n, length;
     const char *ptr;
     char *buf;
@@ -2438,15 +2442,14 @@ __glXDisp_QueryServerString(__GLXclientState * cl, GLbyte * pc)
             ptr = pGlxScreen->glvnd;
             break;
         }
-        _X_FALLTHROUGH; /* else fall through */
+        /* else fall through */
     default:
         return BadValue;
     }
 
     n = strlen(ptr) + 1;
     length = __GLX_PAD(n) >> 2;
-
-    xGLXQueryServerStringReply reply = {
+    reply = (xGLXQueryServerStringReply) {
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = length,
@@ -2493,8 +2496,6 @@ __glXDisp_ClientInfo(__GLXclientState * cl, GLbyte * pc)
 
     free(cl->GLClientextensions);
     cl->GLClientextensions = strdup(buf);
-    if (!cl->GLClientextensions)
-        return BadAlloc;
 
     return Success;
 }

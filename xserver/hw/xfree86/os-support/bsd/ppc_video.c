@@ -27,9 +27,7 @@
 #include <xorg-config.h>
 #endif
 
-#include <sys/mman.h>
 #include <X11/X.h>
-
 #include "xf86.h"
 #include "xf86Priv.h"
 
@@ -41,6 +39,10 @@
 /***************************************************************************/
 /* Video Memory Mapping section                                            */
 /***************************************************************************/
+
+#ifdef __OpenBSD__
+#define DEV_MEM "/dev/xf86"
+#endif
 
 Bool xf86EnableIO(void);
 void xf86DisableIO(void);
@@ -77,11 +79,7 @@ xf86DisableIO()
 {
 
     if (ioBase != MAP_FAILED) {
-#if defined(__FreeBSD__)
-        munmap(__DEVOLATILE(unsigned char *, ioBase), 0x10000);
-#else
         munmap(__UNVOLATILE(ioBase), 0x10000);
-#endif
         ioBase = MAP_FAILED;
     }
 }

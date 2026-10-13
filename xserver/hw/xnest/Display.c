@@ -41,7 +41,7 @@ XVisualInfo *xnestVisuals;
 int xnestNumVisuals;
 int xnestDefaultVisualIndex;
 Colormap *xnestDefaultColormaps;
-static uint16_t xnestNumDefaultColormaps;
+static unsigned int xnestNumDefaultColormaps;
 int *xnestDepths;
 int xnestNumDepths;
 XPixmapFormatValues *xnestPixmapFormats;
@@ -53,6 +53,11 @@ Pixmap xnestIconBitmap;
 Pixmap xnestScreenSaverPixmap;
 XlibGC xnestBitmapGC;
 unsigned long xnestEventMask;
+
+#ifdef __SUNPRO_C
+/* prevent "Function has no return statement" error for x_io_error_handler */
+#pragma does_not_return(exit)
+#endif
 
 static int _X_NORETURN
 x_io_error_handler(Display * dpy)
@@ -83,7 +88,7 @@ xnestOpenDisplay(int argc, char *argv[])
                    XDisplayName(xnestDisplayName));
 
     if (xnestSynchronize)
-        XSynchronize(xnestDisplay, TRUE);
+        XSynchronize(xnestDisplay, True);
 
     mask = VisualScreenMask;
     vi.screen = DefaultScreen(xnestDisplay);

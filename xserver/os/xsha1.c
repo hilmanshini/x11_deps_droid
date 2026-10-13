@@ -31,7 +31,7 @@
 #endif
 
 #include "os.h"
-#include "os/xsha1.h"
+#include "xsha1.h"
 
 #if defined(HAVE_SHA1_IN_LIBMD)  /* Use libmd for SHA1 */ \
 	|| defined(HAVE_SHA1_IN_LIBC)   /* Use libc for SHA1 */

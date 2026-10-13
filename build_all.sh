@@ -2,7 +2,7 @@
 # Usage:
 #   ./build_all.sh              build everything
 #   ./build_all.sh from x11     resume from a step
-#   ./build_all.sh only xkbfile run a single step
+#   ./build_all.sh only xserver run a single step
 set -eo pipefail
 cd "$(dirname "$0")"
 ROOT=$PWD
@@ -12,8 +12,8 @@ NATIVE=$ROOT/native.ini
 J=$(nproc)
 
 STEPS=(macros xorgproto xtrans xau xdmcp xcbproto xcb x11 pixman xkbfile
-       xkbcomp xkbconfig fontenc freetype xfont xcvt)
-
+       xkbcomp xkbconfig fontenc freetype xfont xcvt sha1 xserver)
+rm -rf freetype/
 # ---------- argument parsing ----------
 MODE=all; TARGET=""
 case "${1:-}" in
@@ -35,14 +35,12 @@ for p in /usr/bin/python3 /usr/bin/python3.13 /usr/bin/python3.12 /usr/bin/pytho
 done
 echo "Python >= 3.11: ${PY:-NOT FOUND}"
 
-# Native file: tools that run on your PC (bypasses the pyenv shim)
 cat > "$NATIVE" <<EOF
 [binaries]
 python3 = '${PY:-/usr/bin/python3}'
 python = '${PY:-/usr/bin/python3}'
 EOF
 
-# Cross file: created only if missing
 if [ ! -f "$CROSS" ]; then
 cat > "$CROSS" <<EOF
 [binaries]
@@ -98,11 +96,12 @@ ms() {
   rm -rf _b
   meson setup _b --cross-file "$CROSS" --native-file "$NATIVE" \
       --prefix=$PREFIX --libdir=lib "$@"
+  ninja -C _b
   ninja -C _b install
   popd >/dev/null
 }
 
-# step <name> <command...>: runs only when selected; stops the script on failure
+# step <name> <command...>
 step() {
   local name=$1; shift
   if [ "$MODE" = from ] && [ "$name" = "$TARGET" ]; then go=1; fi
@@ -129,10 +128,61 @@ xkbconfig() {
 freetype() {
   if [ ! -d "$ROOT/freetype/.git" ]; then
     git clone https://gitlab.freedesktop.org/freetype/freetype.git "$ROOT/freetype"
+    local tag
     tag=$(git -C "$ROOT/freetype" tag | grep -E '^VER-2-[0-9]+-[0-9]+$' | sort -V | tail -1)
     git -C "$ROOT/freetype" checkout "$tag"
   fi
   ms freetype -Dharfbuzz=disabled -Dbzip2=disabled -Dpng=disabled -Dbrotli=disabled
+}
+
+# libsha1: its test.c uses old C and fails, so build the library only
+sha1() {
+  if [ ! -d "$ROOT/libsha1" ]; then
+    git clone https://github.com/dottedmag/libsha1.git "$ROOT/libsha1"
+  fi
+  pushd "$ROOT/libsha1" >/dev/null
+  [ -f configure ] || autoreconf -fi
+  rm -rf _b; mkdir _b; cd _b
+  CFLAGS="-O2 -std=gnu89 -Wno-implicit-int" \
+    ../configure --host=$TRIPLE --prefix=$PREFIX --disable-static
+  make -j$J -k || true                      # test.c may still fail; ignore
+  [ -f .libs/libsha1.so ] || { echo "libsha1.so was not built"; exit 1; }
+  mkdir -p "$PREFIX/include" "$PREFIX/lib/pkgconfig"
+  cp ../libsha1.h "$PREFIX/include/"
+  cp -a .libs/libsha1.so* "$PREFIX/lib/"
+  cat > "$PREFIX/lib/pkgconfig/libsha1.pc" <<EOF
+prefix=$PREFIX
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+
+Name: libsha1
+Description: SHA1 implementation
+Version: 0.3.99
+Libs: -L\${libdir} -lsha1
+Cflags: -I\${includedir}
+EOF
+  popd >/dev/null
+  pkg-config --exists libsha1
+}
+
+xserver() {
+  # Bionic has no libpthread: replace the lookup (idempotent)
+  if grep -q "find_library('pthread'" "$ROOT/xserver/os/meson.build"; then
+    cp -n "$ROOT/xserver/os/meson.build" "$ROOT/xserver/os/meson.build.orig"
+    sed -i "s|cc.find_library('pthread'[^)]*)|dependency('', required: false)|" \
+      "$ROOT/xserver/os/meson.build"
+  fi
+  ms xserver \
+    -Dxorg=false -Dxvfb=true -Dxnest=false -Dxephyr=false -Dxwin=false \
+    -Dglamor=false -Dglx=false -Ddri3=false \
+    -Dudev=false -Dudev_kms=false -Dhal=false -Dsystemd_logind=false \
+    -Dxdmcp=false -Dmitshm=false -Dpciaccess=false -Dint10=false \
+    -Dsecure-rpc=false -Dsha1=libsha1 \
+    -Dxkb_dir=$DEVPREFIX/share/X11/xkb \
+    -Dxkb_bin_dir=$DEVPREFIX/bin \
+    -Dxkb_output_dir=/data/local/tmp \
+    -Dlog_dir=/data/local/tmp \
+    -Ddefault_font_path=$DEVPREFIX/share/fonts
 }
 
 # ---------- build order ----------
@@ -152,6 +202,8 @@ step fontenc   at libfontenc
 step freetype  freetype
 step xfont     at libxfont --with-bzip2=no
 step xcvt      ms libxcvt
+step sha1      sha1
+step xserver   xserver
 
 echo
-echo "Dependencies done. Now build xserver."
+echo "All done. Xvfb is in $PREFIX/bin"

@@ -27,7 +27,7 @@
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
  */
 
-#include "vndserver_priv.h"
+#include "vndserver.h"
 
 #include <pixmapstr.h>
 
@@ -131,6 +131,7 @@ GlxContextTagInfo *GlxAllocContextTag(ClientPtr client, GlxServerVendor *vendor)
         cl->contextTagCount = newSize;
     }
 
+    assert(index >= 0);
     assert(index < cl->contextTagCount);
     memset(&cl->contextTags[index], 0, sizeof(GlxContextTagInfo));
     cl->contextTags[index].tag = (GLXContextTag) (index + 1);
